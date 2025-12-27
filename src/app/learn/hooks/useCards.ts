@@ -24,15 +24,10 @@ export function useCards() {
     }));
   }, [fetchedCards, localCards]);
 
-  // Calculate reviewed count directly instead of using an effect
-  const reviewedCount = localCards !== null
-    ? localCards.filter((card) => card.reviewed).length
-    : apiReviewedCount;
-
   return { 
     cards: initializedCards, 
     setCards: setLocalCards, 
-    reviewedCount,
+    reviewedCount: apiReviewedCount,
     loading 
   };
 }

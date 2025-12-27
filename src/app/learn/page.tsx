@@ -22,8 +22,10 @@ export default function Learn() {
     auth,
   } = useLearnSession();
 
+  const isSessionComplete = progress.total > 0 && progress.reviewed >= progress.total;
+
   if (loading) return <LoadingState />;
-  if (cards.length === 0 || !currentCard) return <EmptyState />;
+  if (cards.length === 0 || !currentCard || isSessionComplete) return <EmptyState />;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
