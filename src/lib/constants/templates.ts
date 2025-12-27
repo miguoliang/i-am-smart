@@ -14,6 +14,5 @@ export const DEFAULT_CARD_TEMPLATES = {
   {{#if metadata.phonetic}}
   <p class="text-3xl text-muted-foreground mb-4">/{{metadata.phonetic}}/</p>
   {{/if}}
-  <p class="text-xl text-muted-foreground">Please rate this card</p>
 </div>`
 };

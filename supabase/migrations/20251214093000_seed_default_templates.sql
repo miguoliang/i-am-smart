@@ -27,7 +27,6 @@ VALUES
   {{#if metadata.phonetic}}
   <p class="text-3xl text-muted-foreground mb-4">/{{metadata.phonetic}}/</p>
   {{/if}}
-  <p class="text-xl text-muted-foreground">Please rate this card</p>
 </div>'
 )
 ON CONFLICT (code) DO UPDATE 
