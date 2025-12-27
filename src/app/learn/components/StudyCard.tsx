@@ -23,6 +23,7 @@ export const StudyCard = ({
   return (
     <div
       className="relative w-full max-w-2xl"
+      style={{ perspective: "1000px" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -41,7 +42,6 @@ export const StudyCard = ({
           style={{ 
             backfaceVisibility: 'hidden', 
             WebkitBackfaceVisibility: 'hidden',
-            zIndex: flipped ? 0 : 1, // Front is on top when NOT flipped
           }}
         >
           <CardContent className="h-full p-12">
@@ -60,7 +60,6 @@ export const StudyCard = ({
             transform: "rotateY(180deg)", 
             backfaceVisibility: 'hidden', 
             WebkitBackfaceVisibility: 'hidden',
-            zIndex: flipped ? 1 : 0, // Back is on top when flipped
           }}
         >
           <CardContent className="h-full p-12">

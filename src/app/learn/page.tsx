@@ -41,6 +41,7 @@ export default function Learn() {
       <ProgressIndicator reviewed={progress.reviewed} total={progress.total} />
 
       <StudyCard
+        key={currentCard.id}
         card={currentCard}
         flipped={flip.isFlipped}
         onFlip={flip.toggle}
