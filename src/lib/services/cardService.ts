@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getTodayDateRange, nowISO } from '@/lib/utils/dateUtils';
+import { getTodayDateRange } from '@/lib/utils/dateUtils';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
 import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
@@ -88,7 +88,10 @@ export const cardService = {
 
     // 2. Fetch due cards
     const { data: dueCards, error: dueError } = await supabase
-      .from('account_cards')
+      .rpc('get_due_cards', {
+        p_user_id: userId,
+        p_limit: remainingSlots,
+      })
       .select(`
         id,
         knowledge_code,
@@ -113,11 +116,7 @@ export const cardService = {
         repetitions,
         next_review_date,
         last_reviewed_at
-      `)
-      .eq('account_id', userId)
-      .lte('next_review_date', nowISO())
-      .order('next_review_date', { ascending: true })
-      .limit(remainingSlots);
+      `);
 
     if (dueError) {
       throw ApiError.internal(`Fetch due cards error: ${dueError.message}`);
