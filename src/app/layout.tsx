@@ -1,14 +1,27 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Providers from './providers'
 import { Analytics } from "@vercel/analytics/next"
 import { ConditionalFooter } from './components/ConditionalFooter'
 import { Toaster } from 'sonner'
 
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export const metadata: Metadata = {
   title: '背它一辈子',
   description: '一个基于间隔重复的英语学习应用',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Be It Forever",
+  },
 }
 
 export default function RootLayout({
