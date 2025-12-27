@@ -1,5 +1,6 @@
 // API functions for cards
 import type { Card } from "@/app/learn/types";
+import type { ApiResponse } from "@/lib/utils/apiError";
 
 export interface DueCardsResponse {
   reviewedCount: number;
@@ -14,7 +15,8 @@ export async function fetchDueCards(): Promise<DueCardsResponse> {
     }
     throw new Error("获取卡片失败");
   }
-  return res.json();
+  const json: ApiResponse<DueCardsResponse> = await res.json();
+  return json.data ?? { reviewedCount: 0, cards: [] };
 }
 
 export async function reviewCard(cardId: number, quality: number): Promise<void> {
