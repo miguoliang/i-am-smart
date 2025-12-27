@@ -22,55 +22,57 @@ export const StudyCard = ({
 }: StudyCardProps) => {
   return (
     <div
-      className="relative w-full max-w-2xl"
-      style={{ perspective: "1000px" }}
+      className="group w-full max-w-2xl perspective-1000"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onClick={onFlip}
     >
-      <ShadcnCard
-        className="rounded-3xl shadow-2xl p-0 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d relative bg-card overflow-hidden"
+      <div
+        className="relative grid transition-all duration-500 preserve-3d"
         style={{
           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-          transformStyle: "preserve-3d",
-          backgroundColor: 'hsl(var(--card))',
         }}
-        onClick={onFlip}
       >
         {/* Front Side */}
         <div 
-          className="absolute inset-0 bg-card rounded-3xl"
+          className="col-start-1 row-start-1 backface-hidden"
+          // When flipped (180deg), front face (0deg) is facing away.
           style={{ 
             backfaceVisibility: 'hidden', 
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-          <CardContent className="h-full p-12">
-            <DynamicCard 
-              template={card.templates?.front || DEFAULT_CARD_TEMPLATES.front} 
-              knowledge={card.knowledge} 
-              className="h-full"
-            />
-          </CardContent>
+          <ShadcnCard className="h-full min-h-96 rounded-3xl shadow-2xl p-0 flex flex-col justify-center items-center bg-card overflow-hidden">
+            <CardContent className="h-full p-12 w-full">
+              <DynamicCard 
+                template={card.templates?.front || DEFAULT_CARD_TEMPLATES.front} 
+                knowledge={card.knowledge} 
+                className="h-full"
+              />
+            </CardContent>
+          </ShadcnCard>
         </div>
 
         {/* Back Side */}
         <div 
-          className="absolute inset-0 bg-card rounded-3xl"
+          className="col-start-1 row-start-1 backface-hidden"
           style={{ 
             transform: "rotateY(180deg)", 
             backfaceVisibility: 'hidden', 
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-          <CardContent className="h-full p-12">
-            <DynamicCard 
-              template={card.templates?.back || DEFAULT_CARD_TEMPLATES.back} 
-              knowledge={card.knowledge}
-              className="h-full"
-            />
-          </CardContent>
+          <ShadcnCard className="h-full min-h-96 rounded-3xl shadow-2xl p-0 flex flex-col justify-center items-center bg-card overflow-hidden">
+            <CardContent className="h-full p-12 w-full">
+              <DynamicCard 
+                template={card.templates?.back || DEFAULT_CARD_TEMPLATES.back} 
+                knowledge={card.knowledge}
+                className="h-full"
+              />
+            </CardContent>
+          </ShadcnCard>
         </div>
-      </ShadcnCard>
+      </div>
     </div>
   );
 };
