@@ -2,7 +2,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Providers from './providers'
-import { Analytics } from "@vercel/analytics/next"
 import { ConditionalFooter } from './components/ConditionalFooter'
 import { Toaster } from 'sonner'
 
@@ -35,7 +34,6 @@ export default function RootLayout({
         <Providers>{children}</Providers>
         <ConditionalFooter />
         <Toaster position="top-center" />
-        <Analytics />
       </body>
     </html>
   )
