@@ -4,6 +4,7 @@ import './globals.css'
 import Providers from './providers'
 import { ConditionalFooter } from './components/ConditionalFooter'
 import { Toaster } from 'sonner'
+import { PWAUpdater } from './components/PWAUpdater'
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <Providers>{children}</Providers>
         <ConditionalFooter />
         <Toaster position="top-center" />
+        <PWAUpdater />
       </body>
     </html>
   )
