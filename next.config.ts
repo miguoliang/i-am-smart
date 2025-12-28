@@ -8,6 +8,13 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      handlebars: 'handlebars/dist/handlebars.js',
+    };
+    return config;
+  },
 };
 
 export default withSerwist(nextConfig);
