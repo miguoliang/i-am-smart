@@ -53,7 +53,7 @@ export const accountService = {
       id: u.id,
       username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
       email: u.email || "",
-      role: (u.user_metadata?.role as string)?.trim() || "learner",
+      role: (u.app_metadata?.role as string)?.trim() || "learner",
       created_at: u.created_at,
       updated_at: u.updated_at || u.created_at,
       last_sign_in_at: u.last_sign_in_at || null,
@@ -89,7 +89,7 @@ export const accountService = {
       throw ApiError.notFound("目标账户不存在");
     }
 
-    const targetRole = (targetUser.user.user_metadata?.role as string)?.trim() || "learner";
+    const targetRole = (targetUser.user.app_metadata?.role as string)?.trim() || "learner";
     if (targetRole === "operator") {
       throw ApiError.validationError("不能给 operator 分配卡片");
     }

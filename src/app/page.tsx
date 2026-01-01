@@ -91,23 +91,16 @@ export default function SignIn() {
 
     // Debug role checking
     const user = data.user;
-    const appMetadataRole = user?.app_metadata?.role;
-    const userMetadataRole = user?.user_metadata?.role;
+    const role = user?.app_metadata?.role;
     
     logger.debug("User role check", {
       userId: user?.id,
       app_metadata: user?.app_metadata,
-      user_metadata: user?.user_metadata,
-      app_metadata_role: appMetadataRole,
-      user_metadata_role: userMetadataRole,
+      role,
     });
 
     // ← 关键跳转逻辑
-    // Check both app_metadata and user_metadata for backward compatibility
-    // Prefer app_metadata as it's the secure source (users can't modify it)
-    const isOperator = appMetadataRole === "operator" || userMetadataRole === "operator";
-    
-    if (isOperator) {
+    if (role === "operator") {
       router.push("/operator");
     } else {
       router.push("/learn");

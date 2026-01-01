@@ -3,23 +3,45 @@ import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest } from 'next/server'
 import { knowledgeService, ImportKnowledgeParams } from '@/lib/services/knowledgeService'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET() {
   try {
     const supabase = await createRouteHandlerClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw ApiError.unauthorized('未登录')
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      logger.error('Knowledge GET: Authentication failed', { authError });
+      throw ApiError.unauthorized('未登录')
+    }
 
     // Check if user is operator
-    if (user.app_metadata?.role !== 'operator') {
+    const role = user.app_metadata?.role;
+    
+    logger.debug('Knowledge GET: Operator check', {
+      userId: user.id,
+      role,
+    });
+
+    if (role !== 'operator') {
+      logger.warn('Knowledge GET: Access denied - not an operator', {
+        userId: user.id,
+        role,
+      });
       throw ApiError.forbidden('权限不足')
     }
 
     const data = await knowledgeService.getAllKnowledge(supabase)
+    
+    logger.debug('Knowledge GET: Success', {
+      userId: user.id,
+      knowledgeCount: data?.length || 0,
+    });
 
     return apiSuccess(data)
   } catch (error) {
+    logger.error('Knowledge GET: Error', { error });
     return handleApiError(error)
   }
 }
@@ -55,7 +77,24 @@ export async function POST(req: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user || user.app_metadata?.role !== "operator") {
+    if (authError || !user) {
+      logger.error('Knowledge POST: Authentication failed', { authError });
+      throw ApiError.forbidden("Permission denied");
+    }
+
+    // Check if user is operator
+    const role = user.app_metadata?.role;
+    
+    logger.debug('Knowledge POST: Operator check', {
+      userId: user.id,
+      role,
+    });
+
+    if (role !== "operator") {
+      logger.warn('Knowledge POST: Access denied - not an operator', {
+        userId: user.id,
+        role,
+      });
       throw ApiError.forbidden("Permission denied");
     }
 

@@ -21,6 +21,8 @@ export async function fetchKnowledges(): Promise<Knowledge[]> {
     }
     throw new Error("加载失败");
   }
-  return res.json();
+  const json = await res.json();
+  // API returns { data: [...] }, extract the data array
+  return json.data || [];
 }
 

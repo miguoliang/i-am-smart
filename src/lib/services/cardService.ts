@@ -3,6 +3,7 @@ import { getTodayDateRange } from '@/lib/utils/dateUtils';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
 import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
+import { logger } from '@/lib/utils/logger';
 
 export interface DueCardsResult {
   reviewedCount: number;
@@ -119,7 +120,28 @@ export const cardService = {
       `);
 
     if (dueError) {
-      throw ApiError.internal(`Fetch due cards error: ${dueError.message}`);
+      // Enhanced error logging for RLS debugging
+      const errorMessage = dueError.message || 'Unknown error';
+      const isRlsError = errorMessage.includes('permission denied') || 
+                        errorMessage.includes('row-level security') ||
+                        errorMessage.includes('policy');
+      
+      logger.error('Failed to fetch due cards with knowledge join', {
+        userId,
+        error: dueError,
+        errorMessage,
+        isRlsError,
+        remainingSlots,
+      });
+      
+      if (isRlsError) {
+        throw ApiError.internal(
+          `RLS policy error when fetching cards with knowledge: ${errorMessage}. ` +
+          `User ID: ${userId}. This may indicate a problem with knowledge table SELECT policy.`
+        );
+      }
+      
+      throw ApiError.internal(`Fetch due cards error: ${errorMessage}`);
     }
 
     // 3. Transform response

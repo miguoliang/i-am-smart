@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/utils/logger';
 
 export interface KnowledgeItem {
   code: string;
@@ -28,14 +29,26 @@ export const knowledgeService = {
    * Fetch all knowledge items ordered by creation date (newest first)
    */
   async getAllKnowledge(supabase: SupabaseClient): Promise<KnowledgeItem[]> {
+    logger.debug('Fetching all knowledge items');
+    
     const { data, error } = await supabase
       .from('knowledge')
       .select('code, name, description, metadata, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error) {
+      logger.error('Failed to fetch knowledge items', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorDetails: error.details,
+      });
       throw new Error(`Fetch knowledge error: ${error.message}`);
     }
+
+    logger.debug('Successfully fetched knowledge items', {
+      count: data?.length || 0,
+    });
 
     return data as KnowledgeItem[];
   },

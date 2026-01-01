@@ -25,9 +25,11 @@ export async function fetchAccounts(
   const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.error || "获取账户列表失败");
+    throw new Error(data.error?.message || data.error || "获取账户列表失败");
   }
-  return res.json();
+  const json = await res.json();
+  // API returns { data: {...} }, extract the data object
+  return json.data;
 }
 
 export async function distributeCards(accountId: string): Promise<{ count: number }> {
@@ -40,9 +42,11 @@ export async function distributeCards(accountId: string): Promise<{ count: numbe
 
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.error || "分配卡片失败");
+    throw new Error(data.error?.message || data.error || "分配卡片失败");
   }
 
-  return res.json();
+  const json = await res.json();
+  // API returns { data: {...} }, extract the data object
+  return json.data;
 }
 
