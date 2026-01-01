@@ -1,6 +1,5 @@
 // API functions for knowledge
 export interface KnowledgeMetadata {
-  phonetic?: string;
   [key: string]: unknown;
 }
 

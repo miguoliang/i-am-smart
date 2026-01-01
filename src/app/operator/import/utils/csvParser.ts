@@ -58,7 +58,6 @@ export const parseCSV = async (file: File): Promise<CSVData> => {
                 example: rowObj["Example Sentence"] || rowObj["example"] || rowObj["exampleSentence"] || null,
                 prompt: rowObj["Self-Examine Prompt"] || rowObj["prompt"] || rowObj["selfExaminePrompt"] || null,
                 theme: rowObj["Theme"] || rowObj["theme"] || null,
-                phonetic: rowObj["Phonetic"] || rowObj["phonetic"] || null,
               },
             };
 

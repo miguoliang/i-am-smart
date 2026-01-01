@@ -37,9 +37,8 @@ The system is built on the **SM-2 algorithm**, which determines the optimal time
   * Unique immutable code (`ST-XXXXXXX` or `CS-XXXXXXX`).
   * Name, Description, and Metadata (JSONB).
   * Relationships to other items.
-* **Card Types**: Different ways to present knowledge (e.g., Term → Definition, Fill-in-the-blank).
-* **Templates**: Visual layout definitions for card types (Front/Back content).
-* **Account Cards**: A user-specific instance of a (Knowledge Item + Card Type) pair, tracking their personal progress.
+* **Card Types**: Definitions of different card structures (e.g., standard forward, reverse, cloze).
+* **Scheduling**: The core Spaced Repetition logic (SM-2 based).
 
 ---
 

@@ -8,7 +8,6 @@ export interface WordData {
     example?: string | null; // 例句
     prompt?: string | null; // 自检提示
     theme?: string | null; // 主题
-    phonetic?: string | null; // 音标
     [key: string]: unknown; // 允许其他元数据
   };
 }

@@ -35,32 +35,7 @@ Definitions of learning patterns (e.g., "Term -> Definition", "Cloze Deletion").
 | `created_at` | `TIMESTAMPTZ` | NO | Creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp. |
 
-### 2.3 Templates
-
-Rendering layouts (HTML/Markdown/Component structures) linked to card types.
-
-| Column | Type | Nullable | Description |
-| -- | -- | -- | -- |
-| `code` | `VARCHAR(20)` | NO | **PK**. Immutable identifier. |
-| `name` | `VARCHAR(255)` | NO | Unique template name. |
-| `description` | `TEXT` | NO | Description of the template. |
-| `format` | `VARCHAR(255)` | NO | Format type (e.g., "markdown", "html"). |
-| `content` | `TEXT` | NO | The actual template content. |
-| `created_at` | `TIMESTAMPTZ` | NO | Creation timestamp. |
-| `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp. |
-
-### 2.4 Card Type Templates (Relation)
-
-Many-to-many link between Card Types and Templates, defining roles (e.g., "Front", "Back").
-
-| Column | Type | Nullable | Description |
-| -- | -- | -- | -- |
-| `id` | `BIGSERIAL` | NO | **PK**. Internal ID. |
-| `card_type_code` | `VARCHAR(20)` | NO | **FK** -> `card_types.code`. |
-| `template_code` | `VARCHAR(20)` | NO | **FK** -> `templates.code`. |
-| `role` | `VARCHAR(255)` | NO | Usage role (e.g., "front", "back"). |
-
-### 2.5 Accounts
+### 2.3 Accounts
 
 User identities.
 
@@ -71,7 +46,7 @@ User identities.
 | `created_at` | `TIMESTAMPTZ` | NO | Registration timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp. |
 
-### 2.6 Account Cards
+### 2.4 Account Cards
 
 The intersection of Account, Knowledge, and Card Type. This table tracks the user's personal learning progress (SM-2 state) for a specific item.
 
@@ -112,8 +87,6 @@ erDiagram
     Account ||--o{ AccountCard : "tracks progress for"
     Knowledge ||--o{ AccountCard : "is subject of"
     CardType ||--o{ AccountCard : "defines format of"
-    
-    CardType }|--|{ Template : "uses (via card_type_template_rel)"
     
     AccountCard ||--o{ ReviewHistory : "logs history"
 ```

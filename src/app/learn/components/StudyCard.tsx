@@ -1,6 +1,5 @@
 import type { Card } from "../types";
 import { DynamicCard } from "./DynamicCard";
-import { DEFAULT_CARD_TEMPLATES } from "@/lib/constants/templates";
 import { cn } from "@/lib/utils";
 
 interface StudyCardProps {
@@ -16,6 +15,7 @@ export const StudyCard = ({
   card,
   flipped,
   onFlip,
+  onSpeak,
   onTouchStart,
   onTouchEnd,
 }: StudyCardProps) => {
@@ -36,9 +36,10 @@ export const StudyCard = ({
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden]">
           <CardFace>
             <DynamicCard 
-              template={card.templates?.front || DEFAULT_CARD_TEMPLATES.front} 
+              side="front"
               knowledge={card.knowledge} 
               className="h-full w-full"
+              onSpeak={onSpeak}
             />
           </CardFace>
         </div>
@@ -47,9 +48,10 @@ export const StudyCard = ({
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
           <CardFace>
             <DynamicCard 
-              template={card.templates?.back || DEFAULT_CARD_TEMPLATES.back} 
+              side="back"
               knowledge={card.knowledge}
               className="h-full w-full"
+              onSpeak={onSpeak}
             />
           </CardFace>
         </div>

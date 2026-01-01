@@ -156,7 +156,7 @@ sequenceDiagram
   - Automatic field mapping:
     - `name`: Maps from "English Word", "english", "word", "name"
     - `description`: Maps from "Chinese Translation", "chinese", "translation", "description"
-    - `metadata`: Maps POS, level, example, prompt, theme, phonetic
+    - `metadata`: Maps POS, level, example, prompt, theme
   - Duplicate header handling (keeps first occurrence)
   - Duplicate name removal (case-sensitive)
   - Empty row filtering
@@ -210,7 +210,6 @@ The parser automatically recognizes multiple column name variations:
 | `metadata.example` | "Example Sentence", "example", "exampleSentence" |
 | `metadata.prompt` | "Self-Examine Prompt", "prompt", "selfExaminePrompt" |
 | `metadata.theme` | "Theme", "theme" |
-| `metadata.phonetic` | "Phonetic", "phonetic" |
 
 ### Data Flow
 

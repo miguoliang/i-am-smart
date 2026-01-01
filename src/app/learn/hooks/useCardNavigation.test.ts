@@ -3,11 +3,11 @@ import { useCardNavigation } from './useCardNavigation';
 import { Card } from '../types';
 
 describe('useCardNavigation', () => {
-  const mockCards: Card[] = [
-    { id: 1, reviewed: false, templates: { front: 'F1', back: 'B1' } } as Card,
-    { id: 2, reviewed: false, templates: { front: 'F2', back: 'B2' } } as Card,
-    { id: 3, reviewed: false, templates: { front: 'F3', back: 'B3' } } as Card,
-  ];
+    const mockCards = [
+      { id: 1, reviewed: false } as Card,
+      { id: 2, reviewed: false } as Card,
+      { id: 3, reviewed: false } as Card,
+    ];
 
   it('should initialize with first card', () => {
     const { result } = renderHook(() => useCardNavigation(mockCards));

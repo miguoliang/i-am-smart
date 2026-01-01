@@ -30,15 +30,6 @@ interface RawCardData {
     description: string;
     metadata: KnowledgeMetadata;
   };
-  card_types: {
-    code: string;
-    card_type_templates: {
-      role: string;
-      templates: {
-        content: string;
-      } | null;
-    }[];
-  };
 }
 
 /**
@@ -103,15 +94,6 @@ export const cardService = {
           description,
           metadata
         ),
-        card_types!inner (
-          code,
-          card_type_templates (
-            role,
-            templates (
-              content
-            )
-          )
-        ),
         ease_factor,
         interval_days,
         repetitions,
@@ -146,32 +128,9 @@ export const cardService = {
 
     // 3. Transform response
     const formattedCards = (dueCards as unknown as RawCardData[])?.map((card) => {
-      // Define types for the raw DB response structure for clarity
-      interface TemplateRelation {
-        role: string;
-        templates: { content: string } | null;
-      }
-
-      // Explicitly type the joined property
-      const cardTypeTemplates = card.card_types?.card_type_templates as TemplateRelation[];
-
-      const templates = cardTypeTemplates?.reduce(
-        (acc: { front?: string; back?: string }, t: TemplateRelation) => {
-          if (t.role === 'front') acc.front = t.templates?.content;
-          if (t.role === 'back') acc.back = t.templates?.content;
-          return acc;
-        },
-        { front: '', back: '' }
-      );
-
-      // Remove the complex nested structure before returning
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { card_types, ...rest } = card;
-      
       // Ensure the return object matches Card interface
       return {
-        ...rest,
-        templates: templates as { front: string; back: string },
+        ...card,
       };
     });
 
