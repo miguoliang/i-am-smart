@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+---
+
+# API Design Principles
+
+Follow these principles when designing and implementing APIs.
+
+## RESTful Design
+
+- Use appropriate HTTP methods (GET, POST, PUT, PATCH, DELETE).
+- Follow REST conventions for resource naming and structure.
+- Use meaningful resource names.
+- Return appropriate HTTP status codes.
+- Version APIs appropriately.
+
+## API Consistency
+
+- Maintain consistent naming conventions across endpoints.
+- Use consistent response formats.
+- Follow consistent error handling patterns.
+- Document APIs thoroughly.
+- Include examples in API documentation.
+
+## Request/Response Design
+
+- Use clear, descriptive endpoint names.
+- Implement proper request validation.
+- Return consistent response structures.
+- Include relevant metadata in responses.
+- Use pagination for list endpoints.
+
+## Error Handling
+
+- Return appropriate HTTP status codes.
+- Provide meaningful error messages.
+- Include error details in consistent format.
+- Log errors appropriately for debugging.
+- Don't expose sensitive information in error responses.

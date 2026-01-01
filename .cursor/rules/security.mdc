@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+
+# Security Principles
+
+Follow these principles to build secure applications.
+
+## Security by Design
+
+- Consider security from the beginning of development.
+- Validate and sanitize all inputs.
+- Use parameterized queries to prevent SQL injection.
+- Implement proper authentication and authorization.
+- Follow the principle of least privilege.
+
+## Input Validation
+
+- Validate all user inputs at boundaries.
+- Sanitize data before processing or storing.
+- Use type checking and validation libraries.
+- Reject invalid inputs early.
+- Never trust client-side validation alone.
+
+## Authentication & Authorization
+
+- Implement secure authentication mechanisms.
+- Use secure session management.
+- Implement proper authorization checks.
+- Use role-based access control (RBAC) when appropriate.
+- Never expose sensitive credentials in code or logs.
+
+## Defense in Depth
+
+- Implement multiple layers of security.
+- Don't rely on a single security measure.
+- Validate at multiple levels (client, server, database).
+- Log security events for monitoring.
+- Implement rate limiting to prevent abuse.
+
+## Data Protection
+
+- Encrypt sensitive data at rest and in transit.
+- Use HTTPS for all communications.
+- Implement proper CORS policies.
+- Protect against common vulnerabilities (XSS, CSRF, etc.).
+- Keep dependencies up to date to patch security vulnerabilities.

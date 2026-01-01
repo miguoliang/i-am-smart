@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+
+# TypeScript Standards
+
+You are an expert in TypeScript. Follow these standards when writing TypeScript code.
+
+## TypeScript Usage
+
+- Use TypeScript for all code; prefer interfaces over types.
+- Use functional components with TypeScript interfaces.
+- Leverage TypeScript's type system to catch errors at compile time.
+- Use strict mode and enable all recommended compiler options.
+
+## Type Safety
+
+- Avoid using `any` type; use `unknown` when type is truly unknown.
+- Use type guards and type assertions appropriately.
+- Prefer type inference when types are obvious.
+- Use generic types for reusable, type-safe code.
+
+## Code Style
+
+- Write concise, technical TypeScript code with accurate examples.
+- Use functional and declarative programming patterns; avoid classes.
+- Use the "function" keyword for pure functions.
+- Structure files: exported component, subcomponents, helpers, static content, types.
+
+## Naming Conventions
+
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Favor named exports for components and utilities.
+- Use PascalCase for types, interfaces, and classes.
+- Use camelCase for variables and functions.
