@@ -27,7 +27,6 @@ The database relies on PostgreSQL hosted by Supabase.
     *   `code` (PK): Immutable identifier (e.g., `ST-0000001`) generated via **Database Triggers**.
     *   `metadata` (JSONB): Flexible attributes.
 *   `card_types`: Definitions of learning patterns.
-*   `templates`: Rendering layouts linked to card types.
 *   `accounts`: User identities (managed by Supabase Auth).
 *   `account_cards`: Intersection of Account + Knowledge + CardType. Tracks SM-2 state.
 *   `review_history`: Immutable log of all reviews for analytics.

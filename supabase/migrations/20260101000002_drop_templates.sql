@@ -1,7 +1,17 @@
 -- Migration to drop template related tables and functions
 
 -- Drop the trigger that synced template codes (from sync_sequences.sql and add_triggers.sql)
-DROP TRIGGER IF EXISTS "trigger_global_st_code_templates" ON "public"."templates";
+-- Use DO block to check if table exists before dropping trigger
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'templates'
+  ) THEN
+    DROP TRIGGER IF EXISTS "trigger_global_st_code_templates" ON "public"."templates";
+  END IF;
+END $$;
 
 -- Drop policies related to templates and card_type_templates (from add_template_rls.sql)
 -- Note: Dropping the table automatically drops the policies attached to it.

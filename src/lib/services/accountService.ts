@@ -114,10 +114,15 @@ export const accountService = {
       .select("code")
       .limit(1);
 
-    let finalCardTypeCode = "ST-0000001"; // Default fallback
-    if (!cardTypesError && cardTypes && cardTypes.length > 0) {
-      finalCardTypeCode = cardTypes[0].code;
+    if (cardTypesError) {
+      throw ApiError.internal(`获取卡片类型失败: ${cardTypesError.message}`);
     }
+
+    if (!cardTypes || cardTypes.length === 0) {
+      throw ApiError.validationError("系统中没有可用的卡片类型，请先创建卡片类型");
+    }
+
+    const finalCardTypeCode = cardTypes[0].code;
 
     // 4. Prepare account cards data
     const now = nowISO();

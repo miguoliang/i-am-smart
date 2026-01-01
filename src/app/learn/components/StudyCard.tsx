@@ -35,9 +35,9 @@ export const StudyCard = ({
         {/* Front Side */}
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden]">
           <CardFace>
-            <DynamicCard 
+            <DynamicCard
               side="front"
-              knowledge={card.knowledge} 
+              knowledge={card.knowledge}
               className="h-full w-full"
               onSpeak={onSpeak}
             />
@@ -47,7 +47,7 @@ export const StudyCard = ({
         {/* Back Side */}
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
           <CardFace>
-            <DynamicCard 
+            <DynamicCard
               side="back"
               knowledge={card.knowledge}
               className="h-full w-full"
@@ -60,11 +60,17 @@ export const StudyCard = ({
   );
 };
 
-function CardFace({ children, className }: { children: React.ReactNode; className?: string }) {
+function CardFace({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div 
+    <div
       className={cn(
-        "h-full min-h-96 w-full rounded-3xl bg-card p-12 shadow-2xl border flex flex-col justify-center items-center text-card-foreground", 
+        "h-full min-h-96 w-full rounded-3xl bg-card p-12 shadow-2xl border flex flex-col justify-center items-center text-card-foreground",
         className
       )}
     >
