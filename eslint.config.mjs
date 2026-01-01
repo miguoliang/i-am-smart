@@ -15,6 +15,19 @@ const eslintConfig = defineConfig([
     "public/sw.js",
     "public/workbox-*.js",
   ]),
+  {
+    rules: {
+      // Prevent direct console usage - use logger utility instead
+      "no-console": "error",
+    },
+  },
+  {
+    // Allow console usage only in the logger utility file
+    files: ["src/lib/utils/logger.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

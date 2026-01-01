@@ -1,5 +1,6 @@
 import { createMiddlewareClient } from '@/lib/supabaseServer'
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 export async function proxy(req: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function proxy(req: NextRequest) {
   } catch (error) {
     // If there's an error (e.g., during prerendering), just continue
     // This prevents crashes during static generation
-    console.error('Middleware error:', error)
+    logger.error('Middleware error', { error, pathname: req.nextUrl.pathname })
     const res = NextResponse.next({ request: req })
     // Add CORS headers even on error
     res.headers.set('Access-Control-Allow-Origin', '*')

@@ -1,5 +1,6 @@
 import Handlebars from 'handlebars';
 import DOMPurify from 'dompurify';
+import { logger } from './logger';
 
 /**
  * Compiles a Handlebars template with data and sanitizes the output HTML.
@@ -28,7 +29,8 @@ export const renderTemplate = (template: string, data: unknown): string => {
 
     return sanitizer.sanitize(rawHtml);
   } catch (error) {
-    console.error("Template rendering error:", error);
-    return `<div class="p-4 text-red-500 border border-red-500 rounded bg-red-50">Error rendering template: ${(error as Error).message}</div>`;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("Template rendering error", { error, message: errorMessage });
+    return `<div class="p-4 text-red-500 border border-red-500 rounded bg-red-50">Error rendering template: ${errorMessage}</div>`;
   }
 };

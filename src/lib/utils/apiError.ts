@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ApiError, ApiErrorCode } from './apiErrorClasses';
+import { logger } from './logger';
 
 export { ApiError, ApiErrorCode };
 
@@ -13,7 +14,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 export function handleApiError(error: unknown) {
-  console.error('API Error:', error);
+  logger.error('API Error', { error });
 
   if (error instanceof ApiError) {
     return NextResponse.json<ApiResponse>(

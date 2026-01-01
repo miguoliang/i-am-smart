@@ -11,6 +11,7 @@ import {
   isRateLimitError,
   getRateLimitErrorMessage,
 } from "@/lib/utils/errorHandling";
+import { logger } from "@/lib/utils/logger";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ export default function SignIn() {
       });
 
       if (error) {
-        console.error("OTP Error:", error);
+        logger.error("OTP Error", { error, message: error.message });
         
         if (isRateLimitError(error.message)) {
           toast.error(getRateLimitErrorMessage(error.message, "重新发送验证码"));
@@ -52,8 +53,8 @@ export default function SignIn() {
       setLoading(false);
       toast.success("验证码已发送到您的邮箱，请查收。");
     } catch (err) {
-      console.error("OTP Exception:", err);
       const errorMessage = err instanceof Error ? err.message : "发送验证码失败，请检查网络连接";
+      logger.error("OTP Exception", { error: err, message: errorMessage });
       
       if (isRateLimitError(errorMessage)) {
         toast.error(getRateLimitErrorMessage(errorMessage, "重新发送验证码"));
@@ -88,8 +89,25 @@ export default function SignIn() {
       return;
     }
 
+    // Debug role checking
+    const user = data.user;
+    const appMetadataRole = user?.app_metadata?.role;
+    const userMetadataRole = user?.user_metadata?.role;
+    
+    logger.debug("User role check", {
+      userId: user?.id,
+      app_metadata: user?.app_metadata,
+      user_metadata: user?.user_metadata,
+      app_metadata_role: appMetadataRole,
+      user_metadata_role: userMetadataRole,
+    });
+
     // ← 关键跳转逻辑
-    if (data.user?.user_metadata?.role === "operator") {
+    // Check both app_metadata and user_metadata for backward compatibility
+    // Prefer app_metadata as it's the secure source (users can't modify it)
+    const isOperator = appMetadataRole === "operator" || userMetadataRole === "operator";
+    
+    if (isOperator) {
       router.push("/operator");
     } else {
       router.push("/learn");
