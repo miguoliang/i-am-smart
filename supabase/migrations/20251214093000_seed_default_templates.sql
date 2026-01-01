@@ -33,6 +33,11 @@ ON CONFLICT (code) DO UPDATE
 SET content = EXCLUDED.content, 
     updated_at = NOW();
 
+-- Ensure Card Type exists
+INSERT INTO public.card_types (code, name, description)
+VALUES ('basic-front-back', 'Basic Front/Back', 'Standard card with front and back sides')
+ON CONFLICT (code) DO NOTHING;
+
 -- Link templates to Card Type 'basic-front-back'
 INSERT INTO public.card_type_templates (card_type_code, template_code, role)
 VALUES 
