@@ -10,11 +10,12 @@ export const ImportButton = ({ onClick, loading, disabled }: ImportButtonProps) 
   return (
     <Button
       onClick={onClick}
-      disabled={disabled || loading}
+      disabled={disabled}
+      loading={loading}
       size="lg"
       className="px-6 py-3"
     >
-      {loading ? "导入中..." : "开始导入"}
+      开始导入
     </Button>
   );
 };

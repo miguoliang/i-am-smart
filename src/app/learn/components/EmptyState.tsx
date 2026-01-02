@@ -2,11 +2,14 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import { useState } from "react";
 
 export function EmptyState() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
+    setLoading(true);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
@@ -17,6 +20,7 @@ export function EmptyState() {
       <div className="absolute top-4 right-4">
         <Button
           onClick={handleSignOut}
+          loading={loading}
           variant="ghost"
           size="sm"
           className="gap-2"

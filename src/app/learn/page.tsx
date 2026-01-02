@@ -32,6 +32,7 @@ export default function Learn() {
       <div className="absolute top-4 right-4">
         <Button
           onClick={auth.handleSignOut}
+          loading={auth.isSigningOut}
           variant="ghost"
           size="sm"
           className="gap-2"

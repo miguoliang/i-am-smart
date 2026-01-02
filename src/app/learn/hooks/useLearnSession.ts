@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { useCards } from "./useCards";
@@ -9,6 +10,7 @@ import { useCardNavigation } from "./useCardNavigation";
 
 export function useLearnSession() {
   const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   
   // 1. Data & State
   const { cards, setCards, reviewedCount: apiReviewedCount, loading } = useCards();
@@ -34,6 +36,7 @@ export function useLearnSession() {
 
   // 4. Auth Handler
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
@@ -64,6 +67,7 @@ export function useLearnSession() {
     },
     auth: {
       handleSignOut,
+      isSigningOut,
     },
   };
 }

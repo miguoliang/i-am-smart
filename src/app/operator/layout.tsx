@@ -4,6 +4,7 @@ import { DashboardLayout } from "./components/DashboardLayout";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
+import { useState } from "react";
 
 export default function OperatorLayout({
   children,
@@ -11,6 +12,7 @@ export default function OperatorLayout({
   children: React.ReactNode;
 }) {
   const { user, loading, supabase } = useOperatorAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Redirect is handled by the hook
   if (loading || !user) {
@@ -22,13 +24,14 @@ export default function OperatorLayout({
   }
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     await supabase.auth.signOut();
     // Redirect handled by hook onAuthStateChange
   };
 
   return (
     <DashboardLayout
-      topNav={<TopNav userEmail={user.email || ""} onSignOut={handleSignOut} />}
+      topNav={<TopNav userEmail={user.email || ""} onSignOut={handleSignOut} loading={isSigningOut} />}
       sidebar={<Sidebar />}
     >
       {children}

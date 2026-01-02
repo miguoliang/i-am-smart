@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 
@@ -71,15 +70,8 @@ export const DistributeCardsDialog = ({
           >
             取消
           </Button>
-          <Button onClick={handleDistribute} disabled={distributing}>
-            {distributing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                分配中...
-              </>
-            ) : (
-              "确认分配"
-            )}
+          <Button onClick={handleDistribute} loading={distributing}>
+            确认分配
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -138,21 +138,21 @@ export default function SignIn() {
           {!otpSent ? (
             <Button
               onClick={handleSendOtp}
-              disabled={loading}
+              loading={loading}
               size="lg"
               className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
             >
-              {loading ? "发送中..." : "发送验证码"}
+              发送验证码
             </Button>
           ) : (
             <>
               <Button
                 onClick={handleVerifyOtp}
-                disabled={loading}
+                loading={loading}
                 size="lg"
                 className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
               >
-                {loading ? "验证中..." : "验证登录"}
+                验证登录
               </Button>
               <Button
                 onClick={() => {
