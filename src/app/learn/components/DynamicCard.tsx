@@ -9,7 +9,7 @@ interface DynamicCardProps {
   onSpeak?: (text: string, lang: "en-US" | "en-GB") => void;
 }
 
-export const DynamicCard: React.FC<DynamicCardProps> = ({ knowledge, side, className, onSpeak }) => {
+export function DynamicCard({ knowledge, side, className, onSpeak }: DynamicCardProps) {
   if (side === 'front') {
     return (
       <div className={`flex flex-col items-center justify-center h-full ${className || ''}`}>

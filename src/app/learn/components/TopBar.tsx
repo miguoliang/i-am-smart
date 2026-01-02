@@ -25,6 +25,12 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
     unsubscribe: unsubscribePush,
   } = usePushNotifications();
 
+  const handlePushToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (subscription) unsubscribePush();
+    else subscribePush();
+  };
+
   return (
     <>
       {/* Top Left Burger Menu */}
@@ -38,11 +44,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
           <DropdownMenuContent align="start">
             {isPushSupported && (
               <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (subscription) unsubscribePush();
-                  else subscribePush();
-                }}
+                onClick={handlePushToggle}
                 disabled={pushLoading}
               >
                 {pushLoading ? (

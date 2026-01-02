@@ -1,16 +1,13 @@
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabaseClient";
 import { useCards } from "./useCards";
 import { useCardFlip } from "./useCardFlip";
 import { useSpeech } from "./useSpeech";
 import { useTouchSwipe } from "./useTouchSwipe";
 import { useCardReview } from "./useCardReview";
 import { useCardNavigation } from "./useCardNavigation";
+import { useSignOut } from "@/hooks/useSignOut";
 
 export function useLearnSession() {
-  const router = useRouter();
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { signOut, isSigningOut } = useSignOut();
   
   // 1. Data & State
   const { cards, setCards, reviewedCount: apiReviewedCount, loading } = useCards();
@@ -35,12 +32,7 @@ export function useLearnSession() {
   });
 
   // 4. Auth Handler
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-  };
+  // Handled by useSignOut hook
 
   return {
     loading,
@@ -66,7 +58,7 @@ export function useLearnSession() {
       handleRate,
     },
     auth: {
-      handleSignOut,
+      handleSignOut: signOut,
       isSigningOut,
     },
   };

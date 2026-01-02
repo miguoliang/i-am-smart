@@ -66,17 +66,6 @@ export function usePushNotifications() {
   async function unsubscribe() {
     setLoading(true);
     try {
-        // Optional: Unsubscribe from PushManager
-        /*
-        const registration = await navigator.serviceWorker.ready;
-        const sub = await registration.pushManager.getSubscription();
-        if (sub) {
-            await sub.unsubscribe();
-        }
-        */
-       // For now, we just clear local state as requested by common patterns or if we want to re-subscribe
-       // But to be proper, let's just nullify the state to show the "Subscribe" button again.
-       // Re-subscribing will generate a new subscription object or return existing one.
        setSubscription(null);
        toast.success("Notifications disabled (locally)");
     } catch {
