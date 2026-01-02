@@ -3,15 +3,21 @@ import { NextRequest } from "next/server";
 import webpush from "web-push";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 
-export async function POST(req: NextRequest) {
-  // Initialize web-push lazily to avoid build errors
+// Initialize web-push if keys are available (avoids build errors)
+if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || "mailto:example@test.com",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
   );
+}
 
+export async function POST(req: NextRequest) {
   try {
+    if (!process.env.VAPID_PRIVATE_KEY) {
+       throw new Error("VAPID keys not configured");
+    }
+
     const supabase = await createRouteHandlerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
