@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PushNotificationManager } from "./PushNotificationManager";
-import { InstallPrompt } from "./InstallPrompt";
 
 export const NavigationFooter = () => {
   const pathname = usePathname();
@@ -31,10 +29,6 @@ export const NavigationFooter = () => {
         >
           Stats
         </Link>
-        <div className="flex gap-2">
-            <InstallPrompt />
-            <PushNotificationManager />
-        </div>
       </div>
     </footer>
   );
