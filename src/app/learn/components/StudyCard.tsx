@@ -70,7 +70,7 @@ function CardFace({
   return (
     <div
       className={cn(
-        "h-full min-h-96 w-full rounded-3xl bg-card p-12 shadow-2xl border flex flex-col justify-center items-center text-card-foreground",
+        "h-full min-h-[50vh] md:min-h-96 w-full rounded-3xl bg-card p-6 md:p-12 shadow-2xl border flex flex-col justify-center items-center text-card-foreground",
         className
       )}
     >

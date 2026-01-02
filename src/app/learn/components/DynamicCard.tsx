@@ -13,11 +13,13 @@ export const DynamicCard: React.FC<DynamicCardProps> = ({ knowledge, side, class
   if (side === 'front') {
     return (
       <div className={`flex flex-col items-center justify-center h-full ${className || ''}`}>
-        <h2 className="text-8xl font-bold mb-8">{knowledge.name}</h2>
-        <div className="flex gap-4 mb-8">
+        <h2 className="text-4xl md:text-6xl lg:text-8xl font-bold mb-4 md:mb-8 text-center break-words max-w-full">
+          {knowledge.name}
+        </h2>
+        <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-6 md:mb-8">
           <Button
             variant="secondary"
-            className="px-6 py-2 hover:scale-110 transition"
+            className="px-4 py-2 md:px-6 hover:scale-110 transition text-sm md:text-base"
             onClick={(e) => {
               e.stopPropagation();
               onSpeak?.(knowledge.name, 'en-US');
@@ -27,7 +29,7 @@ export const DynamicCard: React.FC<DynamicCardProps> = ({ knowledge, side, class
           </Button>
           <Button
             variant="secondary"
-            className="px-6 py-2 hover:scale-110 transition"
+            className="px-4 py-2 md:px-6 hover:scale-110 transition text-sm md:text-base"
             onClick={(e) => {
               e.stopPropagation();
               onSpeak?.(knowledge.name, 'en-GB');
@@ -36,7 +38,7 @@ export const DynamicCard: React.FC<DynamicCardProps> = ({ knowledge, side, class
             UK Speaker
           </Button>
         </div>
-        <p className="text-2xl text-muted-foreground">Click or swipe to see answer</p>
+        <p className="text-sm md:text-xl text-muted-foreground text-center">Click or swipe to see answer</p>
       </div>
     );
   }
@@ -44,8 +46,10 @@ export const DynamicCard: React.FC<DynamicCardProps> = ({ knowledge, side, class
   // Back side
   return (
     <div className={`flex flex-col items-center justify-center h-full ${className || ''}`}>
-      <div className="flex items-center gap-6 mb-8">
-        <p className="text-7xl font-bold text-primary text-center">{knowledge.description}</p>
+      <div className="flex items-center gap-6 mb-4 md:mb-8 px-2">
+        <p className="text-2xl md:text-5xl lg:text-7xl font-bold text-primary text-center break-words max-w-full">
+          {knowledge.description}
+        </p>
       </div>
     </div>
   );
