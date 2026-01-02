@@ -34,7 +34,10 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   return (
     <>
       {/* Top Left Burger Menu */}
-      <div className="absolute top-4 left-4 z-50">
+      <div 
+        className="absolute left-4 z-50"
+        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -70,7 +73,10 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
       </div>
 
       {/* Top Right Install Button */}
-      <div className="absolute top-4 right-4 z-50">
+      <div 
+        className="absolute right-4 z-50"
+        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+      >
         <InstallPrompt />
       </div>
     </>
