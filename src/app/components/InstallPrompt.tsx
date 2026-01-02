@@ -1,0 +1,77 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
+export function InstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setTimeout(() => setIsStandalone(true), 0);
+    }
+
+    // Handle Android/Desktop install prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    // Check for iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    setTimeout(() => setIsIOS(isIosDevice), 0);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+      }
+    } else if (isIOS) {
+      toast("To install on iOS: tap 'Share' then 'Add to Home Screen'", {
+        duration: 5000,
+        position: "bottom-center",
+      });
+    }
+  };
+
+  // Don't show if already installed
+  if (isStandalone) return null;
+
+  // Don't show if not installable (desktop safari) and not iOS
+  if (!deferredPrompt && !isIOS) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={handleInstallClick}
+      title="Install App"
+    >
+      <Download className="h-5 w-5" />
+    </Button>
+  );
+}
