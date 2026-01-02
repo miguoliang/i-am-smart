@@ -1,8 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { useState } from "react";
+import { TopBar } from "./TopBar";
 
 export function EmptyState() {
   const router = useRouter();
@@ -17,18 +16,7 @@ export function EmptyState() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <Button
-          onClick={handleSignOut}
-          loading={loading}
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">退出登录</span>
-        </Button>
-      </div>
+      <TopBar onSignOut={handleSignOut} isSigningOut={loading} />
       <div className="text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
           今日复习完成！

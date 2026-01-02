@@ -1,13 +1,12 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 import { ProgressIndicator } from "./components/ProgressIndicator";
 import { StudyCard } from "./components/StudyCard";
 import { RatingButtons } from "./components/RatingButtons";
-import { LogOut } from "lucide-react";
 import { useLearnSession } from "./hooks/useLearnSession";
+import { TopBar } from "./components/TopBar";
 
 export default function Learn() {
   const {
@@ -29,18 +28,8 @@ export default function Learn() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <Button
-          onClick={auth.handleSignOut}
-          loading={auth.isSigningOut}
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">退出登录</span>
-        </Button>
-      </div>
+      <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
+
       <ProgressIndicator reviewed={progress.reviewed} total={progress.total} />
 
       <StudyCard
