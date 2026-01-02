@@ -27,7 +27,7 @@ export default function Learn() {
   if (cards.length === 0 || !currentCard || isSessionComplete) return <EmptyState />;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+    <div className="min-h-dvh bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
       <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
 
       <ProgressIndicator reviewed={progress.reviewed} total={progress.total} />
