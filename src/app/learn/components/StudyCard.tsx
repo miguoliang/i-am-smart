@@ -19,10 +19,10 @@ export const StudyCard = ({
   onTouchStart,
   onTouchEnd,
 }: StudyCardProps) => {
-  // Handle keyboard events to match native button behavior
-  // Native buttons activate on Enter (keydown) and Space (keyup)
+  // Handle keyboard events to match native button semantics
+  // Per WAI-ARIA: Enter activates on keydown, Space activates on keyup
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Enter activates on keydown
+    // Enter activates on keydown (matches native button behavior)
     if (e.key === 'Enter') {
       e.preventDefault();
       onFlip();
@@ -34,7 +34,7 @@ export const StudyCard = ({
   };
 
   const handleKeyUp = (e: React.KeyboardEvent) => {
-    // Space activates on keyup (matching native button behavior)
+    // Space activates on keyup (matches native button behavior per WAI-ARIA)
     if (e.key === ' ') {
       e.preventDefault();
       onFlip();
