@@ -1,8 +1,36 @@
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { logger } from "@/lib/utils/logger";
 import { sanitizeFeedbackContent } from "@/lib/utils/sanitize";
+import { createFeedbackService } from "@/lib/services/factory";
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = await createRouteHandlerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw ApiError.unauthorized("未登录");
+    }
+
+    // Check if user is operator
+    if (user.app_metadata?.role !== 'operator') {
+      throw ApiError.forbidden("无权访问");
+    }
+
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+
+    const feedbackService = await createFeedbackService();
+    const result = await feedbackService.getFeedbacks(page, limit);
+
+    return apiSuccess(result);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {

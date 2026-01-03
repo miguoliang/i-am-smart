@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
+import { FeedbackContent } from '@/lib/types/feedback';
 
 // Create DOMPurify instance for server-side use
 const window = new JSDOM('').window;
@@ -27,16 +28,6 @@ export function sanitizeText(text: string): string {
 /**
  * Sanitize feedback content object
  */
-export interface FeedbackContent {
-  occupation?: string;
-  learningPurpose?: string[];
-  fragmentTimeHelpful?: string;
-  fragmentTimeNotHelpfulReason?: string;
-  willRecommend?: string;
-  notRecommendReason?: string;
-  openFeedback?: string;
-}
-
 export function sanitizeFeedbackContent(content: FeedbackContent): FeedbackContent {
   const sanitized: FeedbackContent = {};
 

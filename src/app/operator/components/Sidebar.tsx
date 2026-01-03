@@ -14,6 +14,7 @@ const sidebarItems: SidebarItem[] = [
   { href: "/operator/knowledges", label: "单词列表", icon: "📚" },
   { href: "/operator/import", label: "导入词库", icon: "📥" },
   { href: "/operator/accounts", label: "账户管理", icon: "👥" },
+  { href: "/operator/feedback", label: "用户反馈", icon: "💬" },
   // Add more sidebar items here as needed
 ];
 

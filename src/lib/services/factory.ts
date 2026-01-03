@@ -3,9 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import { SupabaseCardRepository } from '@/lib/repositories/implementations/supabase-card.repository';
 import { SupabaseAccountRepository } from '@/lib/repositories/implementations/supabase-account.repository';
 import { SupabaseKnowledgeRepository } from '@/lib/repositories/implementations/supabase-knowledge.repository';
+import { SupabaseFeedbackRepository } from '@/lib/repositories/implementations/supabase-feedback.repository';
 import { CardService } from './cardService';
 import { AccountService } from './accountService';
 import { KnowledgeService } from './knowledgeService';
+import { FeedbackService } from './feedbackService';
 
 /**
  * Factory for CardService
@@ -25,6 +27,16 @@ export async function createKnowledgeService(): Promise<KnowledgeService> {
   const supabase = await createRouteHandlerClient();
   const repo = new SupabaseKnowledgeRepository(supabase);
   return new KnowledgeService(repo);
+}
+
+/**
+ * Factory for FeedbackService
+ * Uses Route Handler Client (User Context)
+ */
+export async function createFeedbackService(): Promise<FeedbackService> {
+  const supabase = await createRouteHandlerClient();
+  const repo = new SupabaseFeedbackRepository(supabase);
+  return new FeedbackService(repo);
 }
 
 /**
