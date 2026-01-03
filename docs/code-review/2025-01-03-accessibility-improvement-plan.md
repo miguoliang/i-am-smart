@@ -1,9 +1,10 @@
 # Accessibility Standards Improvement Plan
 
 **Date:** 2025-01-03  
-**Status:** Planning  
+**Status:** In Progress  
 **Priority:** High  
-**Estimated Effort:** 1-2 days
+**Estimated Effort:** 1-2 days  
+**Last Updated:** 2025-01-03
 
 ## Executive Summary
 
@@ -34,49 +35,61 @@ Key areas of focus include: semantic HTML, ARIA labeling, keyboard navigation, a
 
 ## Implementation Plan
 
-### Phase 1: Global Accessibility Fixes
+### Phase 1: Global Accessibility Fixes ✅ **COMPLETED**
 
 **Goal:** Address site-wide structure and navigation issues.
 
-#### 1.1 "Skip to Content" Link
+#### 1.1 "Skip to Content" Link ✅
 - **Action:** Add a hidden "Skip to main content" link as the first focusable element in the root layout.
 - **Implementation:**
-  - Create `src/components/SkipLink.tsx`
-  - Add to `src/app/layout.tsx`
+  - ✅ Created `src/components/SkipLink.tsx`
+  - ✅ Added to `src/app/layout.tsx`
+- **Status:** Complete - SkipLink component implemented with proper focus styles
 
-#### 1.2 HTML Language Attribute
+#### 1.2 HTML Language Attribute ✅
 - **Action:** Verify and enforce `<html lang="zh">` in `src/app/layout.tsx`.
+- **Status:** Complete - Verified `<html lang="zh">` is set in root layout
 
-#### 1.3 Landmark Regions
+#### 1.3 Landmark Regions ✅
 - **Action:** Ensure all pages are wrapped in a `<main id="main-content">`.
-- **Target Files:** `src/app/page.tsx`, `src/app/learn/page.tsx`, `src/app/feedback/page.tsx`, `src/app/layout.tsx`.
+- **Status:** Complete - Main landmark with `id="main-content"` added to root layout
 
-**Estimated Time:** 1-2 hours
+**Estimated Time:** 1-2 hours  
+**Actual Time:** ~1 hour  
+**Completed:** 2025-01-03
 
 ---
 
-### Phase 2: Form Accessibility (Feedback Page)
+### Phase 2: Form Accessibility (Feedback Page) ✅ **COMPLETED**
 
 **Goal:** Ensure the feedback form is fully accessible to screen readers and keyboard users.
 
-#### 2.1 Label Association
+#### 2.1 Label Association ✅
 - **Action:** Ensure every `<input>`, `<textarea>`, and custom control has a visible `<label>` or `aria-label`.
 - **Implementation:**
-  - Refactor `src/app/feedback/page.tsx`.
-  - Use `htmlFor` / `id` pairing strictly.
-  - For radio groups, use `<fieldset>` and `<legend>`.
+  - ✅ Refactored `src/app/feedback/page.tsx`.
+  - ✅ All inputs have proper `aria-label` attributes.
+  - ✅ Radio groups use `<fieldset>` and `<legend>`.
+  - ✅ Textareas use `<Label>` components with `htmlFor` / `id` pairing.
+- **Status:** Complete - All form controls have accessible labels
 
-#### 2.2 Error Messaging
+#### 2.2 Error Messaging ✅
 - **Action:** Programmatically associate error messages with inputs.
 - **Implementation:**
-  - Add `id="error-[fieldname]"` to error message containers.
-  - Add `aria-describedby="error-[fieldname]"` and `aria-invalid="true"` to invalid inputs.
+  - ✅ Added `id="error-[fieldname]"` to error message containers.
+  - ✅ Added `aria-describedby="error-[fieldname]"` to invalid inputs.
+  - ✅ Added `aria-invalid="true"` to invalid inputs and fieldsets.
+  - ✅ Error messages have `role="alert"` for screen reader announcements.
+- **Status:** Complete - Error messages properly associated with inputs
 
-#### 2.3 Custom Controls (Radix UI / Shadcn)
+#### 2.3 Custom Controls (Radix UI / Shadcn) ✅
 - **Action:** Verify `Checkbox` and `RadioGroup` usage.
-- **Note:** Shadcn UI components usually handle this well, but we must ensure we are passing the correct `aria-label` or wrapping them in `<FormItem>` correctly if using `react-hook-form`.
+- **Status:** Complete - Radix UI Checkbox components properly labeled with `aria-label`
+- **Note:** Shadcn UI components handle accessibility well; verified proper usage
 
-**Estimated Time:** 3-4 hours
+**Estimated Time:** 3-4 hours  
+**Actual Time:** ~3 hours  
+**Completed:** 2025-01-03
 
 ---
 
@@ -100,31 +113,62 @@ Key areas of focus include: semantic HTML, ARIA labeling, keyboard navigation, a
 
 ## Testing Strategy
 
-### Automated Testing
+### Automated Testing ✅ **COMPLETED**
 - **Tool:** `jest-axe`
 - **Action:** Add a test file `src/app/feedback/page.test.tsx` (or similar) that renders the form and runs `axe` checks.
+- **Status:** ✅ Complete - Test file created with 3 accessibility tests:
+  - ✅ `should have no violations` - Uses jest-axe to check for WCAG violations
+  - ✅ `should have accessible form controls` - Verifies labels and button accessibility
+  - ✅ `should associate error messages with inputs` - Verifies ARIA error associations
+- **Test Infrastructure:** Added mocks for `ResizeObserver` and `window.matchMedia` in `jest.setup.ts`
+- **Result:** All 3 tests passing ✅
 
-### Manual Testing
+### Manual Testing ⚠️ **PENDING**
 - **Keyboard:** Tab through the entire feedback flow and flashcard review flow without a mouse.
 - **Screen Reader (Simulation):** Use MacOS VoiceOver (if available) or verify ARIA attributes in DevTools Accessibility tree.
+- **Status:** Not yet performed - Recommended for final verification
 
 ---
 
 ## Success Criteria
 
-1. ✅ `jest-axe` tests pass for the Feedback page.
-2. ✅ All form inputs have accessible names (labels).
-3. ✅ Flashcard can be flipped and reviewed using only the keyboard.
-4. ✅ HTML structure includes valid `lang` and `<main>` landmarks.
+1. ✅ `jest-axe` tests pass for the Feedback page. **COMPLETED**
+2. ✅ All form inputs have accessible names (labels). **COMPLETED**
+3. ⚠️ Flashcard can be flipped and reviewed using only the keyboard. **PENDING**
+4. ✅ HTML structure includes valid `lang` and `<main>` landmarks. **COMPLETED**
+
+**Progress:** 3 of 4 criteria met (75% complete)
 
 ---
 
 ## Timeline
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| Phase 1: Global Fixes | 1-2 hours | None |
-| Phase 2: Feedback Form | 3-4 hours | Phase 1 |
-| Phase 3: Flashcard | 2-3 hours | None |
-| **Total** | **~1 Day** | |
+| Phase | Duration | Status | Completed Date |
+|-------|----------|--------|----------------|
+| Phase 1: Global Fixes | 1-2 hours | ✅ Complete | 2025-01-03 |
+| Phase 2: Feedback Form | 3-4 hours | ✅ Complete | 2025-01-03 |
+| Phase 3: Flashcard | 2-3 hours | ⚠️ Pending | - |
+| **Total** | **~1 Day** | **75% Complete** | |
+
+## Progress Summary
+
+### Completed ✅
+- Skip to content link implemented
+- HTML lang attribute verified
+- Main landmark regions added
+- Feedback form labels and ARIA attributes
+- Error message associations with inputs
+- Automated accessibility tests (jest-axe)
+- Test infrastructure setup
+
+### Remaining ⚠️
+- Phase 3: Flashcard keyboard accessibility
+- Manual keyboard navigation testing
+- Manual screen reader testing
+
+### Next Steps
+1. Implement keyboard flip support for Flashcard component
+2. Add focus indicators to Flashcard
+3. Perform manual accessibility testing
+4. Final verification and documentation
 
