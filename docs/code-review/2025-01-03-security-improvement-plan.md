@@ -7,39 +7,16 @@
 
 ## Executive Summary
 
-This **simplified** plan leverages Netlify and Supabase platform features to address security vulnerabilities with minimal complexity:
-1. **CORS Policy** - Simplified restriction using environment variables
-2. **Rate Limiting** - Leverage Supabase's built-in rate limiting + simple in-memory limiter for Next.js API routes
+This plan leverages Netlify and Supabase platform features to address security vulnerabilities with minimal complexity:
+1. **CORS Policy** - Restrict middleware proxy only (Netlify handles API routes automatically)
+2. **Rate Limiting** - Simple in-memory limiter for Next.js API routes (Supabase already rate-limits their API)
 3. **Input Sanitization** - Use existing `dompurify` library
 
 **Key Simplifications:**
-- ✅ No external dependencies (Upstash) needed - use Supabase rate limiting
-- ✅ Simpler CORS handling - Netlify handles most CORS automatically
-- ✅ Lightweight in-memory rate limiter for Next.js routes (sufficient for most use cases)
-
----
-
-## Why This Plan is Simpler
-
-### Platform Advantages
-
-1. **Netlify:**
-   - ✅ Handles CORS automatically for API routes
-   - ✅ Provides `x-forwarded-for` header for IP-based rate limiting
-   - ✅ Serverless functions are stateless (in-memory rate limiting resets per invocation, which is acceptable)
-
-2. **Supabase:**
-   - ✅ Built-in rate limiting on all API endpoints
-   - ✅ Row Level Security (RLS) provides additional protection
-   - ✅ Auth endpoints already rate-limited by Supabase
-
-### Simplifications Made
-
-- ❌ **Removed:** Upstash Redis dependency (not needed)
-- ❌ **Removed:** Complex CORS handling for API routes (Netlify handles it)
-- ✅ **Simplified:** In-memory rate limiter (sufficient for Next.js API routes)
-- ✅ **Simplified:** CORS only needed for middleware proxy
-- ✅ **Kept:** Input sanitization (still critical)
+- ✅ No external dependencies needed
+- ✅ Netlify handles API route CORS automatically
+- ✅ Supabase provides built-in rate limiting
+- ✅ Lightweight in-memory rate limiter sufficient for Next.js routes
 
 ---
 
@@ -80,30 +57,11 @@ res.headers.set('Access-Control-Allow-Origin', '*')
 
 ---
 
-## Target Architecture
-
-### Security Layers
-
-```
-Request → CORS Check → Rate Limiter → Input Validation → Sanitization → Business Logic → Database
-```
-
-### Benefits
-
-1. **Defense in Depth**: Multiple security layers
-2. **Attack Prevention**: Proactive protection against common attacks
-3. **Compliance**: Better alignment with security best practices
-4. **Monitoring**: Foundation for security event logging
-
----
-
 ## Implementation Plan
 
-### Phase 1: CORS Policy Restriction (Simplified)
+### Phase 1: CORS Policy Restriction
 
-**Goal:** Restrict CORS in middleware only (Netlify handles API route CORS automatically)
-
-**Note:** Since you're using Netlify, CORS for Next.js API routes is handled automatically. We only need to fix the middleware proxy.
+**Goal:** Restrict CORS in middleware proxy (Netlify handles API route CORS automatically)
 
 #### 1.1 Add Environment Variable
 
@@ -238,54 +196,15 @@ export async function proxy(req: NextRequest) {
 // ... rest of file
 ```
 
-#### 1.4 Add CORS to API Routes
-
-**File:** `src/lib/utils/apiError.ts` (or create middleware utility)
-
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { getCorsHeaders, handleCorsPreflight } from './cors';
-
-/**
- * Wrapper for API route handlers that adds CORS support
- */
-export function withCors<T>(
-  handler: (req: NextRequest, context?: T) => Promise<NextResponse>
-) {
-  return async (req: NextRequest, context?: T): Promise<NextResponse> => {
-    // Handle OPTIONS preflight
-    if (req.method === 'OPTIONS') {
-      const preflightResponse = handleCorsPreflight(req);
-      if (preflightResponse) return preflightResponse;
-      return new NextResponse(null, { status: 403 });
-    }
-
-    const response = await handler(req, context);
-    
-    // Add CORS headers to response
-    const corsHeaders = getCorsHeaders(req);
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
-
-    return response;
-  };
-}
-```
-
 **Estimated Time:** 1-2 hours
 
 ---
 
-### Phase 2: Rate Limiting Implementation (Simplified)
+### Phase 2: Rate Limiting Implementation
 
-**Goal:** Simple rate limiting for Next.js API routes (Supabase already handles their API)
+**Goal:** Add rate limiting for Next.js API routes (Supabase already rate-limits their API)
 
-**Note:** Supabase has built-in rate limiting on their API endpoints. We only need to add rate limiting for Next.js API routes.
-
-#### 2.1 Create Simple In-Memory Rate Limiter
-
-**No external dependencies needed!** We'll use a simple in-memory solution that's sufficient for most use cases.
+#### 2.1 Create In-Memory Rate Limiter
 
 **File:** `src/lib/utils/rateLimit.ts`
 
@@ -376,96 +295,22 @@ if (typeof setInterval !== 'undefined') {
 }
 ```
 
-#### 2.5 Update API Routes
+#### 2.2 Update API Routes
 
-**File:** `src/app/api/auth/send-otp/route.ts`
+**Add rate limiting to these routes:**
 
+- `src/app/api/auth/send-otp/route.ts` - Use `'auth'` limiter
+- `src/app/api/feedback/route.ts` - Use `'feedback'` limiter with `user?.id`
+- `src/app/api/cards/[id]/review/route.ts` - Use `'cardReview'` limiter with `user.id`
+- `src/app/api/knowledge/route.ts` (POST) - Use `'knowledgeImport'` limiter with `user.id`
+
+**Example:**
 ```typescript
 import { rateLimit } from '@/lib/utils/rateLimit';
-// ... other imports
 
 export async function POST(req: NextRequest) {
   try {
-    // Apply rate limiting
-    await rateLimit(req, 'auth');
-
-    const { email } = await req.json();
-    // ... rest of handler
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-```
-
-**File:** `src/app/api/feedback/route.ts`
-
-```typescript
-import { rateLimit } from '@/lib/utils/rateLimit';
-// ... other imports
-
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createRouteHandlerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Apply rate limiting (use user ID if available)
     await rateLimit(req, 'feedback', user?.id);
-
-    const { content } = await req.json();
-    // ... rest of handler
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-```
-
-**File:** `src/app/api/cards/[id]/review/route.ts`
-
-```typescript
-import { rateLimit } from '@/lib/utils/rateLimit';
-// ... other imports
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const supabase = await createRouteHandlerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw ApiError.unauthorized('未登录');
-    }
-
-    // Apply rate limiting
-    await rateLimit(request, 'cardReview', user.id);
-
-    const { quality } = await request.json();
-    // ... rest of handler
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-```
-
-**File:** `src/app/api/knowledge/route.ts` (POST method)
-
-```typescript
-import { rateLimit } from '@/lib/utils/rateLimit';
-// ... other imports
-
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createRouteHandlerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user || user.app_metadata?.role !== 'operator') {
-      throw ApiError.forbidden('权限不足');
-    }
-
-    // Apply rate limiting for imports
-    await rateLimit(req, 'knowledgeImport', user.id);
-
     // ... rest of handler
   } catch (error) {
     return handleApiError(error);
@@ -589,154 +434,30 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-#### 3.3 Update Knowledge Import (if needed)
-
-**File:** `src/lib/services/knowledgeService.ts` (if knowledge items contain user input)
-
-```typescript
-import { sanitizeText } from '@/lib/utils/sanitize';
-
-// In importKnowledge method, sanitize name and description
-const validItems = items
-  .map((item) => {
-    if (!item || typeof item !== 'object' || !item.name) return null;
-    
-    return {
-      name: sanitizeText(item.name.trim()),
-      description: item.description ? sanitizeText(item.description.trim()) : "",
-      metadata: item.metadata || {},
-    };
-  })
-  .filter((item): item is NonNullable<typeof item> => item !== null && item.name.length > 0);
-```
-
-**Estimated Time:** 3-4 hours
+**Estimated Time:** 2-3 hours
 
 ---
 
 ## Testing Strategy
 
-### Unit Tests
+**Unit Tests:**
+- CORS origin validation
+- Rate limiting logic
+- Sanitization functions
 
-**File:** `src/lib/utils/cors.test.ts`
+**Integration Tests:**
+- CORS headers in responses
+- Rate limiting behavior
+- Sanitization in feedback flow
 
-```typescript
-import { getCorsHeaders, isOriginAllowed } from './cors';
-import { NextRequest } from 'next/server';
-
-describe('CORS', () => {
-  beforeEach(() => {
-    process.env.ALLOWED_ORIGINS = 'http://localhost:3000,https://example.com';
-  });
-
-  it('should allow configured origins', () => {
-    expect(isOriginAllowed('http://localhost:3000')).toBe(true);
-    expect(isOriginAllowed('https://example.com')).toBe(true);
-  });
-
-  it('should reject unconfigured origins', () => {
-    expect(isOriginAllowed('https://evil.com')).toBe(false);
-  });
-});
-```
-
-**File:** `src/lib/utils/rateLimit.test.ts`
-
-```typescript
-import { rateLimit } from './rateLimit';
-import { NextRequest } from 'next/server';
-
-describe('Rate Limiting', () => {
-  it('should allow requests within limit', async () => {
-    const req = new NextRequest('http://localhost/api/test');
-    // Mock rate limiter
-    // Test implementation
-  });
-
-  it('should reject requests exceeding limit', async () => {
-    // Test rate limit exceeded scenario
-  });
-});
-```
-
-**File:** `src/lib/utils/sanitize.test.ts`
-
-```typescript
-import { sanitizeText, sanitizeHtml } from './sanitize';
-
-describe('Sanitization', () => {
-  it('should remove script tags', () => {
-    const input = 'Hello <script>alert("xss")</script> World';
-    expect(sanitizeText(input)).toBe('Hello World');
-  });
-
-  it('should preserve plain text', () => {
-    const input = 'Hello World';
-    expect(sanitizeText(input)).toBe('Hello World');
-  });
-});
-```
-
-### Integration Tests
-
-- Test CORS headers in API responses
-- Test rate limiting behavior
-- Test sanitization in feedback submission flow
-
-**Estimated Time:** 4-6 hours
-
----
-
-## Migration Strategy
-
-### Approach: Incremental Rollout
-
-1. **Week 1: CORS & Sanitization**
-   - Implement CORS restrictions
-   - Add input sanitization
-   - Test thoroughly
-   - Deploy to production
-
-2. **Week 2: Rate Limiting**
-   - Implement rate limiting
-   - Start with permissive limits
-   - Monitor and adjust
-   - Gradually tighten limits
-
-### Backward Compatibility
-
-- CORS: May break if clients use different origins (document required)
-- Rate Limiting: May temporarily block legitimate users (monitor closely)
-- Sanitization: Should be transparent to users
-
----
-
-## Risk Assessment
-
-### Low Risk
-- Input sanitization (additive, no breaking changes)
-- CORS configuration (environment-based)
-
-### Medium Risk
-- Rate limiting (may affect legitimate users if misconfigured)
-- CORS restrictions (may break existing integrations)
-
-### Mitigation
-- Start with permissive rate limits
-- Monitor error rates and adjust
-- Document CORS requirements
-- Provide fallback mechanisms
-
----
+**Estimated Time:** 2-3 hours
 
 ## Success Criteria
 
 1. ✅ CORS restricted to configured origins only
-2. ✅ Rate limiting active on all API endpoints
+2. ✅ Rate limiting active on Next.js API endpoints
 3. ✅ All user-generated content sanitized before storage
-4. ✅ No XSS vulnerabilities in stored content
-5. ✅ API abuse protection in place
-6. ✅ Tests passing with >80% coverage for security utilities
+4. ✅ Tests passing for security utilities
 
 ---
 
@@ -764,32 +485,13 @@ NETLIFY_URL=https://your-site.netlify.app
 
 ---
 
-## Dependencies to Add
+## Dependencies
 
-**None!** All dependencies already exist:
+**None required** - All dependencies already exist:
 - ✅ `dompurify` - Already installed
 - ✅ `jsdom` - Already installed (for server-side DOMPurify)
-- ✅ No external rate limiting service needed (using simple in-memory solution)
-
-**Benefits of Simplified Approach:**
-- 🎯 No external services to manage
-- 💰 No additional costs
-- ⚡ Faster implementation
-- 🔧 Easier to maintain
-- ✅ Leverages Supabase's built-in rate limiting
 
 ---
 
-## Next Steps
-
-1. **Review and Approve Plan** - Get team buy-in
-2. **Create Feature Branch** - `security/cors-rate-limit-sanitization`
-3. **Start with Phase 1** - CORS restrictions (lowest risk)
-4. **Incremental PRs** - Small, reviewable changes
-5. **Monitor** - Watch for regressions and false positives
-
----
-
-**Plan Created:** 2025-01-03  
-**Next Review:** After Phase 1 completion
+**Plan Created:** 2025-01-03
 
