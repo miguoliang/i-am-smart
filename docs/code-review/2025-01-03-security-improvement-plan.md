@@ -3,20 +3,19 @@
 **Date:** 2025-01-03  
 **Status:** Planning  
 **Priority:** High  
-**Estimated Effort:** 1-2 days (Simplified)
+**Estimated Effort:** 1 day
 
 ## Executive Summary
 
 This plan leverages Netlify and Supabase platform features to address security vulnerabilities with minimal complexity:
 1. **CORS Policy** - Restrict middleware proxy only (Netlify handles API routes automatically)
-2. **Rate Limiting** - Simple in-memory limiter for Next.js API routes (Supabase already rate-limits their API)
-3. **Input Sanitization** - Use existing `dompurify` library
+2. **Input Sanitization** - Use existing `dompurify` library
 
 **Key Simplifications:**
 - ✅ No external dependencies needed
 - ✅ Netlify handles API route CORS automatically
+- ✅ Netlify provides rate limiting platform features
 - ✅ Supabase provides built-in rate limiting
-- ✅ Lightweight in-memory rate limiter sufficient for Next.js routes
 
 ---
 
@@ -33,20 +32,7 @@ This plan leverages Netlify and Supabase platform features to address security v
 res.headers.set('Access-Control-Allow-Origin', '*')
 ```
 
-#### 2. Rate Limiting ⚠️ **HIGH**
-- **Issue:** No rate limiting on Next.js API endpoints (Supabase API already has rate limiting)
-- **Risk:** API abuse, DDoS attacks, brute force attempts
-- **Affected Routes:**
-  - `/api/auth/send-otp` - Vulnerable to email spam (Supabase handles this, but we can add app-level)
-  - `/api/feedback` - Vulnerable to spam submissions
-  - `/api/cards/[id]/review` - Vulnerable to abuse
-  - `/api/knowledge` (POST) - Vulnerable to bulk imports
-- **Note:** 
-  - Supabase already provides rate limiting on their API endpoints
-  - We only need to add rate limiting for Next.js API routes
-  - Can use simple in-memory solution (Netlify functions are stateless, but sufficient for per-request limits)
-
-#### 3. Input Sanitization ⚠️ **MEDIUM**
+#### 2. Input Sanitization ⚠️ **MEDIUM**
 - **Location:** `src/app/api/feedback/route.ts`, `src/app/feedback/page.tsx`
 - **Issue:** User-generated content stored without HTML sanitization
 - **Risk:** XSS attacks, stored malicious scripts
@@ -142,16 +128,9 @@ export function getCorsHeaders(req: NextRequest): Record<string, string> {
 import { createMiddlewareClient } from '@/lib/supabaseServer'
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/utils/logger'
-import { getCorsHeaders, handleCorsPreflight } from '@/lib/utils/cors'
+import { getCorsHeaders } from '@/lib/utils/cors'
 
 export async function proxy(req: NextRequest) {
-  // Handle OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    const preflightResponse = handleCorsPreflight(req);
-    if (preflightResponse) return preflightResponse;
-    return new NextResponse(null, { status: 403 });
-  }
-
   try {
     const { supabase, res } = createMiddlewareClient(req)
 
@@ -200,129 +179,7 @@ export async function proxy(req: NextRequest) {
 
 ---
 
-### Phase 2: Rate Limiting Implementation
-
-**Goal:** Add rate limiting for Next.js API routes (Supabase already rate-limits their API)
-
-#### 2.1 Create In-Memory Rate Limiter
-
-**File:** `src/lib/utils/rateLimit.ts`
-
-```typescript
-import { NextRequest } from 'next/server';
-import { ApiError } from './apiErrorClasses';
-
-interface RateLimitConfig {
-  limit: number;
-  windowMs: number; // Time window in milliseconds
-}
-
-// Rate limit configurations per endpoint type
-const rateLimitConfigs: Record<string, RateLimitConfig> = {
-  auth: { limit: 5, windowMs: 15 * 60 * 1000 }, // 5 requests per 15 minutes
-  feedback: { limit: 10, windowMs: 60 * 60 * 1000 }, // 10 requests per hour
-  cardReview: { limit: 100, windowMs: 60 * 1000 }, // 100 requests per minute
-  knowledgeImport: { limit: 20, windowMs: 60 * 60 * 1000 }, // 20 imports per hour
-  general: { limit: 60, windowMs: 60 * 1000 }, // 60 requests per minute
-};
-
-// Simple in-memory store (clears on serverless function restart, which is fine)
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
-/**
- * Get identifier for rate limiting (IP address or user ID)
- */
-function getRateLimitIdentifier(req: NextRequest, userId?: string): string {
-  // Prefer user ID if available (more accurate)
-  if (userId) {
-    return `user:${userId}`;
-  }
-  
-  // Fall back to IP address (Netlify provides x-forwarded-for)
-  const forwarded = req.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || 'unknown';
-  return `ip:${ip}`;
-}
-
-/**
- * Apply rate limiting to a request
- */
-export async function rateLimit(
-  req: NextRequest,
-  limiterType: keyof typeof rateLimitConfigs,
-  userId?: string
-): Promise<void> {
-  const config = rateLimitConfigs[limiterType];
-  const identifier = getRateLimitIdentifier(req, userId);
-  const key = `${limiterType}:${identifier}`;
-  const now = Date.now();
-  
-  const record = rateLimitStore.get(key);
-  
-  // Check if window has expired or doesn't exist
-  if (!record || now > record.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + config.windowMs });
-    return; // Allow request
-  }
-  
-  // Check if limit exceeded
-  if (record.count >= config.limit) {
-    const resetTime = new Date(record.resetAt).toISOString();
-    throw ApiError.validationError(
-      `Rate limit exceeded. Please try again after ${resetTime}`
-    );
-  }
-  
-  // Increment count
-  record.count++;
-}
-
-/**
- * Clean up old entries periodically (optional, for memory management)
- */
-function cleanupRateLimitStore() {
-  const now = Date.now();
-  for (const [key, record] of rateLimitStore.entries()) {
-    if (now > record.resetAt) {
-      rateLimitStore.delete(key);
-    }
-  }
-}
-
-// Cleanup every 5 minutes (only runs when function is warm)
-if (typeof setInterval !== 'undefined') {
-  setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
-}
-```
-
-#### 2.2 Update API Routes
-
-**Add rate limiting to these routes:**
-
-- `src/app/api/auth/send-otp/route.ts` - Use `'auth'` limiter
-- `src/app/api/feedback/route.ts` - Use `'feedback'` limiter with `user?.id`
-- `src/app/api/cards/[id]/review/route.ts` - Use `'cardReview'` limiter with `user.id`
-- `src/app/api/knowledge/route.ts` (POST) - Use `'knowledgeImport'` limiter with `user.id`
-
-**Example:**
-```typescript
-import { rateLimit } from '@/lib/utils/rateLimit';
-
-export async function POST(req: NextRequest) {
-  try {
-    await rateLimit(req, 'feedback', user?.id);
-    // ... rest of handler
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-```
-
-**Estimated Time:** 2-3 hours
-
----
-
-### Phase 3: Input Sanitization
+### Phase 2: Input Sanitization
 
 **Goal:** Sanitize all user-generated content before storage
 
@@ -442,12 +299,10 @@ export async function POST(req: NextRequest) {
 
 **Unit Tests:**
 - CORS origin validation
-- Rate limiting logic
 - Sanitization functions
 
 **Integration Tests:**
 - CORS headers in responses
-- Rate limiting behavior
 - Sanitization in feedback flow
 
 **Estimated Time:** 2-3 hours
@@ -455,21 +310,20 @@ export async function POST(req: NextRequest) {
 ## Success Criteria
 
 1. ✅ CORS restricted to configured origins only
-2. ✅ Rate limiting active on Next.js API endpoints
-3. ✅ All user-generated content sanitized before storage
-4. ✅ Tests passing for security utilities
+2. ✅ All user-generated content sanitized before storage
+3. ✅ Tests passing for security utilities
+4. ✅ Netlify rate limiting configured via platform features
 
 ---
 
-## Timeline (Simplified)
+## Timeline
 
 | Phase | Duration | Dependencies |
 |-------|----------|--------------|
 | Phase 1: CORS Restriction | 1-2 hours | None |
-| Phase 2: Rate Limiting | 2-3 hours | None |
-| Phase 3: Input Sanitization | 2-3 hours | None |
-| Testing | 2-3 hours | All phases |
-| **Total** | **7-11 hours** | ~1-2 days |
+| Phase 2: Input Sanitization | 2-3 hours | None |
+| Testing | 1-2 hours | All phases |
+| **Total** | **4-7 hours** | ~1 day |
 
 ---
 
