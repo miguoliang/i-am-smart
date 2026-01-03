@@ -38,7 +38,7 @@ export function DynamicCard({ knowledge, side, className, onSpeak }: DynamicCard
             UK Speaker
           </Button>
         </div>
-        <p className="text-sm md:text-xl text-muted-foreground text-center">Click or swipe to see answer</p>
+        <p className="text-sm md:text-xl text-muted-foreground text-center">Click, swipe, or press Enter/Space to see answer</p>
       </div>
     );
   }

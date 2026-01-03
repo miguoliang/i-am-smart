@@ -19,12 +19,24 @@ export const StudyCard = ({
   onTouchStart,
   onTouchEnd,
 }: StudyCardProps) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow Enter or Space to flip the card
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); // Prevent scrolling when Space is pressed
+      onFlip();
+    }
+  };
+
   return (
     <div
-      className="group w-full max-w-2xl [perspective:1000px]"
+      className="group w-full max-w-2xl [perspective:1000px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-3xl"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onClick={onFlip}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={flipped ? "Card showing answer. Press Enter or Space to flip back to question." : "Card showing question. Press Enter or Space to flip and see answer."}
     >
       <div
         className={cn(
