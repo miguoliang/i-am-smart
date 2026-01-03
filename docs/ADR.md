@@ -53,31 +53,44 @@ erDiagram
 
 ## 3\. Application Architecture
 
-### 3.1 Backend Layers (Next.js API Routes)
+### 3.1 Backend Layers (Layered Architecture)
+
+The backend follows a strict layered architecture to separate concerns and ensure testability (Dependency Inversion Principle).
 
 1.  **Route Handlers (**`src/app/api/`):
-    *   Act as the API gateway.
-    *   Authenticate users via `@supabase/ssr`.
-    *   Execute business logic and return JSON responses.
-2.  **Supabase Client (**`src/lib/supabaseServer.ts`):
-    *   Handles secure, server-side database interactions.
-    *   Manages cookie-based sessions.
+    *   **Role**: API Gateway & Controller.
+    *   **Responsibility**: Auth checks, request parsing, response formatting.
+    *   **Dependency**: Calls **Services** (injected via Factory).
+2.  **Service Layer (**`src/lib/services/`):
+    *   **Role**: Business Logic.
+    *   **Responsibility**: Implements core domain logic (e.g., SM-2 algorithm, account management).
+    *   **Dependency**: Depends on **Repository Interfaces** (Domain Layer), not concrete implementations.
+3.  **Repository Layer (**`src/lib/repositories/`):
+    *   **Role**: Data Access.
+    *   **Responsibility**: Abstraction over the database (Supabase).
+    *   **Implementation**: `SupabaseCardRepository`, `SupabaseAccountRepository`, etc.
+4.  **Supabase Client (**`src/lib/supabaseServer.ts`):
+    *   **Role**: Database Driver.
+    *   **Responsibility**: Used only within Repository implementations for SQL/RPC execution.
 
 ### 3.2 Frontend Architecture
 
 *   **Framework**: React + Vite (via Next.js) + TypeScript.
 *   **State Management**: TanStack Query (React Query).
 *   **UI Components**: Radix UI + Tailwind CSS (Shadcn-like structure).
+    *   **Accessibility**: WCAG 2.1 AA Compliant (Keyboard navigation, ARIA labels, Focus management).
 *   **Auth**: Supabase Auth helpers for Next.js.
 
 ### 3.3 Learner Workflows
 
 1.  **Daily Review**:
     *   **Endpoint**: `GET /api/accounts/me/cards/due`
-    *   **Logic**: Queries `account_cards` where `next_review_date <= NOW()`.
+    *   **Logic**: Service calls Repository to query `account_cards` where `next_review_date <= NOW()`.
 2.  **Card Review**:
     *   **Endpoint**: `POST /api/cards/{id}/review`
-    *   **Logic**: Updates SM-2 state (`ease_factor`, `interval`, `next_review_date`) based on user quality rating.
+    *   **Logic**:
+        *   Service calculates new SM-2 state.
+        *   Repository executes **Transactional RPC** (`review_card`) to atomically update card state and insert review history.
 
 ### 3.4 Operator Workflows
 
@@ -101,7 +114,7 @@ erDiagram
 
 ### 4.2 Spaced Repetition (SM-2)
 
-*   **Logic**: Implemented in API Route handlers (TypeScript).
+*   **Logic**: Implemented in Service Layer (`cardService.ts`).
 *   **State**: Persisted in `account_cards`.
 
 ---
@@ -119,6 +132,15 @@ erDiagram
 *   **RBAC**:
     *   `client`: Read-only access to content, Write access to own `account_cards`.
     *   `operator`: Write access to `knowledge` table.
+
+### 5.3 Defense in Depth
+
+*   **Input Sanitization**:
+    *   **Mechanism**: Server-side HTML sanitization using `dompurify` (`src/lib/utils/sanitize.ts`).
+    *   **Scope**: All user-generated content (e.g., feedback) is sanitized before storage to prevent XSS.
+*   **Platform Security**:
+    *   **CORS**: Managed by Netlify platform headers.
+    *   **Rate Limiting**: Managed by Netlify edge protection.
 
 ---
 
