@@ -183,7 +183,7 @@ export async function proxy(req: NextRequest) {
 
 **Goal:** Sanitize all user-generated content before storage
 
-#### 3.1 Create Sanitization Utility
+#### 2.1 Create Sanitization Utility
 
 **File:** `src/lib/utils/sanitize.ts`
 
@@ -257,7 +257,7 @@ export function sanitizeFeedbackContent(content: FeedbackContent): FeedbackConte
 }
 ```
 
-#### 3.2 Update Feedback API Route
+#### 2.2 Update Feedback API Route
 
 **File:** `src/app/api/feedback/route.ts`
 
