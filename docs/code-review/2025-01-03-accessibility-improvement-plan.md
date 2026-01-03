@@ -16,21 +16,46 @@ Key areas of focus include: semantic HTML, ARIA labeling, keyboard navigation, a
 
 ## Current State Analysis
 
-### Issues Identified
+### Issues Identified & Resolution Status
 
-#### 1. WCAG Guidelines Compliance ⚠️ **NEEDS IMPROVEMENT**
-- **Root Layout:** Missing or unverified `lang` attribute.
-- **Form Controls:** Radio buttons and checkboxes in `src/app/feedback/page.tsx` lack proper `aria-label` or `aria-labelledby`.
-- **Form Validation:** Error messages are not programmatically associated with inputs via `aria-describedby`.
-- **Navigation:** No "Skip to Content" link.
+#### 1. WCAG Guidelines Compliance ✅ **IMPROVED** (75% Complete)
+- **Root Layout:** ✅ **RESOLVED** - `lang="zh"` attribute verified and set in root layout
+- **Form Controls:** ✅ **RESOLVED** - All radio buttons and checkboxes in `src/app/feedback/page.tsx` now have proper `aria-label` attributes
+- **Form Validation:** ✅ **RESOLVED** - Error messages programmatically associated with inputs via `aria-describedby`, `aria-invalid`, and `role="alert"`
+- **Navigation:** ✅ **RESOLVED** - "Skip to Content" link implemented (`SkipLink.tsx`)
+- **Remaining:** Focus indicators need visual verification across all components
 
-#### 2. Semantic HTML & Custom Controls ⚠️ **NEEDS IMPROVEMENT**
-- **Custom Inputs:** The custom implementation of radio/checkboxes in Feedback page may not expose correct role/state to assistive technology.
-- **Landmarks:** Missing `<main>` regions in some page layouts.
+#### 2. Semantic HTML & Custom Controls ✅ **IMPROVED** (2025-01-03)
+- **Custom Inputs:** ✅ **RESOLVED** - Radio/checkbox implementations in Feedback page verified for accessibility:
+  - Proper use of `<fieldset>` and `<legend>` for radio groups
+  - Radix UI Checkbox components properly labeled with `aria-label`
+  - Semantic HTML structure maintained
+- **Landmarks:** ✅ **RESOLVED** - `<main id="main-content">` landmark added to root layout, ensuring all pages are wrapped in main region
+- **Remaining:** Some individual pages may need verification for landmark usage
 
-#### 3. Keyboard Navigation ⚠️ **NEEDS IMPROVEMENT**
-- **Flashcard:** The generic "flip" interaction is touch-optimized but may lack specific keyboard triggers (e.g., Space/Enter).
-- **Focus Management:** Focus indicators on custom controls are not clearly verified.
+#### 3. Keyboard Navigation ⚠️ **PARTIALLY ADDRESSED** (25% Remaining)
+- **Feedback Form:** ✅ **RESOLVED** - All form controls are keyboard accessible, proper tab order, focus management
+- **Flashcard:** ⚠️ **PENDING** - The card flip interaction is touch-optimized but lacks keyboard triggers (Space/Enter)
+- **Focus Management:** ⚠️ **NEEDS VERIFICATION** - Focus indicators on custom controls need visual verification, especially for Flashcard component
+- **Remaining Work:**
+  - Add keyboard handlers for card navigation (arrow keys, space/enter for flip)
+  - Ensure Flashcard component has visible focus indicators
+  - Verify all interactive elements are keyboard accessible
+
+### Summary of Current State
+
+**Completed (75%):**
+- ✅ Global accessibility structure (SkipLink, lang attribute, landmarks)
+- ✅ Feedback form fully accessible (labels, ARIA attributes, error associations)
+- ✅ Automated accessibility testing in place
+- ✅ Test infrastructure supporting accessibility tests
+
+**In Progress (25%):**
+- ⚠️ Flashcard keyboard navigation
+- ⚠️ Focus indicator verification
+- ⚠️ Manual accessibility testing
+
+**Overall Status:** The application has made significant progress toward WCAG 2.1 AA compliance. The feedback form is now fully accessible, and automated testing ensures regressions are caught. The remaining work focuses on making the core learning experience (Flashcard) keyboard-accessible.
 
 ---
 
