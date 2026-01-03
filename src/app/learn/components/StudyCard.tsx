@@ -51,7 +51,7 @@ export const StudyCard = ({
       onKeyUp={handleKeyUp}
       tabIndex={0}
       role="button"
-      aria-label={flipped ? "Card showing answer. Press Enter or Space to flip back to question." : "Card showing question. Press Enter or Space to flip and see answer."}
+      aria-label={flipped ? "卡片显示答案。按 Enter 或 Space 键翻回问题。" : "卡片显示问题。按 Enter 或 Space 键翻转查看答案。"}
     >
       <div
         className={cn(

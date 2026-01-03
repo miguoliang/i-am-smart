@@ -51,7 +51,7 @@ export function InstallPrompt() {
         setDeferredPrompt(null);
       }
     } else if (isIOS) {
-      toast("To install on iOS: tap 'Share' then 'Add to Home Screen'", {
+      toast("在 iOS 上安装：点击“分享”按钮，然后选择“添加到主屏幕”", {
         duration: 5000,
         position: "bottom-center",
       });
@@ -69,7 +69,7 @@ export function InstallPrompt() {
       variant="ghost"
       size="icon"
       onClick={handleInstallClick}
-      title="Install App"
+      title="安装应用"
     >
       <Download className="h-5 w-5" />
     </Button>

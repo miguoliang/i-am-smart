@@ -17,7 +17,7 @@ export const NavigationFooter = () => {
               : "text-muted-foreground hover:text-primary"
           }`}
         >
-          Learn
+          学习
         </Link>
         <Link
           href="/stats"
@@ -27,7 +27,7 @@ export const NavigationFooter = () => {
               : "text-muted-foreground hover:text-primary"
           }`}
         >
-          Stats
+          统计
         </Link>
         <Link
           href="/feedback"
@@ -37,7 +37,7 @@ export const NavigationFooter = () => {
               : "text-muted-foreground hover:text-primary"
           }`}
         >
-          Feedback
+          反馈
         </Link>
       </div>
     </footer>
