@@ -19,10 +19,24 @@ export const StudyCard = ({
   onTouchStart,
   onTouchEnd,
 }: StudyCardProps) => {
+  // Handle keyboard events to match native button behavior
+  // Native buttons activate on Enter (keydown) and Space (keyup)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Allow Enter or Space to flip the card
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault(); // Prevent scrolling when Space is pressed
+    // Enter activates on keydown
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onFlip();
+    }
+    // Space prevents scrolling on keydown, but activates on keyup
+    if (e.key === ' ') {
+      e.preventDefault(); // Prevent scrolling
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    // Space activates on keyup (matching native button behavior)
+    if (e.key === ' ') {
+      e.preventDefault();
       onFlip();
     }
   };
@@ -34,6 +48,7 @@ export const StudyCard = ({
       onTouchEnd={onTouchEnd}
       onClick={onFlip}
       onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       tabIndex={0}
       role="button"
       aria-label={flipped ? "Card showing answer. Press Enter or Space to flip back to question." : "Card showing question. Press Enter or Space to flip and see answer."}
