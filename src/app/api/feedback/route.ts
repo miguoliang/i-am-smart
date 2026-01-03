@@ -2,17 +2,20 @@ import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { NextRequest } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { logger } from "@/lib/utils/logger";
+import { sanitizeFeedbackContent } from "@/lib/utils/sanitize";
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createRouteHandlerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { content } = await req.json();
+    const { content: rawContent } = await req.json();
 
-    if (!content || typeof content !== "object" || Array.isArray(content)) {
+    if (!rawContent || typeof rawContent !== "object" || Array.isArray(rawContent)) {
       throw ApiError.validationError("反馈内容格式无效");
     }
+
+    const content = sanitizeFeedbackContent(rawContent);
 
     // Validate required fields in content
     if (!content.occupation || typeof content.occupation !== "string") {

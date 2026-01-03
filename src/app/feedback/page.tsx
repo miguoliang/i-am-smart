@@ -28,6 +28,9 @@ export default function FeedbackPage() {
   const [openFeedback, setOpenFeedback] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Error states for accessibility
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const occupationOptions = [
     { value: "student", label: "学生" },
     { value: "office_worker", label: "上班族" },
@@ -58,37 +61,29 @@ export default function FeedbackPage() {
     });
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!occupation) newErrors.occupation = "请选择您的职业";
+    if (learningPurpose.length === 0) newErrors.learningPurpose = "请至少选择一个英语学习的目的";
+    if (!fragmentTimeHelpful) newErrors.fragmentTimeHelpful = "请选择这个app对充分利用碎片时间是否有帮助";
+    if (fragmentTimeHelpful === "no" && !fragmentTimeNotHelpfulReason.trim()) {
+      newErrors.fragmentTimeNotHelpfulReason = "请说明为什么觉得没有帮助";
+    }
+    if (!willRecommend) newErrors.willRecommend = "请选择是否会推荐给朋友";
+    if (willRecommend === "no" && !notRecommendReason.trim()) {
+      newErrors.notRecommendReason = "请说明不推荐的原因";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (!occupation) {
-      toast.error("请选择您的职业");
-      return;
-    }
-
-    if (learningPurpose.length === 0) {
-      toast.error("请至少选择一个英语学习的目的");
-      return;
-    }
-
-    if (!fragmentTimeHelpful) {
-      toast.error("请选择这个app对充分利用碎片时间是否有帮助");
-      return;
-    }
-
-    if (fragmentTimeHelpful === "no" && !fragmentTimeNotHelpfulReason.trim()) {
-      toast.error("请说明为什么觉得没有帮助");
-      return;
-    }
-
-    if (!willRecommend) {
-      toast.error("请选择是否会推荐给朋友");
-      return;
-    }
-
-    if (willRecommend === "no" && !notRecommendReason.trim()) {
-      toast.error("请说明不推荐的原因");
+    if (!validate()) {
+      toast.error("请填写所有必填项");
       return;
     }
 
@@ -132,6 +127,7 @@ export default function FeedbackPage() {
       setWillRecommend("");
       setNotRecommendReason("");
       setOpenFeedback("");
+      setErrors({});
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "提交失败，请检查网络连接";
       logger.error("Feedback submission exception", { error: err, message: errorMessage });
@@ -151,12 +147,12 @@ export default function FeedbackPage() {
           感谢你的反馈！会直接决定我们下一步加什么～
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8" aria-label="用户反馈表单">
           {/* Question 1: Occupation */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              1. 您的职业是？（单选）
-            </Label>
+          <fieldset className="space-y-3" aria-invalid={!!errors.occupation}>
+            <legend className="text-base font-semibold">
+              1. 您的职业是？（单选） <span className="text-red-500" aria-hidden="true">*</span>
+            </legend>
             <div className="space-y-2">
               {occupationOptions.map((option) => (
                 <label
@@ -170,18 +166,22 @@ export default function FeedbackPage() {
                     checked={occupation === option.value}
                     onChange={(e) => setOccupation(e.target.value)}
                     className="w-4 h-4 text-primary focus:ring-primary"
+                    aria-label={option.label}
                   />
                   <span className="text-sm">{option.label}</span>
                 </label>
               ))}
             </div>
-          </div>
+            {errors.occupation && (
+              <p className="text-sm text-red-500 font-medium" role="alert">{errors.occupation}</p>
+            )}
+          </fieldset>
 
           {/* Question 2: Learning Purpose */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              2. 您学习英语的目的是什么？（可多选）
-            </Label>
+          <fieldset className="space-y-3" aria-invalid={!!errors.learningPurpose}>
+            <legend className="text-base font-semibold">
+              2. 您学习英语的目的是什么？（可多选） <span className="text-red-500" aria-hidden="true">*</span>
+            </legend>
             <div className="space-y-2">
               {learningPurposeOptions.map((option) => (
                 <label
@@ -191,18 +191,22 @@ export default function FeedbackPage() {
                   <Checkbox
                     checked={learningPurpose.includes(option.value)}
                     onCheckedChange={() => handleLearningPurposeToggle(option.value)}
+                    aria-label={option.label}
                   />
                   <span className="text-sm flex-1">{option.label}</span>
                 </label>
               ))}
             </div>
-          </div>
+            {errors.learningPurpose && (
+               <p className="text-sm text-red-500 font-medium" role="alert">{errors.learningPurpose}</p>
+            )}
+          </fieldset>
 
           {/* Question 3: Fragment Time Helpful */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              3. 你觉得这个app对充分利用碎片时间是否有帮助？（单选）
-            </Label>
+          <fieldset className="space-y-3" aria-invalid={!!errors.fragmentTimeHelpful}>
+            <legend className="text-base font-semibold">
+              3. 你觉得这个app对充分利用碎片时间是否有帮助？（单选） <span className="text-red-500" aria-hidden="true">*</span>
+            </legend>
             <div className="space-y-2">
               {fragmentTimeHelpfulOptions.map((option) => (
                 <label
@@ -216,15 +220,20 @@ export default function FeedbackPage() {
                     checked={fragmentTimeHelpful === option.value}
                     onChange={(e) => setFragmentTimeHelpful(e.target.value)}
                     className="w-4 h-4 text-primary focus:ring-primary"
+                    aria-label={option.label}
                   />
                   <span className="text-sm">{option.label}</span>
                 </label>
               ))}
             </div>
+            {errors.fragmentTimeHelpful && (
+               <p className="text-sm text-red-500 font-medium" role="alert">{errors.fragmentTimeHelpful}</p>
+            )}
+            
             {fragmentTimeHelpful === "no" && (
               <div className="mt-3 space-y-2">
                 <Label htmlFor="fragmentTimeNotHelpfulReason" className="text-sm">
-                  请说明为什么觉得没有帮助：
+                  请说明为什么觉得没有帮助： <span className="text-red-500" aria-hidden="true">*</span>
                 </Label>
                 <Textarea
                   id="fragmentTimeNotHelpfulReason"
@@ -234,19 +243,28 @@ export default function FeedbackPage() {
                   className="min-h-[100px] resize-y"
                   maxLength={1000}
                   required
+                  aria-invalid={!!errors.fragmentTimeNotHelpfulReason}
+                  aria-describedby={errors.fragmentTimeNotHelpfulReason ? "error-fragmentTimeNotHelpfulReason" : undefined}
                 />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {fragmentTimeNotHelpfulReason.length}/1000
-                </p>
+                <div className="flex justify-between items-center">
+                   {errors.fragmentTimeNotHelpfulReason && (
+                    <p id="error-fragmentTimeNotHelpfulReason" className="text-sm text-red-500 font-medium" role="alert">
+                        {errors.fragmentTimeNotHelpfulReason}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+                    {fragmentTimeNotHelpfulReason.length}/1000
+                  </p>
+                </div>
               </div>
             )}
-          </div>
+          </fieldset>
 
           {/* Question 4: Will Recommend */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              4. 您会把这个App推荐给朋友吗？
-            </Label>
+          <fieldset className="space-y-3" aria-invalid={!!errors.willRecommend}>
+            <legend className="text-base font-semibold">
+              4. 您会把这个App推荐给朋友吗？ <span className="text-red-500" aria-hidden="true">*</span>
+            </legend>
             <div className="space-y-2">
               <label className="flex items-center gap-3 p-3 rounded-md border border-input hover:bg-accent cursor-pointer transition-colors">
                 <input
@@ -256,6 +274,7 @@ export default function FeedbackPage() {
                   checked={willRecommend === "yes"}
                   onChange={(e) => setWillRecommend(e.target.value)}
                   className="w-4 h-4 text-primary focus:ring-primary"
+                  aria-label="会"
                 />
                 <span className="text-sm">会</span>
               </label>
@@ -267,14 +286,19 @@ export default function FeedbackPage() {
                   checked={willRecommend === "no"}
                   onChange={(e) => setWillRecommend(e.target.value)}
                   className="w-4 h-4 text-primary focus:ring-primary"
+                  aria-label="不会"
                 />
                 <span className="text-sm">不会</span>
               </label>
             </div>
+             {errors.willRecommend && (
+               <p className="text-sm text-red-500 font-medium" role="alert">{errors.willRecommend}</p>
+            )}
+
             {willRecommend === "no" && (
               <div className="mt-3 space-y-2">
                 <Label htmlFor="notRecommendReason" className="text-sm">
-                  请说明不推荐的原因：
+                  请说明不推荐的原因： <span className="text-red-500" aria-hidden="true">*</span>
                 </Label>
                 <Textarea
                   id="notRecommendReason"
@@ -284,13 +308,22 @@ export default function FeedbackPage() {
                   className="min-h-[100px] resize-y"
                   maxLength={1000}
                   required={willRecommend === "no"}
+                  aria-invalid={!!errors.notRecommendReason}
+                  aria-describedby={errors.notRecommendReason ? "error-notRecommendReason" : undefined}
                 />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {notRecommendReason.length}/1000
-                </p>
+                <div className="flex justify-between items-center">
+                    {errors.notRecommendReason && (
+                        <p id="error-notRecommendReason" className="text-sm text-red-500 font-medium" role="alert">
+                            {errors.notRecommendReason}
+                        </p>
+                    )}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+                    {notRecommendReason.length}/1000
+                    </p>
+                </div>
               </div>
             )}
-          </div>
+          </fieldset>
 
           {/* Question 5: Open Feedback */}
           <div className="space-y-2">

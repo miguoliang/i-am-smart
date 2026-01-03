@@ -5,6 +5,7 @@ import Providers from "./providers";
 import { ConditionalFooter } from "./components/ConditionalFooter";
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
+import { SkipLink } from "@/components/SkipLink";
 
 export const metadata: Metadata = {
   title: "背它一辈子",
@@ -24,7 +25,12 @@ export default function RootLayout({
   return (
     <html lang="zh" suppressHydrationWarning>
       <body>
-        <Providers>{children}</Providers>
+        <SkipLink />
+        <Providers>
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+        </Providers>
         <ConditionalFooter />
         <Toaster position="top-center" />
         <PWAUpdater />
