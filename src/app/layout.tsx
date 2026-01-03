@@ -23,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh" suppressHydrationWarning>
-      <body className="bg-red-500">
+      <body>
         <Providers>{children}</Providers>
         <ConditionalFooter />
         <Toaster position="top-center" />

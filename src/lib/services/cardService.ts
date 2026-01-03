@@ -1,9 +1,8 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { CardRepository } from '@/lib/repositories/card.repository';
 import { getTodayDateRange } from '@/lib/utils/dateUtils';
-import { Card, KnowledgeMetadata } from '@/app/learn/types';
+import { Card } from '@/app/learn/types';
 import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
-import { logger } from '@/lib/utils/logger';
 
 export interface DueCardsResult {
   reviewedCount: number;
@@ -15,59 +14,20 @@ export interface ReviewCardResult {
   nextReview: string;
 }
 
-interface RawCardData {
-  id: number;
-  knowledge_code: string;
-  card_type_code: string;
-  ease_factor: number;
-  interval_days: number;
-  repetitions: number;
-  next_review_date: string;
-  last_reviewed_at: string | null;
-  knowledge: {
-    code: string;
-    name: string;
-    description: string;
-    metadata: KnowledgeMetadata;
-  };
-}
+export class CardService {
+  constructor(private cardRepository: CardRepository) {}
 
-/**
- * Service to handle card-related business logic
- */
-export const cardService = {
-  /**
-   * Get the number of cards reviewed today by the user
-   */
-  async getReviewedTodayCount(
-    supabase: SupabaseClient,
-    userId: string
-  ): Promise<number> {
+  async getReviewedTodayCount(userId: string): Promise<number> {
     const { startOfToday, endOfToday } = getTodayDateRange();
+    return this.cardRepository.getReviewedTodayCount(
+      userId, 
+      startOfToday.toISOString(), 
+      endOfToday.toISOString()
+    );
+  }
 
-    const { count, error } = await supabase
-      .from('account_cards')
-      .select('*', { count: 'exact', head: true })
-      .eq('account_id', userId)
-      .gte('last_reviewed_at', startOfToday.toISOString())
-      .lte('last_reviewed_at', endOfToday.toISOString());
-
-    if (error) {
-      throw ApiError.internal(`Count reviewed today error: ${error.message}`);
-    }
-
-    return count ?? 0;
-  },
-
-  /**
-   * Fetch due cards for the user, respecting the daily limit
-   */
-  async getDueCards(
-    supabase: SupabaseClient,
-    userId: string
-  ): Promise<DueCardsResult> {
-    // 1. Check daily limit
-    const currentReviewedCount = await this.getReviewedTodayCount(supabase, userId);
+  async getDueCards(userId: string): Promise<DueCardsResult> {
+    const currentReviewedCount = await this.getReviewedTodayCount(userId);
 
     if (currentReviewedCount >= DAILY_REVIEW_LIMIT) {
       return {
@@ -77,87 +37,18 @@ export const cardService = {
     }
 
     const remainingSlots = DAILY_REVIEW_LIMIT - currentReviewedCount;
-
-    // 2. Fetch due cards
-    const { data: dueCards, error: dueError } = await supabase
-      .rpc('get_due_cards', {
-        p_user_id: userId,
-        p_limit: remainingSlots,
-      })
-      .select(`
-        id,
-        knowledge_code,
-        card_type_code,
-        knowledge!inner (
-          code,
-          name,
-          description,
-          metadata
-        ),
-        ease_factor,
-        interval_days,
-        repetitions,
-        next_review_date,
-        last_reviewed_at
-      `);
-
-    if (dueError) {
-      // Enhanced error logging for RLS debugging
-      const errorMessage = dueError.message || 'Unknown error';
-      const isRlsError = errorMessage.includes('permission denied') || 
-                        errorMessage.includes('row-level security') ||
-                        errorMessage.includes('policy');
-      
-      logger.error('Failed to fetch due cards with knowledge join', {
-        userId,
-        error: dueError,
-        errorMessage,
-        isRlsError,
-        remainingSlots,
-      });
-      
-      if (isRlsError) {
-        throw ApiError.internal(
-          `RLS policy error when fetching cards with knowledge: ${errorMessage}. ` +
-          `User ID: ${userId}. This may indicate a problem with knowledge table SELECT policy.`
-        );
-      }
-      
-      throw ApiError.internal(`Fetch due cards error: ${errorMessage}`);
-    }
-
-    // 3. Transform response
-    const formattedCards = (dueCards as unknown as RawCardData[])?.map((card) => {
-      // Ensure the return object matches Card interface
-      return {
-        ...card,
-      };
-    });
+    const cards = await this.cardRepository.getDueCards(userId, remainingSlots);
 
     return {
       reviewedCount: currentReviewedCount,
-      cards: formattedCards ?? [],
+      cards,
     };
-  },
+  }
 
-  /**
-   * Process a card review
-   */
-  async reviewCard(
-    supabase: SupabaseClient,
-    userId: string,
-    cardId: number,
-    quality: number
-  ): Promise<ReviewCardResult> {
-    // 1. Fetch current card state
-    const { data: card, error: fetchError } = await supabase
-      .from('account_cards')
-      .select('*')
-      .eq('id', cardId)
-      .eq('account_id', userId)
-      .single();
-
-    if (fetchError || !card) {
+  async reviewCard(userId: string, cardId: number, quality: number): Promise<ReviewCardResult> {
+    // 1. Fetch card
+    const card = await this.cardRepository.getCardById(cardId, userId);
+    if (!card) {
       throw ApiError.notFound('卡片不存在');
     }
 
@@ -170,19 +61,17 @@ export const cardService = {
       new Date(card.last_reviewed_at) >= startOfToday &&
       new Date(card.last_reviewed_at) <= endOfToday;
 
-    // If this is a new card to review (not reviewed today), check daily limit
     if (!isCardReviewedToday) {
-      const reviewedTodayCount = await this.getReviewedTodayCount(supabase, userId);
-
+      const reviewedTodayCount = await this.getReviewedTodayCount(userId);
       if (reviewedTodayCount >= DAILY_REVIEW_LIMIT) {
         throw ApiError.dailyLimitExceeded(`今日已复习${DAILY_REVIEW_LIMIT}张卡片，已达到每日限制`);
       }
     }
 
     // 3. SM-2 Algorithm
-    let newEase = Number(card.ease_factor);
-    let newReps = Number(card.repetitions);
-    let newInterval = Number(card.interval_days);
+    let newEase = Number(card.ease_factor || 2.5);
+    let newReps = Number(card.repetitions || 0);
+    let newInterval = Number(card.interval_days || 0);
 
     if (quality >= 3) {
       // Correct answer
@@ -205,24 +94,20 @@ export const cardService = {
     nextReview.setUTCDate(nextReview.getUTCDate() + newInterval);
     nextReview.setUTCHours(0, 0, 0, 0);
 
-    // 4. Call RPC to Update Card & Insert History Transactionally
-    const { error: rpcError } = await supabase.rpc('review_card', {
-        p_card_id: cardId,
-        p_user_id: userId,
-        p_quality: quality,
-        p_ease_factor: parseFloat(newEase.toFixed(2)),
-        p_interval_days: newInterval,
-        p_repetitions: newReps,
-        p_next_review_date: nextReview.toISOString()
+    // 4. Update via Repository
+    await this.cardRepository.reviewCard({
+      cardId,
+      userId,
+      quality,
+      easeFactor: parseFloat(newEase.toFixed(2)),
+      intervalDays: newInterval,
+      repetitions: newReps,
+      nextReviewDate: nextReview.toISOString(),
     });
-
-    if (rpcError) {
-      throw ApiError.internal(`Review card failed: ${rpcError.message}`);
-    }
 
     return {
       success: true,
       nextReview: nextReview.toISOString(),
     };
-  },
-};
+  }
+}

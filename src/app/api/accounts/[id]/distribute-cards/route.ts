@@ -1,7 +1,6 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer';
 import { NextRequest } from 'next/server';
-import { accountService } from '@/lib/services/accountService';
-import { createClient } from "@supabase/supabase-js";
+import { createAccountService } from '@/lib/services/factory';
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError';
 
 export async function POST(
@@ -27,17 +26,8 @@ export async function POST(
       throw ApiError.validationError("无效的账户ID格式");
     }
 
-    // Check if SUPABASE_SERVICE_ROLE_KEY is configured
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw ApiError.internal("SUPABASE_SERVICE_ROLE_KEY 未配置");
-    }
-
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const result = await accountService.distributeCards(adminClient, accountId);
+    const accountService = createAccountService();
+    const result = await accountService.distributeCards(accountId);
 
     return apiSuccess(result);
   } catch (error) {

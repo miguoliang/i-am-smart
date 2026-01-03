@@ -1,6 +1,6 @@
 // src/app/api/cards/due/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
-import { cardService } from '@/lib/services/cardService'
+import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 
 export async function GET() {
@@ -13,7 +13,8 @@ export async function GET() {
       throw ApiError.unauthorized('未登录')
     }
 
-    const result = await cardService.getDueCards(supabase, user.id)
+    const cardService = await createCardService();
+    const result = await cardService.getDueCards(user.id)
 
     return apiSuccess(result)
   } catch (error) {

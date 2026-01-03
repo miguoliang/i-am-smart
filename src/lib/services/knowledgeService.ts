@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { KnowledgeRepository } from '@/lib/repositories/knowledge.repository';
 import { logger } from '@/lib/utils/logger';
 
 export interface KnowledgeItem {
@@ -24,42 +24,37 @@ export interface ImportKnowledgeResult {
   message: string;
 }
 
-export const knowledgeService = {
+export class KnowledgeService {
+  constructor(private knowledgeRepository: KnowledgeRepository) {}
+
   /**
    * Fetch all knowledge items ordered by creation date (newest first)
    */
-  async getAllKnowledge(supabase: SupabaseClient): Promise<KnowledgeItem[]> {
+  async getAllKnowledge(): Promise<KnowledgeItem[]> {
     logger.debug('Fetching all knowledge items');
     
-    const { data, error } = await supabase
-      .from('knowledge')
-      .select('code, name, description, metadata, created_at, updated_at')
-      .order('created_at', { ascending: false });
+    try {
+      const data = await this.knowledgeRepository.getAll();
+      
+      logger.debug('Successfully fetched knowledge items', {
+        count: data?.length || 0,
+      });
 
-    if (error) {
+      return data;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to fetch knowledge items', {
         error,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorDetails: error.details,
+        errorMessage,
       });
-      throw new Error(`Fetch knowledge error: ${error.message}`);
+      throw error;
     }
-
-    logger.debug('Successfully fetched knowledge items', {
-      count: data?.length || 0,
-    });
-
-    return data as KnowledgeItem[];
-  },
+  }
 
   /**
    * Batch import/upsert knowledge items
    */
-  async importKnowledge(
-    supabase: SupabaseClient, 
-    items: ImportKnowledgeParams[]
-  ): Promise<ImportKnowledgeResult> {
+  async importKnowledge(items: ImportKnowledgeParams[]): Promise<ImportKnowledgeResult> {
     // Validate and transform
     const validItems = items
       .map((item) => {
@@ -83,28 +78,15 @@ export const knowledgeService = {
       };
     }
 
-    // Upsert
-    const { data: inserted, error } = await supabase
-      .from("knowledge")
-      .upsert(validItems, {
-        onConflict: "name",
-        ignoreDuplicates: true,
-      })
-      .select("code");
-
-    if (error) {
-      throw new Error(`Import error: ${error.message}`);
-    }
-
-    const insertedCount = inserted?.length || 0;
-    const skippedCount = validItems.length - insertedCount;
+    // Upsert via repository
+    const { count, skipped } = await this.knowledgeRepository.import(validItems);
 
     return {
       success: true,
-      count: insertedCount,
+      count,
       total: validItems.length,
-      skipped: skippedCount,
-      message: `Successfully imported ${insertedCount} items. ${skippedCount} duplicates skipped.`,
+      skipped,
+      message: `Successfully imported ${count} items. ${skipped} duplicates skipped.`,
     };
   }
-};
+}

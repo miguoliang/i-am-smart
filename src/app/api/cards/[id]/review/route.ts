@@ -1,6 +1,6 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest } from 'next/server'
-import { cardService } from '@/lib/services/cardService'
+import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { MAX_QUALITY, MIN_QUALITY } from '@/lib/constants'
 
@@ -29,7 +29,8 @@ export async function POST(
       throw ApiError.validationError('无效的卡片ID')
     }
 
-    const result = await cardService.reviewCard(supabase, user.id, cardId, quality)
+    const cardService = await createCardService()
+    const result = await cardService.reviewCard(user.id, cardId, quality)
 
     return apiSuccess(result)
   } catch (error) {

@@ -1,4 +1,5 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { AccountRepository } from '@/lib/repositories/account.repository';
+import { KnowledgeRepository } from '@/lib/repositories/knowledge.repository';
 import { nowISO } from '@/lib/utils/dateUtils';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
 
@@ -27,137 +28,78 @@ export interface DistributeCardsResult {
   message: string;
 }
 
-export const accountService = {
+export class AccountService {
+  constructor(
+    private accountRepository: AccountRepository,
+    private knowledgeRepository: KnowledgeRepository
+  ) {}
+
   /**
    * List users with pagination using Admin API
    */
-  async listUsers(
-    adminClient: SupabaseClient,
-    page: number = 1,
-    perPage: number = 10
-  ): Promise<PaginationResult<Account>> {
-    const { data: usersResponse, error } = await adminClient.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-
-    if (error) {
-      throw ApiError.internal(`List users failed: ${error.message}`);
-    }
-
-    if (!usersResponse || !usersResponse.users) {
-      throw ApiError.internal("无法获取用户列表");
-    }
-
-    const accounts = usersResponse.users.map((u) => ({
-      id: u.id,
-      username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
-      email: u.email || "",
-      role: (u.app_metadata?.role as string)?.trim() || "learner",
-      created_at: u.created_at,
-      updated_at: u.updated_at || u.created_at,
-      last_sign_in_at: u.last_sign_in_at || null,
-    }));
-
-    const hasMore = usersResponse.users.length === perPage;
+  async listUsers(page: number = 1, perPage: number = 10): Promise<PaginationResult<Account>> {
+    const { users, hasMore } = await this.accountRepository.listUsers(page, perPage);
 
     return {
-      data: accounts,
+      data: users,
       pagination: {
         page,
         perPage,
         hasMore,
       },
     };
-  },
+  }
 
   /**
    * Distribute all available knowledge cards to a specific user
    */
-  async distributeCards(
-    adminClient: SupabaseClient,
-    targetUserId: string
-  ): Promise<DistributeCardsResult> {
+  async distributeCards(targetUserId: string): Promise<DistributeCardsResult> {
     // 1. Validate target user
-    const { data: targetUser, error: userError } = await adminClient.auth.admin.getUserById(targetUserId);
+    const targetUser = await this.accountRepository.getUserById(targetUserId);
     
-    if (userError) {
-      throw ApiError.internal(`获取目标账户信息失败: ${userError.message}`);
-    }
-
-    if (!targetUser || !targetUser.user) {
+    if (!targetUser) {
       throw ApiError.notFound("目标账户不存在");
     }
 
-    const targetRole = (targetUser.user.app_metadata?.role as string)?.trim() || "learner";
-    if (targetRole === "operator") {
+    if (targetUser.role === "operator") {
       throw ApiError.validationError("不能给 operator 分配卡片");
     }
 
     // 2. Get all knowledge items
-    // Using adminClient is fine here, it has access to everything
-    const { data: knowledges, error: knowledgesError } = await adminClient
-      .from("knowledge")
-      .select("code");
-
-    if (knowledgesError) {
-      throw ApiError.internal(`获取知识列表失败: ${knowledgesError.message}`);
-    }
+    const knowledges = await this.knowledgeRepository.getAll();
 
     if (!knowledges || knowledges.length === 0) {
       throw ApiError.validationError("知识库中没有可分配的卡片");
     }
 
     // 3. Get default card type
-    const { data: cardTypes, error: cardTypesError } = await adminClient
-      .from("card_types")
-      .select("code")
-      .limit(1);
+    const finalCardTypeCode = await this.accountRepository.getSystemDefaultCardTypeCode();
 
-    if (cardTypesError) {
-      throw ApiError.internal(`获取卡片类型失败: ${cardTypesError.message}`);
-    }
-
-    if (!cardTypes || cardTypes.length === 0) {
+    if (!finalCardTypeCode) {
       throw ApiError.validationError("系统中没有可用的卡片类型，请先创建卡片类型");
     }
 
-    const finalCardTypeCode = cardTypes[0].code;
-
     // 4. Prepare account cards data
     const now = nowISO();
-    const accountCards = knowledges.map((knowledge: { code: string }) => ({
-      account_id: targetUserId,
-      knowledge_code: knowledge.code,
-      card_type_code: finalCardTypeCode,
-      ease_factor: 2.5,
-      interval_days: 0,
+    const accountCards = knowledges.map((knowledge) => ({
+      accountId: targetUserId,
+      knowledgeCode: knowledge.code,
+      cardTypeCode: finalCardTypeCode,
+      easeFactor: 2.5,
+      intervalDays: 0,
       repetitions: 0,
-      next_review_date: now,
-      created_at: now,
-      updated_at: now,
+      nextReviewDate: now,
+      createdAt: now,
+      updatedAt: now,
     }));
 
-    // 5. Batch insert
-    const { data: insertedData, error: insertError } = await adminClient
-      .from("account_cards")
-      .upsert(accountCards, {
-        onConflict: "account_id,knowledge_code,card_type_code",
-        ignoreDuplicates: true,
-      })
-      .select();
-
-    if (insertError) {
-      throw ApiError.internal(`分配卡片失败: ${insertError.message}`);
-    }
-
-    const insertedCount = insertedData?.length || 0;
-    const skippedCount = accountCards.length - insertedCount;
+    // 5. Batch insert via repository
+    const { count, skipped } = await this.accountRepository.distributeCards(targetUserId, accountCards);
 
     return {
       success: true,
-      count: insertedCount,
-      message: `成功分配 ${insertedCount} 张卡片${skippedCount > 0 ? `（${skippedCount} 张已存在）` : ""}`,
+      count,
+      message: `成功分配 ${count} 张卡片${skipped > 0 ? `（${skipped} 张已存在）` : ""}`,
     };
   }
-};
+}

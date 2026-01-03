@@ -1,7 +1,8 @@
 // src/app/api/knowledge/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest } from 'next/server'
-import { knowledgeService, ImportKnowledgeParams } from '@/lib/services/knowledgeService'
+import { createKnowledgeService } from '@/lib/services/factory'
+import { ImportKnowledgeParams } from '@/lib/services/knowledgeService'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { logger } from '@/lib/utils/logger'
 
@@ -32,7 +33,8 @@ export async function GET() {
       throw ApiError.forbidden('权限不足')
     }
 
-    const data = await knowledgeService.getAllKnowledge(supabase)
+    const knowledgeService = await createKnowledgeService()
+    const data = await knowledgeService.getAllKnowledge()
     
     logger.debug('Knowledge GET: Success', {
       userId: user.id,
@@ -98,7 +100,8 @@ export async function POST(req: NextRequest) {
       throw ApiError.forbidden("Permission denied");
     }
 
-    const result = await knowledgeService.importKnowledge(supabase, items);
+    const knowledgeService = await createKnowledgeService()
+    const result = await knowledgeService.importKnowledge(items);
     
     if (!result.success && result.message === "No valid items found") {
         throw ApiError.validationError(result.message);
