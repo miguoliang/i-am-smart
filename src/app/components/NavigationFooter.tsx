@@ -29,6 +29,16 @@ export const NavigationFooter = () => {
         >
           Stats
         </Link>
+        <Link
+          href="/feedback"
+          className={`text-2xl transition-colors ${
+            pathname === "/feedback"
+              ? "font-bold text-primary"
+              : "text-muted-foreground hover:text-primary"
+          }`}
+        >
+          Feedback
+        </Link>
       </div>
     </footer>
   );
