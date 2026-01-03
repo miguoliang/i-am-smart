@@ -109,7 +109,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center">
+    <div className=" bg-white dark:bg-gray-900 flex flex-col items-center justify-center">
       <div className="max-w-md md:max-w-lg lg:max-w-xl w-full mx-auto p-5 md:p-8 lg:p-10 text-center box-border">
         <h1 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
           背它一辈子
