@@ -37,11 +37,11 @@ export class SupabaseCardRepository implements CardRepository {
     return count ?? 0;
   }
 
-  async getDueCards(userId: string, limit: number): Promise<Card[]> {
+  async getDueCards(userId: string, limit: number, level?: string): Promise<Card[]> {
     const { data, error } = await this.client
       .rpc('get_due_cards', {
         p_user_id: userId,
-        p_limit: limit,
+        p_limit: limit * (level ? 2 : 1), // Fetch more if filtering by level to ensure we have enough after filtering
       })
       .select(`
         id,
@@ -64,9 +64,20 @@ export class SupabaseCardRepository implements CardRepository {
       throw new Error(`Fetch due cards error: ${error.message}`);
     }
 
-    return (data as unknown as RawCardData[]).map((card) => ({
+    let cards = (data as unknown as RawCardData[]).map((card) => ({
       ...card,
     }));
+
+    // Filter by level if specified
+    if (level) {
+      cards = cards.filter((card) => {
+        const cardLevel = card.knowledge?.metadata?.level;
+        return cardLevel === level;
+      });
+    }
+
+    // Limit to requested amount after filtering
+    return cards.slice(0, limit);
   }
 
   async getCardById(cardId: number, userId: string): Promise<Card | null> {

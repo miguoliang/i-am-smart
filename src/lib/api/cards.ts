@@ -7,8 +7,18 @@ export interface DueCardsResponse {
   cards: Card[];
 }
 
-export async function fetchDueCards(): Promise<DueCardsResponse> {
-  const res = await fetch("/api/cards/due");
+export interface FetchDueCardsParams {
+  level?: string;
+}
+
+export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCardsResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.level) {
+    searchParams.set('level', params.level);
+  }
+
+  const url = `/api/cards/due${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const res = await fetch(url);
   if (!res.ok) {
     if (res.status === 401) {
       throw new Error("未登录");

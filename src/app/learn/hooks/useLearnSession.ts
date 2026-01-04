@@ -5,6 +5,7 @@ import { useTouchSwipe } from "./useTouchSwipe";
 import { useCardReview } from "./useCardReview";
 import { useCardNavigation } from "./useCardNavigation";
 import { useSignOut } from "@/hooks/useSignOut";
+import type { Card } from "../types";
 
 export function useLearnSession() {
   const { signOut, isSigningOut } = useSignOut();
@@ -18,7 +19,7 @@ export function useLearnSession() {
   const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
 
   // 2. Progress Calculation
-  const locallyReviewedCount = cards.filter((card) => card.reviewed).length;
+  const locallyReviewedCount = cards.filter((card: Card & { reviewed?: boolean }) => card.reviewed).length;
   const reviewedCount = apiReviewedCount + locallyReviewedCount;
   const totalCount = apiReviewedCount + cards.length;
 

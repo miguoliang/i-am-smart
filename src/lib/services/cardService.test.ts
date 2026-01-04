@@ -119,8 +119,19 @@ describe('CardService', () => {
 
           expect(result.reviewedCount).toBe(5);
           expect(result.cards).toHaveLength(1);
-          // Limit is 10. Reviewed 5. Remaining 5.
-          expect(cardRepository.getDueCards).toHaveBeenCalledWith('user-123', 5);
+          // Limit is 10. Reviewed 5. Remaining 5. Level is optional (undefined).
+          expect(cardRepository.getDueCards).toHaveBeenCalledWith('user-123', 5, undefined);
+      });
+
+      it('should fetch due cards with level filter', async () => {
+          cardRepository.getReviewedTodayCount.mockResolvedValue(5);
+          cardRepository.getDueCards.mockResolvedValue([mockCard as unknown as Card]);
+
+          const result = await cardService.getDueCards('user-123', 'A1');
+
+          expect(result.reviewedCount).toBe(5);
+          expect(result.cards).toHaveLength(1);
+          expect(cardRepository.getDueCards).toHaveBeenCalledWith('user-123', 5, 'A1');
       });
   });
 });

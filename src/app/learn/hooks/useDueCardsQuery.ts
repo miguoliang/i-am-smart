@@ -4,12 +4,19 @@ import { useEffect } from "react";
 import { fetchDueCards } from "@/lib/api/cards";
 import { hasErrorMessage } from "@/lib/utils/errorUtils";
 
-export function useDueCardsQuery() {
+export interface UseDueCardsQueryParams {
+  level?: string;
+}
+
+export function useDueCardsQuery(params?: UseDueCardsQueryParams) {
   const router = useRouter();
 
+  // Always default to A1 level if not specified
+  const queryParams = { level: 'A1', ...params };
+
   const queryResult = useQuery({
-    queryKey: ["cards", "due"],
-    queryFn: fetchDueCards,
+    queryKey: ["cards", "due", queryParams.level],
+    queryFn: () => fetchDueCards(queryParams),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

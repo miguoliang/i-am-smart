@@ -12,7 +12,7 @@ export interface ReviewCardParams {
 
 export interface CardRepository {
   getReviewedTodayCount(userId: string, startDate: string, endDate: string): Promise<number>;
-  getDueCards(userId: string, limit: number): Promise<Card[]>;
+  getDueCards(userId: string, limit: number, level?: string): Promise<Card[]>;
   getCardById(cardId: number, userId: string): Promise<Card | null>;
   reviewCard(params: ReviewCardParams): Promise<void>;
 }

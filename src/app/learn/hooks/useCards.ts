@@ -6,9 +6,11 @@ export function useCards() {
   const [localCards, setLocalCards] = useState<Card[] | null>(null);
 
   const { 
-    data: { cards: fetchedCards, reviewedCount: apiReviewedCount } = { cards: [], reviewedCount: 0 }, 
+    data,
     isLoading: loading 
   } = useDueCardsQuery();
+
+  const apiReviewedCount = data?.reviewedCount || 0;
 
   // Initialize cards with reviewed status
   // Due cards from API are not reviewed (they haven't been reviewed today)
@@ -17,12 +19,13 @@ export function useCards() {
       return localCards;
     }
     
+    const fetchedCards = data?.cards || [];
     // All cards from API are due cards (unreviewed), so reviewed: false
-    return fetchedCards.map((card) => ({
+    return fetchedCards.map((card: Card) => ({
       ...card,
       reviewed: false,
     }));
-  }, [fetchedCards, localCards]);
+  }, [data?.cards, localCards]);
 
   return { 
     cards: initializedCards, 

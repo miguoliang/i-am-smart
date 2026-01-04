@@ -2,8 +2,9 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { NextRequest } from 'next/server'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createRouteHandlerClient()
 
@@ -13,8 +14,17 @@ export async function GET() {
       throw ApiError.unauthorized('未登录')
     }
 
+    // Parse optional level query parameter
+    const searchParams = req.nextUrl.searchParams;
+    const level = searchParams.get('level') || undefined;
+
+    // Validate level if provided
+    if (level && !['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) {
+      throw ApiError.validationError('Invalid level. Must be one of: A1, A2, B1, B2, C1, C2');
+    }
+
     const cardService = await createCardService();
-    const result = await cardService.getDueCards(user.id)
+    const result = await cardService.getDueCards(user.id, level)
 
     return apiSuccess(result)
   } catch (error) {

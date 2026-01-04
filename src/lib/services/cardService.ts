@@ -26,7 +26,7 @@ export class CardService {
     );
   }
 
-  async getDueCards(userId: string): Promise<DueCardsResult> {
+  async getDueCards(userId: string, level?: string): Promise<DueCardsResult> {
     const currentReviewedCount = await this.getReviewedTodayCount(userId);
 
     if (currentReviewedCount >= DAILY_REVIEW_LIMIT) {
@@ -37,7 +37,7 @@ export class CardService {
     }
 
     const remainingSlots = DAILY_REVIEW_LIMIT - currentReviewedCount;
-    const cards = await this.cardRepository.getDueCards(userId, remainingSlots);
+    const cards = await this.cardRepository.getDueCards(userId, remainingSlots, level);
 
     return {
       reviewedCount: currentReviewedCount,
