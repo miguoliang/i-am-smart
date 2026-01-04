@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { fetchDueCards } from "@/lib/api/cards";
 import { hasErrorMessage } from "@/lib/utils/errorUtils";
+import { useLevel } from "./useLevel";
 
 export interface UseDueCardsQueryParams {
   level?: string;
@@ -10,9 +11,10 @@ export interface UseDueCardsQueryParams {
 
 export function useDueCardsQuery(params?: UseDueCardsQueryParams) {
   const router = useRouter();
+  const { level: currentLevel } = useLevel();
 
-  // Always default to A1 level if not specified
-  const queryParams = { level: 'A1', ...params };
+  // Use level from context if not overridden by params
+  const queryParams = { level: currentLevel, ...params };
 
   const queryResult = useQuery({
     queryKey: ["cards", "due", queryParams.level],
