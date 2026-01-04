@@ -1,27 +1,38 @@
 // API functions for import
-import type { CSVData } from "@/app/operator/import/hooks/useCSVParser";
-
 export interface ImportResult {
   success: boolean;
   count?: number;
   error?: string;
 }
 
-export async function importWords(previewData: CSVData): Promise<ImportResult> {
+export interface CefrKnowledgeItem {
+  englishWord: string;
+  pos: string;
+  level: string;
+  chineseTranslation: string;
+  exampleSentence: string;
+  selfExaminePrompt: string;
+  theme: string;
+  imageName: string | null;
+}
+
+export async function importKnowledge(items: CefrKnowledgeItem[]): Promise<ImportResult> {
   const res = await fetch("/api/knowledge", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ items: previewData.rows }),
+    body: JSON.stringify(items),
   });
 
   const result = await res.json();
 
   if (res.ok) {
-    return { success: true, count: result.count };
+    // API returns { data: { success, count, total, skipped, message } }
+    const data = result.data;
+    return { success: true, count: data?.count };
   } else {
-    const errorMessage = result.error || "导入失败";
+    const errorMessage = result.error?.message || result.error || "导入失败";
     throw new Error(errorMessage);
   }
 }

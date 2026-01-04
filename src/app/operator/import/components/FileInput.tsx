@@ -13,12 +13,12 @@ export const FileInput = ({ onFileChange, fileName, recordCount, error }: FileIn
     <div className="mb-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
         <Label htmlFor="file-upload" className="sr-only">
-          选择 CSV 文件
+          选择 JSON 文件
         </Label>
         <Input
           id="file-upload"
           type="file"
-          accept=".csv"
+          accept=".json"
           onChange={onFileChange}
           className="w-full border-2 border-dashed border-input cursor-pointer hover:border-primary transition"
         />

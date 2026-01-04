@@ -1,5 +1,5 @@
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { logger } from "@/lib/utils/logger";
 import { sanitizeFeedbackContent } from "@/lib/utils/sanitize";

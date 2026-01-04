@@ -7,16 +7,16 @@ import { useWordImport } from "../hooks/useWordImport";
 import { PreviewTable } from "../components/PreviewTable";
 import { ImportButton } from "../components/ImportButton";
 import { BackButton } from "../components/BackButton";
-import { getCSVData, clearCSVData } from "../utils/csvStorage";
+import { getJSONData, clearJSONData } from "../utils/jsonStorage";
 import { toast } from "sonner";
 
 export default function PreviewPage() {
   useOperatorAuth();
   const router = useRouter();
-  const { loading, importWords } = useWordImport();
+  const { loading, importKnowledge } = useWordImport();
   
-  const csvData = useMemo(() => {
-    const stored = getCSVData();
+  const jsonData = useMemo(() => {
+    const stored = getJSONData();
     if (!stored) {
       router.replace("/operator/import");
       return null;
@@ -25,16 +25,16 @@ export default function PreviewPage() {
   }, [router]);
 
   const handleImport = async () => {
-    if (!csvData) {
+    if (!jsonData) {
       toast.error("请先选择文件");
       return;
     }
 
     try {
-      const result = await importWords(csvData.data);
+      const result = await importKnowledge(jsonData.items);
       if (result.success) {
         toast.success(`成功导入 ${result.count} 个单词！`);
-        clearCSVData();
+        clearJSONData();
         router.push("/operator/import");
       }
     } catch (err) {
@@ -43,7 +43,7 @@ export default function PreviewPage() {
     }
   };
 
-  if (!csvData) {
+  if (!jsonData) {
     return (
       <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-blue-950 flex items-center justify-center">
         <div className="text-white text-xl">加载中...</div>
@@ -64,7 +64,7 @@ export default function PreviewPage() {
         </div>
       </div>
 
-      {csvData.data.rows.length > 0 && <PreviewTable data={csvData.data} />}
+      {jsonData.items.length > 0 && <PreviewTable items={jsonData.items} />}
 
       <div className="mt-6 flex items-center justify-between">
         <BackButton label="上一步：选择文件" />
@@ -72,7 +72,7 @@ export default function PreviewPage() {
           <ImportButton
             onClick={handleImport}
             loading={loading}
-            disabled={loading || csvData.data.rows.length === 0}
+            disabled={loading || jsonData.items.length === 0}
           />
         </div>
         <div className="w-[120px]"></div>

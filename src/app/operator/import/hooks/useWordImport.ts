@@ -1,17 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
-import { importWords as importWordsAPI, type ImportResult } from "@/lib/api/import";
+import { importKnowledge, type ImportResult, type CefrKnowledgeItem } from "@/lib/api/import";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import type { CSVData } from "./useCSVParser";
 
 export function useWordImport() {
-  const { mutateAsync: importWords, isPending: loading, error } = useMutation({
-    mutationFn: (previewData: CSVData): Promise<ImportResult> => importWordsAPI(previewData),
+  const { mutateAsync: importKnowledgeItems, isPending: loading, error } = useMutation({
+    mutationFn: (items: CefrKnowledgeItem[]): Promise<ImportResult> => importKnowledge(items),
   });
 
   return {
     loading,
     error: error ? getErrorMessage(error) : null,
-    importWords,
+    importKnowledge: importKnowledgeItems,
   };
 }
 

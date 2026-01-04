@@ -20,16 +20,16 @@ export function ImportSidebar({
           <div className="space-y-4 text-gray-600 dark:text-gray-400 text-sm">
             <div>
               <h4 className="text-gray-900 dark:text-white font-semibold mb-2">步骤说明</h4>
-              <p>1. 选择 CSV 格式的文件</p>
+              <p>1. 选择 JSON 格式的文件</p>
               <p>2. 系统将自动解析文件内容</p>
               <p>3. 点击&ldquo;下一步&rdquo;进入预览页面</p>
             </div>
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <h4 className="text-gray-900 dark:text-white font-semibold mb-2">文件要求</h4>
               <ul className="list-disc list-inside space-y-1">
-                <li>仅支持 CSV 格式</li>
-                <li>第一行为列标题</li>
-                <li>确保数据格式正确</li>
+                <li>仅支持 JSON 格式</li>
+                <li>需符合 CEFR 数据结构</li>
+                <li>必须包含 englishWord 字段</li>
               </ul>
             </div>
             {fileName && (

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchKnowledges, type Knowledge } from "@/lib/api/knowledge";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
+import { Paginator } from "@/app/operator/import/components/Paginator";
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -18,18 +19,25 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 ];
 
 const STORAGE_KEY = "knowledges_table_columns";
+const DEFAULT_PAGE_SIZE = 10;
 
 export function KnowledgeTable() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(DEFAULT_PAGE_SIZE);
+
   const {
-    data: knowledges = [],
+    data: paginatedResult,
     isLoading: loading,
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ["knowledges"],
-    queryFn: fetchKnowledges,
+    queryKey: ["knowledges", currentPage, pageSize],
+    queryFn: () => fetchKnowledges({ page: currentPage, pageSize }),
   });
 
+  const knowledges = paginatedResult?.data || [];
+  const total = paginatedResult?.total || 0;
+  const totalPages = paginatedResult?.totalPages || 0;
   const error = queryError ? getErrorMessage(queryError) : null;
 
   // 定义列
@@ -79,24 +87,39 @@ export function KnowledgeTable() {
   );
 
   return (
-    <DataTable
-      data={knowledges}
-      columns={columns}
-      loading={loading}
-      error={error}
-      pagination={{ enabled: true, pageSize: 10 }}
-      columnSettings={{
-        enabled: true,
-        storageKey: STORAGE_KEY,
-        defaultColumns: DEFAULT_COLUMNS,
-      }}
-      sorting={{ enabled: true }}
-      emptyMessage="暂无数据"
-      refreshButton={{
-        onClick: () => refetch(),
-        loading: loading,
-      }}
-    />
+    <>
+      <DataTable
+        data={knowledges}
+        columns={columns}
+        loading={loading}
+        error={error}
+        pagination={{ enabled: false }}
+        columnSettings={{
+          enabled: true,
+          storageKey: STORAGE_KEY,
+          defaultColumns: DEFAULT_COLUMNS,
+        }}
+        sorting={{ enabled: false }}
+        emptyMessage="暂无数据"
+        refreshButton={{
+          onClick: () => refetch(),
+          loading: loading,
+        }}
+      />
+      {!loading && knowledges.length > 0 && (
+        <div className="mt-4">
+          <Paginator
+            currentPage={currentPage}
+            totalPages={totalPages || 1}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+            }}
+            itemsPerPage={pageSize}
+            totalItems={total}
+          />
+        </div>
+      )}
+    </>
   );
 }
 

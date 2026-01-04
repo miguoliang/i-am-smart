@@ -1,19 +1,19 @@
 "use client";
 
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
-import { useCSVParser } from "./hooks/useCSVParser";
+import { useJSONParser } from "./hooks/useJSONParser";
 import { FileInput } from "./components/FileInput";
 import { NextButton } from "./components/NextButton";
-import { saveCSVData } from "./utils/csvStorage";
+import { saveJSONData } from "./utils/jsonStorage";
 
 export default function ImportLibrary() {
   useOperatorAuth();
 
-  const { file, previewData, error, handleFileChange } = useCSVParser();
+  const { file, previewData, error, handleFileChange } = useJSONParser();
 
   const handleNext = () => {
     if (previewData && file) {
-      saveCSVData(previewData, file.name);
+      saveJSONData(previewData.items, file.name);
     }
   };
 
@@ -24,21 +24,21 @@ export default function ImportLibrary() {
           导入词库 - 步骤 1
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          仅支持 CSV 格式，自动识别字段
+          仅支持 JSON 格式，需符合 CEFR 数据结构
         </p>
       </div>
 
       <FileInput
         onFileChange={handleFileChange}
         fileName={file?.name || null}
-        recordCount={previewData?.rows.length || null}
+        recordCount={previewData?.items.length || null}
         error={error}
       />
 
       <div className="mt-6">
         <NextButton
           onClick={handleNext}
-          disabled={!file || !previewData || previewData.rows.length === 0}
+          disabled={!file || !previewData || previewData.items.length === 0}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { KnowledgeRepository } from '@/lib/repositories/knowledge.repository';
+import { KnowledgeRepository, PaginatedResult } from '@/lib/repositories/knowledge.repository';
 import { logger } from '@/lib/utils/logger';
 
 export interface KnowledgeItem {
@@ -8,6 +8,11 @@ export interface KnowledgeItem {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+export interface KnowledgePaginationParams {
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ImportKnowledgeParams {
@@ -29,6 +34,7 @@ export class KnowledgeService {
 
   /**
    * Fetch all knowledge items ordered by creation date (newest first)
+   * @deprecated Use getPaginatedKnowledge instead for better performance
    */
   async getAllKnowledge(): Promise<KnowledgeItem[]> {
     logger.debug('Fetching all knowledge items');
@@ -46,6 +52,42 @@ export class KnowledgeService {
       logger.error('Failed to fetch knowledge items', {
         error,
         errorMessage,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch paginated knowledge items ordered by creation date (newest first)
+   */
+  async getPaginatedKnowledge(params: KnowledgePaginationParams = {}): Promise<PaginatedResult<KnowledgeItem>> {
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 10;
+
+    logger.debug('Fetching paginated knowledge items', {
+      page,
+      pageSize,
+    });
+    
+    try {
+      const result = await this.knowledgeRepository.getPaginated({ page, pageSize });
+      
+      logger.debug('Successfully fetched paginated knowledge items', {
+        page,
+        pageSize,
+        total: result.total,
+        totalPages: result.totalPages,
+        count: result.data?.length || 0,
+      });
+
+      return result;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to fetch paginated knowledge items', {
+        error,
+        errorMessage,
+        page,
+        pageSize,
       });
       throw error;
     }
