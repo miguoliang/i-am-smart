@@ -1,6 +1,5 @@
 import { AccountRepository } from '@/lib/repositories/account.repository';
 import { KnowledgeRepository } from '@/lib/repositories/knowledge.repository';
-import { nowISO } from '@/lib/utils/dateUtils';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
 
 export interface Account {
@@ -65,36 +64,19 @@ export class AccountService {
       throw ApiError.validationError("不能给 operator 分配卡片");
     }
 
-    // 2. Get all knowledge items
-    const knowledges = await this.knowledgeRepository.getAll();
-
-    if (!knowledges || knowledges.length === 0) {
-      throw ApiError.validationError("知识库中没有可分配的卡片");
-    }
-
-    // 3. Get default card type
+    // 2. Get default card type
     const finalCardTypeCode = await this.accountRepository.getSystemDefaultCardTypeCode();
 
     if (!finalCardTypeCode) {
       throw ApiError.validationError("系统中没有可用的卡片类型，请先创建卡片类型");
     }
 
-    // 4. Prepare account cards data
-    const now = nowISO();
-    const accountCards = knowledges.map((knowledge) => ({
-      accountId: targetUserId,
-      knowledgeCode: knowledge.code,
-      cardTypeCode: finalCardTypeCode,
-      easeFactor: 2.5,
-      intervalDays: 0,
-      repetitions: 0,
-      nextReviewDate: now,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    // 3. Distribute via RPC
+    const { count, skipped } = await this.accountRepository.distributeAllCards(targetUserId, finalCardTypeCode);
 
-    // 5. Batch insert via repository
-    const { count, skipped } = await this.accountRepository.distributeCards(targetUserId, accountCards);
+    if (count === 0 && skipped === 0) {
+      throw ApiError.validationError("知识库中没有可分配的卡片");
+    }
 
     return {
       success: true,

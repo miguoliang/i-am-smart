@@ -16,5 +16,6 @@ export interface AccountRepository {
   listUsers(page: number, perPage: number): Promise<{ users: Account[]; hasMore: boolean }>;
   getUserById(userId: string): Promise<Account | null>;
   distributeCards(userId: string, cards: CardDistribution[]): Promise<{ count: number; skipped: number }>;
+  distributeAllCards(userId: string, cardTypeCode: string): Promise<{ count: number; skipped: number }>;
   getSystemDefaultCardTypeCode(): Promise<string | null>;
 }

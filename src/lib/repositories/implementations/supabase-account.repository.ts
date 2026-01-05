@@ -93,4 +93,19 @@ export class SupabaseAccountRepository implements AccountRepository {
 
     return { count, skipped };
   }
+
+  async distributeAllCards(userId: string, cardTypeCode: string): Promise<{ count: number; skipped: number }> {
+    const { data, error } = await this.adminClient.rpc('distribute_all_cards', {
+      p_user_id: userId,
+      p_card_type_code: cardTypeCode,
+    });
+
+    if (error) {
+      throw new Error(`批量分配卡片失败: ${error.message}`);
+    }
+
+    // Cast the returned JSON
+    const result = data as { inserted: number; skipped: number };
+    return { count: result.inserted, skipped: result.skipped };
+  }
 }
