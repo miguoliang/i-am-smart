@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Bell, BellOff, Loader2, Check } from "lucide-react";
+import { LogOut, Settings, Bell, BellOff, Loader2, Check, Lock } from "lucide-react";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useLevel } from "../hooks/useLevel";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -72,11 +73,17 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               </h3>
               {availableLevels.map((levelOption) => {
                 const isComingSoon = ["C1", "C2"].includes(levelOption);
+                const isPro = ["B1", "B2"].includes(levelOption);
+                
                 return (
                   <button
                     key={levelOption}
                     disabled={isComingSoon}
                     onClick={() => {
+                      if (isPro) {
+                        toast.info("升级会员解锁该等级");
+                        return;
+                      }
                       if (!isComingSoon) {
                         setLevel(levelOption);
                         setOpen(false);
@@ -87,13 +94,19 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                       isComingSoon
                         ? "opacity-50 cursor-not-allowed bg-muted/50"
                         : "hover:bg-accent hover:text-accent-foreground",
-                      level === levelOption && !isComingSoon && "bg-accent text-accent-foreground"
+                      level === levelOption && !isComingSoon && !isPro && "bg-accent text-accent-foreground"
                     )}
                   >
                     <div className="flex items-center justify-center w-5 h-5">
                       {level === levelOption && <Check className="h-4 w-4" />}
+                      {isPro && <Lock className="h-4 w-4 text-amber-500" />}
                     </div>
                     <span className="flex-1">{levelOption}</span>
+                    {isPro && (
+                      <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded whitespace-nowrap">
+                        Pro
+                      </span>
+                    )}
                     {isComingSoon && (
                       <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded text-muted-foreground whitespace-nowrap">
                         敬请期待
