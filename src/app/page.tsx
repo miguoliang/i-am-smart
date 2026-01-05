@@ -27,24 +27,34 @@ export default function SignIn() {
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("邮箱格式不正确");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-        },
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        logger.error("OTP Error", { error, message: error.message });
-        
-        if (isRateLimitError(error.message)) {
-          toast.error(getRateLimitErrorMessage(error.message, "重新发送验证码"));
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle API errors
+        if (data.error) {
+          if (data.error.code === 'RATE_LIMIT_EXCEEDED') {
+             toast.error(data.error.message);
+          } else {
+             toast.error(data.error.message || "发送验证码失败");
+          }
         } else {
-          toast.error(error.message);
+          toast.error("发送验证码失败");
         }
-        
         setLoading(false);
         return;
       }
@@ -55,13 +65,7 @@ export default function SignIn() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "发送验证码失败，请检查网络连接";
       logger.error("OTP Exception", { error: err, message: errorMessage });
-      
-      if (isRateLimitError(errorMessage)) {
-        toast.error(getRateLimitErrorMessage(errorMessage, "重新发送验证码"));
-      } else {
-        toast.error(errorMessage);
-      }
-      
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -105,7 +109,7 @@ export default function SignIn() {
     } else {
       router.push("/learn");
     }
-    setLoading(false);
+    // Keep loading true while redirecting
   };
 
   return (
