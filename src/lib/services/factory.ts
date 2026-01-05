@@ -4,10 +4,12 @@ import { SupabaseCardRepository } from '@/lib/repositories/implementations/supab
 import { SupabaseAccountRepository } from '@/lib/repositories/implementations/supabase-account.repository';
 import { SupabaseKnowledgeRepository } from '@/lib/repositories/implementations/supabase-knowledge.repository';
 import { SupabaseFeedbackRepository } from '@/lib/repositories/implementations/supabase-feedback.repository';
+import { SupabaseStatsRepository } from '@/lib/repositories/implementations/supabase-stats.repository';
 import { CardService } from './cardService';
 import { AccountService } from './accountService';
 import { KnowledgeService } from './knowledgeService';
 import { FeedbackService } from './feedbackService';
+import { StatsService } from './statsService';
 
 /**
  * Factory for CardService
@@ -37,6 +39,16 @@ export async function createFeedbackService(): Promise<FeedbackService> {
   const supabase = await createRouteHandlerClient();
   const repo = new SupabaseFeedbackRepository(supabase);
   return new FeedbackService(repo);
+}
+
+/**
+ * Factory for StatsService
+ * Uses Route Handler Client (User Context)
+ */
+export async function createStatsService(): Promise<StatsService> {
+  const supabase = await createRouteHandlerClient();
+  const repo = new SupabaseStatsRepository(supabase);
+  return new StatsService(repo);
 }
 
 /**

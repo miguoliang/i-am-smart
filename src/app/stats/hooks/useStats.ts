@@ -1,6 +1,5 @@
-import { useEffect, useState, useMemo } from 'react'
-import { createClient } from '@/lib/supabaseClient'
-import { getDaysAgoISO, nowISO, toDateString } from '@/lib/utils/dateUtils'
+import { useEffect, useState } from 'react'
+import { toDateString } from '@/lib/utils/dateUtils'
 
 export interface StatsData {
   total: number;
@@ -21,53 +20,40 @@ export function useStats() {
     heatMap: []
   })
   
-  const supabase = useMemo(() => createClient(), [])
-
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const offset = new Date().getTimezoneOffset();
+        const res = await fetch(`/api/stats?offset=${offset}`);
+        if (!res.ok) throw new Error('Failed to fetch stats');
+        
+        const data = await res.json();
+        
+        // Generate last 30 days array
+        const fullHeatMap = Array(30).fill(0).map((_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (29 - i));
+          const dateStr = toDateString(date);
+          
+          // Find count in API response (sparse data)
+          const found = data.heatmap.find((h: { date: string; count: number }) => h.date === dateStr);
+          return { date: dateStr, count: found ? found.count : 0 };
+        });
 
-      // 基础统计
-      const { data: cardsData } = await supabase
-        .from('account_cards')
-        .select('repetitions, interval_days')
-        .eq('account_id', user.id)
-
-      const cards = cardsData || []
-      const total = cards.length
-      const mastered = cards.filter(c => c.repetitions >= 7 && c.interval_days >= 30).length
-      const learning = cards.filter(c => c.repetitions > 0 && c.interval_days < 30).length
-
-      // 今日待复习
-      const { count: dueToday } = await supabase
-        .from('account_cards')
-        .select('*', { count: 'exact', head: true })
-        .eq('account_id', user.id)
-        .lte('next_review_date', nowISO())
-
-      // 最近30天热力图
-      // Join account_cards to filter by user.id
-      const { data: historyData } = await supabase
-        .from('review_history')
-        .select('reviewed_at, account_cards!inner(account_id)')
-        .eq('account_cards.account_id', user.id)
-        .gte('reviewed_at', getDaysAgoISO(30))
-      
-      const history = historyData || []
-
-      const heatMap = Array(30).fill(0).map((_, i) => {
-        const date = new Date()
-        date.setDate(date.getDate() - (29 - i))
-        const dateStr = toDateString(date)
-        const count = history.filter((h: { reviewed_at: string }) => h.reviewed_at.startsWith(dateStr)).length
-        return { date: dateStr, count }
-      })
-
-      setStats({ total, mastered, learning, dueToday: dueToday || 0, streak: 0, heatMap })
+        setStats({
+          total: data.stats.total,
+          mastered: data.stats.mastered,
+          learning: data.stats.learning,
+          dueToday: data.stats.dueToday,
+          streak: 0, // Streak calculation can be added later
+          heatMap: fullHeatMap
+        });
+      } catch {
+        // Fail silently or handle error in UI state if needed
+      }
     }
     fetchStats()
-  }, [supabase])
+  }, [])
 
   return stats;
 }
