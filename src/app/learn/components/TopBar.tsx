@@ -70,25 +70,38 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
                 选择等级
               </h3>
-              {availableLevels.map((levelOption) => (
-                <button
-                  key={levelOption}
-                  onClick={() => {
-                    setLevel(levelOption);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    level === levelOption && "bg-accent text-accent-foreground"
-                  )}
-                >
-                  <div className="flex items-center justify-center w-5 h-5">
-                    {level === levelOption && <Check className="h-4 w-4" />}
-                  </div>
-                  <span>{levelOption}</span>
-                </button>
-              ))}
+              {availableLevels.map((levelOption) => {
+                const isComingSoon = ["C1", "C2"].includes(levelOption);
+                return (
+                  <button
+                    key={levelOption}
+                    disabled={isComingSoon}
+                    onClick={() => {
+                      if (!isComingSoon) {
+                        setLevel(levelOption);
+                        setOpen(false);
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors",
+                      isComingSoon
+                        ? "opacity-50 cursor-not-allowed bg-muted/50"
+                        : "hover:bg-accent hover:text-accent-foreground",
+                      level === levelOption && !isComingSoon && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <div className="flex items-center justify-center w-5 h-5">
+                      {level === levelOption && <Check className="h-4 w-4" />}
+                    </div>
+                    <span className="flex-1">{levelOption}</span>
+                    {isComingSoon && (
+                      <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded text-muted-foreground whitespace-nowrap">
+                        敬请期待
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
