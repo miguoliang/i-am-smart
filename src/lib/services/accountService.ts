@@ -10,6 +10,7 @@ export interface Account {
   created_at: string;
   updated_at: string;
   last_sign_in_at: string | null;
+  dailyReviewCount?: number;
 }
 
 export interface PaginationResult<T> {
@@ -37,10 +38,26 @@ export class AccountService {
    * List users with pagination using Admin API
    */
   async listUsers(page: number = 1, perPage: number = 10): Promise<PaginationResult<Account>> {
-    const { users, hasMore } = await this.accountRepository.listUsers(page, perPage);
+    const [userResult, reviewCounts] = await Promise.all([
+      this.accountRepository.listUsers(page, perPage),
+      this.accountRepository.getAccountsDailyReviewCounts(),
+    ]);
+
+    const { users, hasMore } = userResult;
+
+    // Create a map of account ID to review count for efficient lookup
+    const reviewCountMap = new Map(
+      reviewCounts.map(rc => [rc.accountId, rc.reviewCount])
+    );
+
+    // Add daily review count to each user
+    const usersWithReviewCounts = users.map(user => ({
+      ...user,
+      dailyReviewCount: reviewCountMap.get(user.id) || 0,
+    }));
 
     return {
-      data: users,
+      data: usersWithReviewCounts,
       pagination: {
         page,
         perPage,

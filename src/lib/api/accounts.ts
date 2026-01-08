@@ -7,6 +7,7 @@ export interface Account {
   created_at: string;
   updated_at: string;
   last_sign_in_at?: string | null;
+  dailyReviewCount?: number;
 }
 
 export interface AccountsResponse {

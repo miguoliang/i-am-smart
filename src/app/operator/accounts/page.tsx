@@ -21,6 +21,7 @@ interface Account {
   created_at: string;
   updated_at: string;
   last_sign_in_at?: string | null;
+  dailyReviewCount?: number;
 }
 
 // 默认列配置
@@ -29,6 +30,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "username", label: "用户名", visible: true },
   { key: "email", label: "邮箱", visible: true },
   { key: "role", label: "角色", visible: true },
+  { key: "dailyReviewCount", label: "今日复习", visible: true },
   { key: "last_sign_in_at", label: "最后登录", visible: true },
   { key: "created_at", label: "创建时间", visible: true },
   { key: "actions", label: "操作", visible: true },
@@ -93,6 +95,18 @@ export default function AccountsPage() {
               }`}
             >
               {role}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "dailyReviewCount",
+        header: "今日复习",
+        cell: ({ row }) => {
+          const count = row.getValue("dailyReviewCount") as number;
+          return (
+            <span className={`font-mono ${count > 0 ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+              {count || 0}
             </span>
           );
         },

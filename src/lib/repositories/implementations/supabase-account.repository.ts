@@ -53,6 +53,20 @@ export class SupabaseAccountRepository implements AccountRepository {
     };
   }
 
+  async getAccountsDailyReviewCounts(): Promise<{ accountId: string; reviewCount: number }[]> {
+    const { data, error } = await this.adminClient
+      .rpc('get_accounts_daily_review_counts');
+
+    if (error) {
+      throw new Error(`获取每日复习统计失败: ${error.message}`);
+    }
+
+    return (data || []).map((row: { account_id: string; review_count: number }) => ({
+      accountId: row.account_id,
+      reviewCount: Number(row.review_count),
+    }));
+  }
+
   async getSystemDefaultCardTypeCode(): Promise<string | null> {
     const { data, error } = await this.adminClient
       .from("card_types")
