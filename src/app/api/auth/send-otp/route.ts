@@ -5,6 +5,7 @@ import {
   getRateLimitErrorMessage,
 } from "@/lib/utils/errorHandling";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
+import { isValidEmail } from "@/lib/utils/emailValidation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,9 +15,8 @@ export async function POST(req: NextRequest) {
       throw ApiError.validationError("邮箱不能为空");
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Email validation using shared utility
+    if (!isValidEmail(email)) {
       throw ApiError.validationError("邮箱格式不正确");
     }
 
