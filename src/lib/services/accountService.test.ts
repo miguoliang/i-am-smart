@@ -15,6 +15,7 @@ describe('AccountService', () => {
     mockAccountRepo = {
       listUsers: jest.fn(),
       getUserById: jest.fn(),
+      getAccountsDailyReviewCounts: jest.fn(),
       distributeCards: jest.fn(),
       distributeAllCards: jest.fn(),
       getSystemDefaultCardTypeCode: jest.fn(),
