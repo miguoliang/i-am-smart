@@ -3,6 +3,7 @@ import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireAuth } from '@/lib/middleware/auth'
 import { MAX_QUALITY, MIN_QUALITY } from '@/lib/constants'
+import { t, translate } from '@/lib/i18n'
 
 export async function POST(
   request: NextRequest,
@@ -13,7 +14,9 @@ export async function POST(
     
     // Validate quality parameter
     if (typeof quality !== 'number' || quality < MIN_QUALITY || quality > MAX_QUALITY) {
-      throw ApiError.validationError(`评分必须在 ${MIN_QUALITY}-${MAX_QUALITY} 之间`)
+      throw ApiError.validationError(
+        translate(t().validation.qualityMustBeBetween, { min: MIN_QUALITY, max: MAX_QUALITY })
+      );
     }
 
     const { user } = await requireAuth();
@@ -21,7 +24,7 @@ export async function POST(
 
     const cardId = parseInt(id, 10)
     if (isNaN(cardId)) {
-      throw ApiError.validationError('无效的卡片ID')
+      throw ApiError.validationError(t().validation.invalidCardId);
     }
 
     const cardService = await createCardService()

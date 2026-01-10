@@ -3,6 +3,7 @@ import { getTodayDateRange } from '@/lib/utils/dateUtils';
 import { Card } from '@/app/learn/types';
 import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
+import { t, translate } from '@/lib/i18n';
 
 export interface DueCardsResult {
   reviewedCount: number;
@@ -49,7 +50,7 @@ export class CardService {
     // 1. Fetch card
     const card = await this.cardRepository.getCardById(cardId, userId);
     if (!card) {
-      throw ApiError.notFound('卡片不存在');
+      throw ApiError.notFound(t().cards.cardNotFound);
     }
 
     // 2. Check daily limit
@@ -64,7 +65,9 @@ export class CardService {
     if (!isCardReviewedToday) {
       const reviewedTodayCount = await this.getReviewedTodayCount(userId);
       if (reviewedTodayCount >= DAILY_REVIEW_LIMIT) {
-        throw ApiError.dailyLimitExceeded(`今日已复习${DAILY_REVIEW_LIMIT}张卡片，已达到每日限制`);
+        throw ApiError.dailyLimitExceeded(
+          translate(t().cards.dailyLimitExceeded, { limit: DAILY_REVIEW_LIMIT })
+        );
       }
     }
 

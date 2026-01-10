@@ -6,6 +6,7 @@ import { Sidebar } from "./components/Sidebar";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { useState } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { t } from "@/lib/i18n";
 
 export default function OperatorLayout({
   children,
@@ -19,7 +20,7 @@ export default function OperatorLayout({
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
-        <div className="text-white text-3xl font-medium">校验权限中…</div>
+        <div className="text-white text-3xl font-medium">{t().operator.checkingPermissions}</div>
       </div>
     );
   }

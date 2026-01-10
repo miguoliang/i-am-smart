@@ -6,6 +6,7 @@ import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireOperator } from '@/lib/middleware/auth'
 import { logger } from '@/lib/utils/logger'
 import { MAX_PAGE_SIZE } from '@/lib/constants'
+import { t, translate } from '@/lib/i18n'
 
 interface CefrKnowledgeItem {
   englishWord: string;
@@ -33,10 +34,12 @@ export async function GET(req: NextRequest) {
 
     // Validate pagination parameters
     if (page < 1) {
-      throw ApiError.validationError('Page must be greater than 0');
+      throw ApiError.validationError(t().validation.pageMustBeGreaterThanZero);
     }
     if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
-      throw ApiError.validationError(`Page size must be between 1 and ${MAX_PAGE_SIZE}`);
+      throw ApiError.validationError(
+        translate(t().validation.pageSizeMustBeBetween, { max: MAX_PAGE_SIZE })
+      );
     }
 
     const knowledgeService = await createKnowledgeService()

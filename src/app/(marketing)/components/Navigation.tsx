@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 const navigationItems = [
-  { href: "/", label: "首页" },
-  { href: "/features", label: "功能" },
-  { href: "/docs", label: "文档" },
-  { href: "/blog", label: "博客" },
-  { href: "/about", label: "关于" },
+  { href: "/", labelKey: "home" as const },
+  { href: "/features", labelKey: "features" as const },
+  { href: "/docs", labelKey: "docs" as const },
+  { href: "/blog", labelKey: "blog" as const },
+  { href: "/about", labelKey: "about" as const },
 ];
 
 export function Navigation() {
   const pathname = usePathname();
+  const translations = t().navigation;
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -36,7 +38,7 @@ export function Navigation() {
                       : "text-muted-foreground"
                   )}
                 >
-                  {item.label}
+                  {translations[item.labelKey]}
                 </Link>
               );
             })}
@@ -44,7 +46,7 @@ export function Navigation() {
               href="/learn"
               className="text-sm font-medium text-primary hover:text-primary/80"
             >
-              开始学习
+              {translations.startLearning}
             </Link>
           </div>
         </div>

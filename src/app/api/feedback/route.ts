@@ -5,6 +5,7 @@ import { sanitizeFeedbackContent } from "@/lib/utils/sanitize";
 import { createFeedbackService } from "@/lib/services/factory";
 import { requireOperator, requireAuth } from "@/lib/middleware/auth";
 import { validateFeedbackContent } from "@/lib/validation/feedback";
+import { t } from "@/lib/i18n";
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,14 +45,14 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       logger.error("Feedback POST: Database error", { error });
-      throw ApiError.internal("提交反馈失败，请稍后重试");
+      throw ApiError.internal(t().feedback.submitFailed);
     }
 
     logger.info("Feedback submitted", {
       userId: user?.id || "anonymous",
     });
 
-    return apiSuccess({ message: "反馈已提交，感谢您的建议！" });
+    return apiSuccess({ message: t().feedback.submitted });
   } catch (error) {
     return handleApiError(error);
   }

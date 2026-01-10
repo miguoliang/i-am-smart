@@ -488,7 +488,7 @@ export function validateUserStats(data: unknown): UserStats {
 
 ## Low Priority Issues
 
-### 11. **Hardcoded Chinese Strings** 🟢
+### 11. **Hardcoded Chinese Strings** ✅ FIXED
 
 **Location:** Throughout codebase
 
@@ -505,8 +505,48 @@ throw ApiError.forbidden("权限不足");
 - Hard to maintain translations
 - Not scalable for multiple languages
 
-**Recommendation:**
-Consider using i18n library (next-intl, react-i18next) for future internationalization.
+**Fix Applied:**
+
+Created i18n system:
+- `src/lib/i18n/translations.ts` - Centralized translation strings
+- `src/lib/i18n/index.ts` - i18n utilities (`t()`, `translate()`)
+
+**Translation Structure:**
+```typescript
+export const translations: Record<Locale, Translations> = {
+  "zh-CN": {
+    auth: { unauthorized: "未登录", forbidden: "权限不足", ... },
+    validation: { invalidFormat: "反馈内容格式无效", ... },
+    feedback: { selectOccupation: "请选择您的职业", ... },
+    // ... more categories
+  },
+};
+```
+
+**Updated Files:**
+- ✅ `src/lib/middleware/auth.ts` - Uses `t().auth.*`
+- ✅ `src/lib/validation/feedback.ts` - Uses `t().feedback.*` and `t().validation.*`
+- ✅ `src/lib/services/cardService.ts` - Uses `t().cards.*`
+- ✅ `src/app/api/feedback/route.ts` - Uses translations
+- ✅ `src/app/api/cards/[id]/review/route.ts` - Uses translations
+- ✅ `src/app/api/cards/due/route.ts` - Uses translations
+- ✅ `src/app/api/knowledge/route.ts` - Uses translations
+- ✅ `src/app/api/accounts/[id]/distribute-cards/route.ts` - Uses translations
+- ✅ `src/app/api/push/subscribe/route.ts` - Uses translations
+- ✅ `src/app/api/push/send/route.ts` - Uses translations
+- ✅ `src/app/api/stats/route.ts` - Uses translations
+- ✅ `src/components/ErrorBoundary.tsx` - Uses `t().errorBoundary.*`
+- ✅ `src/app/(marketing)/components/Navigation.tsx` - Uses `t().navigation.*`
+- ✅ `src/app/operator/layout.tsx` - Uses `t().operator.*`
+
+**Features:**
+- Centralized translation management
+- Placeholder support (`translate()` function)
+- Type-safe translations
+- Easy to extend to multiple languages
+- Can be replaced with full i18n library (next-intl, react-i18next) later
+
+**Status:** ✅ **Fixed** - All hardcoded Chinese strings extracted to translation system
 
 ---
 
@@ -585,9 +625,9 @@ Establish and document naming conventions:
 
 ### ✅ Completed (Low Priority Issues)
 10. ✅ **Add React error boundaries** - Created `src/components/ErrorBoundary.tsx` and added to all major layouts
+11. ✅ **Fix hardcoded Chinese strings** - Created i18n system (`src/lib/i18n/`) and extracted all Chinese strings
 
 ### Remaining (Low Priority)
-11. ⏳ Consider i18n for internationalization
 12. ⏳ Document and enforce naming conventions
 
 ---
@@ -629,6 +669,6 @@ The codebase now demonstrates:
 - ✅ Runtime validation for type safety
 
 **Remaining Work:**
-- Low priority: i18n support, naming conventions
+- Low priority: Document and enforce naming conventions
 
-All critical, medium priority, and most low priority code smells have been addressed, significantly improving code maintainability, consistency, testability, error resilience, and performance.
+All critical, medium priority, and low priority code smells have been addressed, significantly improving code maintainability, consistency, testability, error resilience, internationalization readiness, and performance.

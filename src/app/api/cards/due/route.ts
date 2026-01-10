@@ -2,6 +2,7 @@
 import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireAuth } from '@/lib/middleware/auth'
+import { t } from '@/lib/i18n'
 import { NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Validate level if provided
     if (level && !['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) {
-      throw ApiError.validationError('Invalid level. Must be one of: A1, A2, B1, B2, C1, C2');
+      throw ApiError.validationError(t().validation.invalidLevel);
     }
 
     const cardService = await createCardService();

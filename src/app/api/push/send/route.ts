@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import webpush from "web-push";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireAuth } from "@/lib/middleware/auth";
+import { t } from "@/lib/i18n";
 
 // Initialize web-push if keys are available (avoids build errors)
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
     if (!subscriptions || subscriptions.length === 0) {
-      throw ApiError.notFound("No subscriptions found");
+      throw ApiError.notFound(t().validation.noSubscriptionsFound);
     }
 
     // Send notifications

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createAccountService } from '@/lib/services/factory';
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError';
 import { requireOperator } from '@/lib/middleware/auth';
+import { t } from '@/lib/i18n';
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function POST(
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(accountId)) {
-      throw ApiError.validationError("无效的账户ID格式");
+      throw ApiError.validationError(t().validation.invalidAccountIdFormat);
     }
 
     const accountService = createAccountService();

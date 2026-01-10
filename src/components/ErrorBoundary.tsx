@@ -3,6 +3,7 @@
 import React, { Component, ReactNode } from "react";
 import { logger } from "@/lib/utils/logger";
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/i18n";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -72,6 +73,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       // Default fallback UI
+      const translations = t().errorBoundary;
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
@@ -92,15 +94,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              出现了一些问题
+              {translations.somethingWentWrong}
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              抱歉，应用遇到了一个错误。我们已经记录了这个问题，请尝试刷新页面。
+              {translations.errorOccurred}
             </p>
             {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mb-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 mb-2">
-                  错误详情（开发模式）
+                  {translations.errorDetailsDev}
                 </summary>
                 <pre className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-auto">
                   {this.state.error.toString()}
@@ -110,13 +112,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             )}
             <div className="flex gap-3 justify-center">
               <Button onClick={this.handleReset} variant="default">
-                重试
+                {translations.retry}
               </Button>
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
               >
-                刷新页面
+                {translations.refreshPage}
               </Button>
             </div>
           </div>

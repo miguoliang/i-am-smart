@@ -1,5 +1,6 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer';
 import { ApiError } from '@/lib/utils/apiError';
+import { t } from '@/lib/i18n';
 import type { User } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -18,7 +19,7 @@ export async function requireAuth(): Promise<AuthContext> {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
-    throw ApiError.unauthorized('未登录');
+    throw ApiError.unauthorized(t().auth.unauthorized);
   }
 
   return { user, supabase };
@@ -33,7 +34,7 @@ export async function requireOperator(): Promise<AuthContext> {
   const { user, supabase } = await requireAuth();
 
   if (user.app_metadata?.role !== 'operator') {
-    throw ApiError.forbidden('权限不足');
+    throw ApiError.forbidden(t().auth.forbidden);
   }
 
   return { user, supabase };

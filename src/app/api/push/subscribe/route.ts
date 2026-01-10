@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireAuth } from "@/lib/middleware/auth";
+import { t } from "@/lib/i18n";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
     const subscription = await req.json();
 
     if (!subscription || !subscription.endpoint) {
-        throw ApiError.validationError("Invalid subscription object");
+        throw ApiError.validationError(t().validation.invalidSubscriptionObject);
     }
 
     // Save to DB
