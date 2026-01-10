@@ -6,7 +6,6 @@ import { ConditionalFooter } from "./components/ConditionalFooter";
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
 import { SkipLink } from "@/components/SkipLink";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "背它一辈子",
@@ -26,17 +25,15 @@ export default function RootLayout({
   return (
     <html lang="zh" suppressHydrationWarning>
       <body>
-        <ErrorBoundary level="page">
-          <SkipLink />
-          <Providers>
-            <main id="main-content" className="flex-1">
-              {children}
-            </main>
-          </Providers>
-          <ConditionalFooter />
-          <Toaster position="top-center" />
-          <PWAUpdater />
-        </ErrorBoundary>
+        <SkipLink />
+        <Providers>
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+        </Providers>
+        <ConditionalFooter />
+        <Toaster position="top-center" />
+        <PWAUpdater />
       </body>
     </html>
   );

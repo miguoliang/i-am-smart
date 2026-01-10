@@ -60,15 +60,6 @@ export interface Translations {
     success: string;
   };
 
-  // Error Boundary
-  errorBoundary: {
-    somethingWentWrong: string;
-    errorOccurred: string;
-    errorDetailsDev: string;
-    retry: string;
-    refreshPage: string;
-  };
-
   // Navigation
   navigation: {
     home: string;
@@ -141,13 +132,6 @@ export const translations: Record<Locale, Translations> = {
       loading: "加载中",
       error: "错误",
       success: "成功",
-    },
-    errorBoundary: {
-      somethingWentWrong: "出现了一些问题",
-      errorOccurred: "抱歉，应用遇到了一个错误。我们已经记录了这个问题，请尝试刷新页面。",
-      errorDetailsDev: "错误详情（开发模式）",
-      retry: "重试",
-      refreshPage: "刷新页面",
     },
     navigation: {
       home: "首页",

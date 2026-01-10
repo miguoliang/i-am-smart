@@ -67,11 +67,11 @@ export function InstallPrompt() {
   return (
     <Button
       variant="ghost"
-      size="icon"
       onClick={handleInstallClick}
-      title="安装应用"
+      className="text-sm font-medium"
     >
-      <Download className="h-5 w-5" />
+      <Download className="h-4 w-4 mr-2" />
+      下载
     </Button>
   );
 }

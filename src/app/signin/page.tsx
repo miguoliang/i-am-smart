@@ -1,13 +1,13 @@
-// src/app/page.tsx - Sign In Page
+// src/app/signin/page.tsx - Sign In Page
 "use client";
 
 import { useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSignIn } from "./hooks/useSignIn";
-import { useDebounce } from "./hooks/useDebounce";
-import { useCountdown } from "./hooks/useCountdown";
+import { useSignIn } from "../hooks/useSignIn";
+import { useDebounce } from "../hooks/useDebounce";
+import { useCountdown } from "../hooks/useCountdown";
 import { isValidEmail } from "@/lib/utils/emailValidation";
 
 export default function SignIn() {
@@ -121,7 +121,7 @@ export default function SignIn() {
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen flex flex-col">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">

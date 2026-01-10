@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
-import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo/structured-data";
+import {
+  generateOrganizationStructuredData,
+  generateWebsiteStructuredData,
+} from "@/lib/seo/structured-data";
 import { Navigation } from "./components/Navigation";
 import { StructuredData } from "@/components/StructuredData";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Be It Forever - 背它一辈子",
-  description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识。使用SM-2算法优化学习，支持文本转语音，提供可视化统计和进度跟踪。",
+  description:
+    "一个基于间隔重复的英语学习应用，帮助您终身掌握知识。使用SM-2算法优化学习，支持文本转语音，提供可视化统计和进度跟踪。",
   keywords: [
     "英语学习",
     "间隔重复",
@@ -32,11 +35,11 @@ export default function MarketingLayout({
   const websiteData = generateWebsiteStructuredData();
 
   return (
-    <ErrorBoundary level="section">
+    <>
       <StructuredData data={organizationData} />
       <StructuredData data={websiteData} />
       <Navigation />
       {children}
-    </ErrorBoundary>
+    </>
   );
 }

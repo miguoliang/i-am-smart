@@ -29,7 +29,7 @@ export function useDueCardsQuery(params?: UseDueCardsQueryParams) {
 
   useEffect(() => {
     if (error && hasErrorMessage(error, "未登录")) {
-      router.push("/");
+      router.push("/signin");
     }
   }, [error, router]);
 
