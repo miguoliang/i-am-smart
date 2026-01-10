@@ -13,9 +13,33 @@ export async function proxy(req: NextRequest) {
 
     const pathname = req.nextUrl.pathname
 
-    // If user is not signed in and trying to access protected routes (not root)
-    // Allow access to root path ('/') for sign-in page
-    if (!user && pathname !== '/') {
+    // Public marketing routes that don't require authentication
+    const publicRoutes = [
+      '/',
+      '/signin',
+      '/features',
+      '/pricing',
+      '/changelog',
+      '/docs',
+      '/blog',
+    ]
+
+    // Protected routes that require authentication
+    const protectedRoutes = ['/learn', '/stats', '/operator', '/feedback']
+
+    // Check if the route is protected
+    const isProtectedRoute = protectedRoutes.some(route => 
+      pathname === route || pathname.startsWith(`${route}/`)
+    )
+
+    // Check if the route is public
+    const isPublicRoute = publicRoutes.some(route => 
+      pathname === route || pathname.startsWith(`${route}/`)
+    )
+
+    // If user is not signed in and trying to access protected routes
+    // Allow access to public routes (marketing site, sign-in, etc.)
+    if (!user && !isPublicRoute && isProtectedRoute) {
       const redirectUrl = req.nextUrl.clone()
       redirectUrl.pathname = '/'
       return NextResponse.redirect(redirectUrl)
