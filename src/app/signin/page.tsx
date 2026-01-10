@@ -1,13 +1,37 @@
 // src/app/signin/page.tsx - Sign In Page
 "use client";
 
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useCallback, useMemo, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSignIn } from "../hooks/useSignIn";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCountdown } from "../hooks/useCountdown";
-import { isValidEmail } from "@/lib/utils/emailValidation";
+import { isValidEmail, sanitizeEmail } from "@/lib/utils/emailValidation";
+import { cn } from "@/lib/utils";
+
+const COUNTDOWN_SECONDS = 60;
+const EMAIL_DEBOUNCE_MS = 500;
+const OTP_LENGTH = 6;
+
+interface SignInState {
+  autoSubmitted: boolean;
+}
+
+type SignInAction =
+  | { type: "SET_AUTO_SUBMITTED"; payload: boolean }
+  | { type: "RESET_AUTO_SUBMITTED" };
+
+function signInReducer(state: SignInState, action: SignInAction): SignInState {
+  switch (action.type) {
+    case "SET_AUTO_SUBMITTED":
+      return { ...state, autoSubmitted: action.payload };
+    case "RESET_AUTO_SUBMITTED":
+      return { ...state, autoSubmitted: false };
+    default:
+      return state;
+  }
+}
 
 export default function SignIn() {
   const {
@@ -18,42 +42,50 @@ export default function SignIn() {
     otpSent,
     loading,
     otpInputRef,
-    autoSubmitRef,
     handleSendOtp,
     handleVerifyOtp,
     handleResendOtp,
   } = useSignIn();
 
-  // Debounce email for validation
-  const debouncedEmail = useDebounce(email, 500);
+  const [state, dispatch] = useReducer(signInReducer, {
+    autoSubmitted: false,
+  });
 
-  // Countdown timer for resend (60 seconds)
+  // Debounce email for validation
+  const debouncedEmail = useDebounce(email, EMAIL_DEBOUNCE_MS);
+
+  // Countdown timer for resend
   const {
     seconds: countdownSeconds,
     isActive: countdownActive,
     reset: resetCountdown,
-  } = useCountdown(60, () => {
-    // Countdown completed
-  });
+  } = useCountdown(COUNTDOWN_SECONDS);
 
   // Validate email on debounced change
   // Using derived state pattern to avoid setState in effect warning
-  const emailError =
-    debouncedEmail && debouncedEmail.length > 0 && !isValidEmail(debouncedEmail)
-      ? "邮箱格式不正确"
-      : null;
+  // Sanitize email before validation (trim whitespace, normalize)
+  const emailError = useMemo(() => {
+    if (!debouncedEmail || debouncedEmail.length === 0) {
+      return null;
+    }
+    const sanitized = sanitizeEmail(debouncedEmail);
+    return !isValidEmail(sanitized) ? "邮箱格式不正确" : null;
+  }, [debouncedEmail]);
 
   // Handle email change
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-  };
+  const handleEmailChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setEmail(e.target.value);
+    },
+    [setEmail]
+  );
 
   // Start countdown when OTP is sent
   useEffect(() => {
-    if (otpSent && !countdownActive) {
+    if (otpSent) {
       resetCountdown();
     }
-  }, [otpSent, countdownActive, resetCountdown]);
+  }, [otpSent, resetCountdown]);
 
   // Auto-focus OTP input when OTP is sent
   useLayoutEffect(() => {
@@ -63,59 +95,79 @@ export default function SignIn() {
   }, [otpSent, otpInputRef]);
 
   // Handle Enter key for email input
-  const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading && !otpSent && !emailError) {
-      e.preventDefault();
-      handleSendOtp();
-    }
-  };
+  const handleEmailKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" && !loading && !otpSent && !emailError) {
+        e.preventDefault();
+        handleSendOtp();
+      }
+    },
+    [loading, otpSent, emailError, handleSendOtp]
+  );
 
   // Handle Enter key for OTP input
-  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading && otpSent) {
-      e.preventDefault();
-      handleVerifyOtp();
-    }
-  };
+  const handleOtpKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" && !loading && otpSent) {
+        e.preventDefault();
+        handleVerifyOtp();
+      }
+    },
+    [loading, otpSent, handleVerifyOtp]
+  );
+
+  // Sanitize OTP input: remove non-digits and limit length
+  const sanitizeOtp = useCallback((value: string): string => {
+    return value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+  }, []);
 
   // Handle OTP paste
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    // Sanitize: remove all non-digit characters and take first 6 digits
-    const sanitized = pastedText.replace(/\D/g, "").slice(0, 6);
-    setOtp(sanitized);
-  };
+  const handleOtpPaste = useCallback(
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData("text");
+      const sanitized = sanitizeOtp(pastedText);
+      setOtp(sanitized);
+    },
+    [sanitizeOtp, setOtp]
+  );
 
   // Handle OTP input change - only allow digits
-  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Only allow digits, max 6 characters
-    const sanitized = value.replace(/\D/g, "").slice(0, 6);
-    setOtp(sanitized);
+  const handleOtpChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const sanitized = sanitizeOtp(e.target.value);
+      setOtp(sanitized);
 
-    // Reset ref when OTP length changes away from 6
-    if (sanitized.length !== 6) {
-      autoSubmitRef.current = false;
-    }
-  };
+      // Reset auto-submitted flag when OTP length changes away from 6
+      if (sanitized.length !== OTP_LENGTH) {
+        dispatch({ type: "RESET_AUTO_SUBMITTED" });
+      }
+    },
+    [sanitizeOtp, setOtp]
+  );
 
   // Auto-submit when OTP reaches 6 digits
   useEffect(() => {
-    if (otp.length === 6 && otpSent && !loading && !autoSubmitRef.current) {
-      autoSubmitRef.current = true;
+    if (
+      otp.length === OTP_LENGTH &&
+      otpSent &&
+      !loading &&
+      !state.autoSubmitted
+    ) {
+      dispatch({ type: "SET_AUTO_SUBMITTED", payload: true });
       handleVerifyOtp();
     }
-  }, [otp.length, otpSent, loading, autoSubmitRef, handleVerifyOtp]);
+  }, [otp, otpSent, loading, state.autoSubmitted, handleVerifyOtp]);
 
   // Handle resend with countdown
-  const handleResendClick = () => {
+  const handleResendClick = useCallback(() => {
     if (countdownActive) {
       return; // Prevent resend during countdown
     }
+    dispatch({ type: "RESET_AUTO_SUBMITTED" });
     handleResendOtp();
     resetCountdown();
-  };
+  }, [countdownActive, handleResendOtp, resetCountdown]);
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen flex flex-col">
@@ -146,9 +198,10 @@ export default function SignIn() {
                 aria-describedby={
                   emailError ? "email-error" : "email-description"
                 }
-                className={`w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg ${
-                  emailError ? "border-red-500 focus-visible:ring-red-500" : ""
-                }`}
+                className={cn(
+                  "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
+                  emailError && "border-red-500 focus-visible:ring-red-500"
+                )}
               />
               {emailError && (
                 <p

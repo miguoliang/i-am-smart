@@ -7,7 +7,7 @@ import {
   getRateLimitErrorMessage,
 } from "@/lib/utils/errorHandling";
 import { logger } from "@/lib/utils/logger";
-import { isValidEmail } from "@/lib/utils/emailValidation";
+import { isValidEmail, sanitizeEmail } from "@/lib/utils/emailValidation";
 
 interface UseSignInReturn {
   email: string;
@@ -17,7 +17,6 @@ interface UseSignInReturn {
   otpSent: boolean;
   loading: boolean;
   otpInputRef: React.RefObject<HTMLInputElement | null>;
-  autoSubmitRef: React.MutableRefObject<boolean>;
   handleSendOtp: () => Promise<void>;
   handleVerifyOtp: () => Promise<void>;
   handleResendOtp: () => void;
@@ -29,7 +28,6 @@ export function useSignIn(): UseSignInReturn {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const otpInputRef = useRef<HTMLInputElement>(null);
-  const autoSubmitRef = useRef(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -39,8 +37,15 @@ export function useSignIn(): UseSignInReturn {
       return;
     }
 
+    // Sanitize email (trim whitespace, normalize)
+    const sanitizedEmail = sanitizeEmail(email);
+    if (!sanitizedEmail) {
+      toast.error("请输入邮箱");
+      return;
+    }
+
     // Email validation
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(sanitizedEmail)) {
       toast.error("邮箱格式不正确，请检查后重试");
       return;
     }
@@ -50,7 +55,7 @@ export function useSignIn(): UseSignInReturn {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: sanitizedEmail }),
       });
 
       const data = await res.json();
@@ -95,8 +100,10 @@ export function useSignIn(): UseSignInReturn {
     }
 
     setLoading(true);
+    // Sanitize email before verification
+    const sanitizedEmail = sanitizeEmail(email);
     const { data, error } = await supabase.auth.verifyOtp({
-      email,
+      email: sanitizedEmail,
       token: otp,
       type: "email",
     });
@@ -137,7 +144,6 @@ export function useSignIn(): UseSignInReturn {
   const handleResendOtp = useCallback(() => {
     setOtpSent(false);
     setOtp("");
-    autoSubmitRef.current = false;
   }, []);
 
   return {
@@ -148,7 +154,6 @@ export function useSignIn(): UseSignInReturn {
     otpSent,
     loading,
     otpInputRef,
-    autoSubmitRef,
     handleSendOtp,
     handleVerifyOtp,
     handleResendOtp,
