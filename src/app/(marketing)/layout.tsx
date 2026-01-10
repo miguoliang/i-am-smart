@@ -4,7 +4,6 @@ import {
   generateOrganizationStructuredData,
   generateWebsiteStructuredData,
 } from "@/lib/seo/structured-data";
-import { Navigation } from "./components/Navigation";
 import { StructuredData } from "@/components/StructuredData";
 
 export const metadata: Metadata = generateSEOMetadata({
@@ -38,7 +37,6 @@ export default function MarketingLayout({
     <>
       <StructuredData data={organizationData} />
       <StructuredData data={websiteData} />
-      <Navigation />
       {children}
     </>
   );

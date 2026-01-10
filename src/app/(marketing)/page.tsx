@@ -18,7 +18,7 @@ export default function HomePage() {
             使用经过验证的SM-2算法优化您的学习，支持文本转语音，提供可视化统计和进度跟踪。
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/learn">
+            <Link href="/signin">
               <Button size="lg" className="text-lg px-8 py-6 w-full sm:w-auto">
                 开始学习
               </Button>
@@ -100,7 +100,7 @@ export default function HomePage() {
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
             立即开始您的学习之旅，让知识伴随您一生。
           </p>
-          <Link href="/learn">
+          <Link href="/signin">
             <Button size="lg" className="text-lg px-8 py-6">
               免费开始
             </Button>

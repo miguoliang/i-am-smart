@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
 import { ConditionalFooter } from "./components/ConditionalFooter";
+import { ConditionalNavigation } from "@/components/ConditionalNavigation";
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
 import { SkipLink } from "@/components/SkipLink";
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body>
         <SkipLink />
         <Providers>
+          <ConditionalNavigation />
           <main id="main-content" className="flex-1">
             {children}
           </main>
