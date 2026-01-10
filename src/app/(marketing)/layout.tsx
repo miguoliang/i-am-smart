@@ -3,6 +3,7 @@ import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo/structured-data";
 import { Navigation } from "./components/Navigation";
 import { StructuredData } from "@/components/StructuredData";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Be It Forever - 背它一辈子",
@@ -31,11 +32,11 @@ export default function MarketingLayout({
   const websiteData = generateWebsiteStructuredData();
 
   return (
-    <>
+    <ErrorBoundary level="section">
       <StructuredData data={organizationData} />
       <StructuredData data={websiteData} />
       <Navigation />
       {children}
-    </>
+    </ErrorBoundary>
   );
 }

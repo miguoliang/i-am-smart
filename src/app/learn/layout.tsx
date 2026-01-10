@@ -1,7 +1,13 @@
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
 export default function LearnLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <ErrorBoundary level="section">
+      {children}
+    </ErrorBoundary>
+  );
 }

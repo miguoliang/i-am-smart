@@ -5,6 +5,7 @@ import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { useState } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function OperatorLayout({
   children,
@@ -30,12 +31,14 @@ export default function OperatorLayout({
   };
 
   return (
-    <DashboardLayout
-      topNav={<TopNav userEmail={user.email || ""} onSignOut={handleSignOut} loading={isSigningOut} />}
-      sidebar={<Sidebar />}
-    >
-      {children}
-    </DashboardLayout>
+    <ErrorBoundary level="section">
+      <DashboardLayout
+        topNav={<TopNav userEmail={user.email || ""} onSignOut={handleSignOut} loading={isSigningOut} />}
+        sidebar={<Sidebar />}
+      >
+        {children}
+      </DashboardLayout>
+    </ErrorBoundary>
   );
 }
 
