@@ -4,7 +4,7 @@ import {
   generateOrganizationStructuredData,
   generateWebsiteStructuredData,
 } from "@/lib/seo/structured-data";
-import { StructuredData } from "@/components/StructuredData";
+import { StructuredData } from "@/components/seo/StructuredData";
 import { MarketingFooter } from "./components/MarketingFooter";
 
 export const metadata: Metadata = generateSEOMetadata({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 import { LogOut, Settings, Bell, BellOff, Loader2, Check, Lock } from "lucide-react";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -14,7 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/components/overlay/Sheet";
 
 interface TopBarProps {
   onSignOut: () => void;

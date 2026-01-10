@@ -9,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/overlay/Dialog";
+import { Button } from "@/components/form/Button";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 

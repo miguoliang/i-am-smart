@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useCallback, useMemo, useReducer } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/form/Button";
+import { Input } from "@/components/form/Input";
 import { useSignIn } from "../hooks/useSignIn";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCountdown } from "../hooks/useCountdown";

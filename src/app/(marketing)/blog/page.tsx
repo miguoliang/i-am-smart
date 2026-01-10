@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/container/Card";
 import { getAllContent } from "@/lib/content/loader";
 
 export const metadata: Metadata = generateSEOMetadata({

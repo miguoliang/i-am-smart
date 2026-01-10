@@ -30,6 +30,13 @@ const eslintConfig = defineConfig([
       "no-console": "off",
     },
   },
+  {
+    // Disable no-explicit-any for Storybook files (needed for generic component types)
+    files: ["**/*.stories.tsx", "**/*.stories.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

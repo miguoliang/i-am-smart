@@ -3,7 +3,7 @@
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 import { ProgressIndicator } from "./components/ProgressIndicator";
-import { FlipCard } from "@/components/FlipCard";
+import { FlipCard } from "@/components/container/FlipCard";
 import { CardContent } from "./components/CardContent";
 import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";

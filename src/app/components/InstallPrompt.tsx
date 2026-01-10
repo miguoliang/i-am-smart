@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/container/Card";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "更新日志",

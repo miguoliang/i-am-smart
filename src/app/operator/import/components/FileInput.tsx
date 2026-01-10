@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/form/Input";
+import { Label } from "@/components/form/Label";
 
 interface FileInputProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

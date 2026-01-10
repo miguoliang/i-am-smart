@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/container/Card";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "定价",

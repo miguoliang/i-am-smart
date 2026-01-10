@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { MacOSWindow } from "./macos-window";
-import { Button } from "./button";
+import { MacOSWindow } from "./MacOSWindow";
+import { Button } from "@/components/form/Button";
 
 const meta: Meta<typeof MacOSWindow> = {
-  title: "UI/MacOSWindow",
+  title: "Container/MacOSWindow",
   component: MacOSWindow,
   parameters: {
     layout: "centered",

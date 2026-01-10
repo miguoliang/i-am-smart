@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
 import { ConditionalFooter } from "./components/ConditionalFooter";
-import { ConditionalNavigation } from "@/components/ConditionalNavigation";
+import { ConditionalNavigation } from "@/components/navigation/ConditionalNavigation";
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
-import { SkipLink } from "@/components/SkipLink";
+import { SkipLink } from "@/components/navigation/SkipLink";
 
 export const metadata: Metadata = {
   title: "背它一辈子",

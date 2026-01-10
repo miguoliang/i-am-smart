@@ -17,7 +17,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Paginator } from "@/app/operator/import/components/Paginator";
 import { ColumnSettings } from "@/app/operator/accounts/components/ColumnSettings";
 import type { ColumnConfig } from "@/app/operator/accounts/components/ColumnSettings";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 import { RefreshCw } from "lucide-react";
 import {
   Table,
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/table/Table";
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -307,4 +307,3 @@ export const DataTable = <TData,>({
 // 导出列设置组件供外部使用
 export { ColumnSettings };
 export type { ColumnConfig };
-

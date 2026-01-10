@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/form/Button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlay/Popover";
+import { Checkbox } from "@/components/form/Checkbox";
+import { Label } from "@/components/form/Label";
 import { Settings2, ChevronDown } from "lucide-react";
 
 export interface ColumnConfig {

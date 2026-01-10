@@ -3,7 +3,7 @@ import { useState } from "react";
 import { FlipCard } from "./FlipCard";
 
 const meta: Meta<typeof FlipCard> = {
-  title: "Components/FlipCard",
+  title: "Container/FlipCard",
   component: FlipCard,
   parameters: {
     layout: "centered",

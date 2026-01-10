@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/form/Button'
 import { LogOut } from 'lucide-react'
 import { useStats } from './hooks/useStats'
 

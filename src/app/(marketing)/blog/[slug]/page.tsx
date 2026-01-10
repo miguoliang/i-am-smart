@@ -5,7 +5,7 @@ import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { generateArticleStructuredData } from "@/lib/seo/structured-data";
 import { MDXContent } from "../../components/MDXContent";
 import { getContentBySlug } from "@/lib/content/loader";
-import { StructuredData } from "@/components/StructuredData";
+import { StructuredData } from "@/components/seo/StructuredData";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;

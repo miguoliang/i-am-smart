@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { CefrKnowledgeItem } from "@/lib/api/import";
-import { DataTable, ColumnConfig } from "@/components/Table";
+import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface PreviewTableProps {

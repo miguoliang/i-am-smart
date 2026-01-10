@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 
 interface NextButtonProps {
   onClick?: () => void;

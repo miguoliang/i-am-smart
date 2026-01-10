@@ -4,14 +4,14 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeedbacks } from "@/lib/api/feedback";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
-import { DataTable, ColumnConfig } from "@/components/Table";
+import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { Paginator } from "../import/components/Paginator";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { Feedback } from "@/lib/types/feedback";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/form/Button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/overlay/Dialog";
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [

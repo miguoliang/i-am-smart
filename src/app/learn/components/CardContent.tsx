@@ -1,6 +1,6 @@
 import React from 'react';
 import { Knowledge } from '../types';
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/form/Button";
 
 interface CardContentProps {
   knowledge: Knowledge;

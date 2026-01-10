@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { MacOSWindow } from "@/components/ui/macos-window";
+import { Button } from "@/components/form/Button";
+import { Card } from "@/components/container/Card";
+import { MacOSWindow } from "@/components/container/MacOSWindow";
 import { Brain, Mic, BarChart3, Smartphone, TrendingUp, Cloud } from "lucide-react";
 
 export default function HomePage() {
