@@ -3,7 +3,8 @@
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 import { ProgressIndicator } from "./components/ProgressIndicator";
-import { StudyCard } from "./components/StudyCard";
+import { FlipCard } from "@/components/FlipCard";
+import { CardContent } from "./components/CardContent";
 import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";
 import { TopBar } from "./components/TopBar";
@@ -32,12 +33,26 @@ export default function Learn() {
 
       <ProgressIndicator reviewed={progress.reviewed} total={progress.total} />
 
-      <StudyCard
+      <FlipCard
         key={currentCard.id}
-        card={currentCard}
+        front={
+          <CardContent
+            side="front"
+            knowledge={currentCard.knowledge}
+            className="h-full w-full"
+            onSpeak={speech.speak}
+          />
+        }
+        back={
+          <CardContent
+            side="back"
+            knowledge={currentCard.knowledge}
+            className="h-full w-full"
+            onSpeak={speech.speak}
+          />
+        }
         flipped={flip.isFlipped}
         onFlip={flip.toggle}
-        onSpeak={speech.speak}
         onTouchStart={touch.handleTouchStart}
         onTouchEnd={touch.handleTouchEnd}
       />

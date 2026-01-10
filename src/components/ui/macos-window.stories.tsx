@@ -47,30 +47,12 @@ export const WithContent: Story = {
   },
 };
 
-export const WithCallbacks: Story = {
-  args: {
-    title: "Interactive Window",
-    onClose: () => alert("Close button clicked!"),
-    onMinimize: () => alert("Minimize button clicked!"),
-    onMaximize: () => alert("Maximize button clicked!"),
-    children: (
-      <div className="p-6">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Click the traffic light buttons to see the callbacks in action!
-        </p>
-        <Button onClick={() => alert("Button clicked!")}>
-          Test Button
-        </Button>
-      </div>
-    ),
-  },
-};
-
 export const CustomStyled: Story = {
   args: {
     title: "Custom Styled Window",
     className: "max-w-2xl",
-    contentClassName: "p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800",
+    contentClassName:
+      "p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800",
     children: (
       <div>
         <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -81,7 +63,15 @@ export const CustomStyled: Story = {
         </p>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            You can customize the window using the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">className</code> and <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">contentClassName</code> props.
+            You can customize the window using the{" "}
+            <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">
+              className
+            </code>{" "}
+            and{" "}
+            <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">
+              contentClassName
+            </code>{" "}
+            props.
           </p>
         </div>
       </div>
@@ -100,7 +90,8 @@ export const LongContent: Story = {
         </h3>
         {Array.from({ length: 20 }, (_, i) => (
           <p key={i} className="text-gray-600 dark:text-gray-400">
-            This is paragraph {i + 1}. The window content area is scrollable when content exceeds the available space.
+            This is paragraph {i + 1}. The window content area is scrollable when
+            content exceeds the available space.
           </p>
         ))}
       </div>

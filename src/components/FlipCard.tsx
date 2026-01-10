@@ -1,45 +1,33 @@
-import type { Card } from "../types";
-import { DynamicCard } from "./DynamicCard";
+import { useFlipCardInteractions } from "@/hooks/useFlipCardInteractions";
 import { cn } from "@/lib/utils";
 
-interface StudyCardProps {
-  card: Card;
+interface FlipCardProps {
+  front: React.ReactNode;
+  back: React.ReactNode;
   flipped: boolean;
   onFlip: () => void;
-  onSpeak: (text: string, lang: "en-US" | "en-GB") => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
 }
 
-export const StudyCard = ({
-  card,
+/**
+ * FlipCard component handles the flip animation and container structure.
+ * It doesn't care what content it displays - accepts front and back as props.
+ * Uses useFlipCardInteractions hook for interaction logic (SRP compliance).
+ * Follows Dependency Inversion Principle: depends on ReactNode abstraction, not concrete content.
+ */
+export const FlipCard = ({
+  front,
+  back,
   flipped,
   onFlip,
-  onSpeak,
   onTouchStart,
   onTouchEnd,
-}: StudyCardProps) => {
-  // Handle keyboard events to match native button semantics
-  // Per WAI-ARIA: Enter activates on keydown, Space activates on keyup
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Enter activates on keydown (matches native button behavior)
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onFlip();
-    }
-    // Space prevents scrolling on keydown, but activates on keyup
-    if (e.key === ' ') {
-      e.preventDefault(); // Prevent scrolling
-    }
-  };
-
-  const handleKeyUp = (e: React.KeyboardEvent) => {
-    // Space activates on keyup (matches native button behavior per WAI-ARIA)
-    if (e.key === ' ') {
-      e.preventDefault();
-      onFlip();
-    }
-  };
+}: FlipCardProps) => {
+  const { handleKeyDown, handleKeyUp, ariaLabel } = useFlipCardInteractions({
+    flipped,
+    onFlip,
+  });
 
   return (
     <div
@@ -51,7 +39,7 @@ export const StudyCard = ({
       onKeyUp={handleKeyUp}
       tabIndex={0}
       role="button"
-      aria-label={flipped ? "卡片显示答案。按 Enter 或 Space 键翻回问题。" : "卡片显示问题。按 Enter 或 Space 键翻转查看答案。"}
+      aria-label={ariaLabel}
     >
       <div
         className={cn(
@@ -61,26 +49,12 @@ export const StudyCard = ({
       >
         {/* Front Side */}
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden]">
-          <CardFace>
-            <DynamicCard
-              side="front"
-              knowledge={card.knowledge}
-              className="h-full w-full"
-              onSpeak={onSpeak}
-            />
-          </CardFace>
+          <CardFace>{front}</CardFace>
         </div>
 
         {/* Back Side */}
         <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <CardFace>
-            <DynamicCard
-              side="back"
-              knowledge={card.knowledge}
-              className="h-full w-full"
-              onSpeak={onSpeak}
-            />
-          </CardFace>
+          <CardFace>{back}</CardFace>
         </div>
       </div>
     </div>

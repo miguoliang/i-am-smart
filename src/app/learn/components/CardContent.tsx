@@ -2,14 +2,19 @@ import React from 'react';
 import { Knowledge } from '../types';
 import { Button } from "@/components/ui/button";
 
-interface DynamicCardProps {
+interface CardContentProps {
   knowledge: Knowledge;
   side: 'front' | 'back';
   className?: string;
   onSpeak?: (text: string, lang: "en-US" | "en-GB") => void;
 }
 
-export function DynamicCard({ knowledge, side, className, onSpeak }: DynamicCardProps) {
+/**
+ * CardContent component renders the content of a flashcard
+ * based on the side (front or back) and knowledge data.
+ * Follows Single Responsibility Principle: only responsible for content rendering.
+ */
+export function CardContent({ knowledge, side, className, onSpeak }: CardContentProps) {
   if (side === 'front') {
     return (
       <div className={`flex flex-col items-center justify-center h-full ${className || ''}`}>

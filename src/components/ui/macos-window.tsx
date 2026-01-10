@@ -1,16 +1,13 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface MacOSWindowProps {
   title?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   contentClassName?: string;
-  onClose?: () => void;
-  onMinimize?: () => void;
-  onMaximize?: () => void;
 }
 
 export function MacOSWindow({
@@ -18,9 +15,6 @@ export function MacOSWindow({
   children,
   className,
   contentClassName,
-  onClose: _onClose,
-  onMinimize: _onMinimize,
-  onMaximize: _onMaximize,
 }: MacOSWindowProps) {
   return (
     <div
