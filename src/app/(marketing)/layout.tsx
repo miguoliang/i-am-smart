@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo/structured-data";
+import { Navigation } from "./components/Navigation";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Be It Forever - 背它一辈子",
@@ -42,6 +43,7 @@ export default function MarketingLayout({
           __html: JSON.stringify(websiteData),
         }}
       />
+      <Navigation />
       {children}
     </>
   );

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSignIn } from "./hooks/useSignIn";
@@ -118,8 +119,47 @@ export default function SignIn() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 flex flex-col items-center justify-center min-h-screen">
-      <div className="max-w-md md:max-w-lg lg:max-w-xl w-full mx-auto p-5 md:p-8 lg:p-10 text-center box-border">
+    <div className="bg-white dark:bg-gray-900 min-h-screen flex flex-col">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
+              背它一辈子
+            </Link>
+            <div className="flex items-center gap-6">
+              <Link
+                href="/features"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                功能
+              </Link>
+              <Link
+                href="/docs"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                文档
+              </Link>
+              <Link
+                href="/blog"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                博客
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                关于
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Sign In Form */}
+      <div className="flex flex-col items-center justify-center flex-1">
+        <div className="max-w-md md:max-w-lg lg:max-w-xl w-full mx-auto p-5 md:p-8 lg:p-10 text-center box-border">
         <h1 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
           背它一辈子
         </h1>
@@ -223,6 +263,7 @@ export default function SignIn() {
         
         <div className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base" role="note">
           首次使用？输入邮箱即可自动创建账号
+        </div>
         </div>
       </div>
     </div>

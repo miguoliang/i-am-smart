@@ -4,8 +4,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "文档",
-  description: "Be It Forever的使用文档和API参考，帮助您快速上手和深入了解应用功能。",
-  keywords: ["文档", "使用指南", "API", "教程"],
+  description: "Be It Forever的使用文档，帮助您快速上手和深入了解应用功能。",
+  keywords: ["文档", "使用指南", "教程"],
 });
 
 export default function DocsPage() {
@@ -19,16 +19,6 @@ export default function DocsPage() {
       title: "用户指南",
       description: "学习如何使用各种功能，包括创建卡片、复习、查看统计等",
       href: "/docs/user-guide",
-    },
-    {
-      title: "管理员指南",
-      description: "了解如何管理内容、用户和系统设置",
-      href: "/docs/admin-guide",
-    },
-    {
-      title: "API参考",
-      description: "查看API文档，了解如何集成和使用API",
-      href: "/docs/api",
     },
     {
       title: "常见问题",
