@@ -1,4 +1,6 @@
 // API functions for import
+import { t } from "@/lib/i18n";
+
 export interface ImportResult {
   success: boolean;
   count?: number;
@@ -32,7 +34,7 @@ export async function importKnowledge(items: CefrKnowledgeItem[]): Promise<Impor
     const data = result.data;
     return { success: true, count: data?.count };
   } else {
-    const errorMessage = result.error?.message || result.error || "导入失败";
+    const errorMessage = result.error?.message || result.error || "Failed to import knowledge";
     throw new Error(errorMessage);
   }
 }

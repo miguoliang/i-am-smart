@@ -1,4 +1,6 @@
 // API functions for knowledge
+import { t } from "@/lib/i18n";
+
 export interface KnowledgeMetadata {
   [key: string]: unknown;
 }
@@ -35,9 +37,9 @@ export async function fetchKnowledges(params: FetchKnowledgesParams = {}): Promi
   const res = await fetch(`/api/knowledge?${searchParams.toString()}`);
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
-      throw new Error("权限不足");
+      throw new Error(t().auth.forbidden);
     }
-    throw new Error("加载失败");
+    throw new Error("Failed to load knowledge");
   }
   const json = await res.json();
   // API returns { data: { data, total, page, pageSize, totalPages } }

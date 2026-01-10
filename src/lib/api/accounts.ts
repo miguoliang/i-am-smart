@@ -1,4 +1,6 @@
 // API functions for accounts
+import { t } from "@/lib/i18n";
+
 export interface Account {
   id: string;
   username: string;
@@ -26,7 +28,7 @@ export async function fetchAccounts(
   const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.error?.message || data.error || "获取账户列表失败");
+    throw new Error(data.error?.message || data.error || "Failed to fetch accounts");
   }
   const json = await res.json();
   // API returns { data: {...} }, extract the data object
@@ -43,7 +45,7 @@ export async function distributeCards(accountId: string): Promise<{ count: numbe
 
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.error?.message || data.error || "分配卡片失败");
+    throw new Error(data.error?.message || data.error || "Failed to distribute cards");
   }
 
   const json = await res.json();
