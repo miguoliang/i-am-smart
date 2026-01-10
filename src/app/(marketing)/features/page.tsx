@@ -36,11 +36,6 @@ export default function FeaturesPage() {
       icon: "⚡",
     },
     {
-      title: "角色权限管理",
-      description: "支持学习者、操作员和管理员三种角色，满足不同用户的需求。",
-      icon: "🔐",
-    },
-    {
       title: "批量导入",
       description: "支持CSV和JSON格式的批量导入，快速创建大量学习卡片。",
       icon: "📥",

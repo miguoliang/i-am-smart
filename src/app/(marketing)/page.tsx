@@ -71,22 +71,6 @@ export default function HomePage() {
                 采用移动优先设计，使用Tailwind CSS和Radix UI构建美观界面。
               </p>
             </Card>
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
-                🔐 安全认证
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                安全的身份验证和授权系统，支持学习者、操作员和管理员角色。
-              </p>
-            </Card>
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
-                🛠️ 管理后台
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                强大的后端界面，支持内容管理、批量导入和用户管理。
-              </p>
-            </Card>
           </div>
         </div>
       </section>
