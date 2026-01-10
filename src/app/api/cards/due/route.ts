@@ -1,18 +1,12 @@
 // src/app/api/cards/due/route.ts
-import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { requireAuth } from '@/lib/middleware/auth'
 import { NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createRouteHandlerClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      throw ApiError.unauthorized('未登录')
-    }
+    const { user } = await requireAuth();
 
     // Parse optional level query parameter
     const searchParams = req.nextUrl.searchParams;

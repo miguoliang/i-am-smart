@@ -1,10 +1,11 @@
 // src/app/api/knowledge/route.ts
-import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest } from 'next/server'
 import { createKnowledgeService } from '@/lib/services/factory'
 import { ImportKnowledgeParams } from '@/lib/services/knowledgeService'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { requireOperator } from '@/lib/middleware/auth'
 import { logger } from '@/lib/utils/logger'
+import { MAX_PAGE_SIZE } from '@/lib/constants'
 
 interface CefrKnowledgeItem {
   englishWord: string;
@@ -19,30 +20,11 @@ interface CefrKnowledgeItem {
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createRouteHandlerClient()
+    const { user } = await requireOperator();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      logger.error('Knowledge GET: Authentication failed', { authError });
-      throw ApiError.unauthorized('未登录')
-    }
-
-    // Check if user is operator
-    const role = user.app_metadata?.role;
-    
-    logger.debug('Knowledge GET: Operator check', {
+    logger.debug('Knowledge GET: Operator authenticated', {
       userId: user.id,
-      role,
     });
-
-    if (role !== 'operator') {
-      logger.warn('Knowledge GET: Access denied - not an operator', {
-        userId: user.id,
-        role,
-      });
-      throw ApiError.forbidden('权限不足')
-    }
 
     // Parse query parameters
     const searchParams = req.nextUrl.searchParams;
@@ -53,8 +35,8 @@ export async function GET(req: NextRequest) {
     if (page < 1) {
       throw ApiError.validationError('Page must be greater than 0');
     }
-    if (pageSize < 1 || pageSize > 100) {
-      throw ApiError.validationError('Page size must be between 1 and 100');
+    if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+      throw ApiError.validationError(`Page size must be between 1 and ${MAX_PAGE_SIZE}`);
     }
 
     const knowledgeService = await createKnowledgeService()
@@ -129,34 +111,11 @@ export async function POST(req: NextRequest) {
       },
     }));
 
-    const supabase = await createRouteHandlerClient();
+    const { user } = await requireOperator();
 
-    // Check permissions
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      logger.error('Knowledge POST: Authentication failed', { authError });
-      throw ApiError.forbidden("Permission denied");
-    }
-
-    // Check if user is operator
-    const role = user.app_metadata?.role;
-    
-    logger.debug('Knowledge POST: Operator check', {
+    logger.debug('Knowledge POST: Operator authenticated', {
       userId: user.id,
-      role,
     });
-
-    if (role !== "operator") {
-      logger.warn('Knowledge POST: Access denied - not an operator', {
-        userId: user.id,
-        role,
-      });
-      throw ApiError.forbidden("Permission denied");
-    }
 
     const knowledgeService = await createKnowledgeService()
     const result = await knowledgeService.importKnowledge(items);

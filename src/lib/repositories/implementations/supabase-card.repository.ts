@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CardRepository, ReviewCardParams } from '../card.repository';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
+import { handleRepositoryError } from '../utils/error-handling';
 
 export class SupabaseCardRepository implements CardRepository {
   constructor(private client: SupabaseClient) {}
@@ -14,7 +15,7 @@ export class SupabaseCardRepository implements CardRepository {
       .lte('last_reviewed_at', endDate);
 
     if (error) {
-      throw new Error(`Count reviewed today error: ${error.message}`);
+      handleRepositoryError(error, 'Count reviewed today');
     }
 
     return count ?? 0;
@@ -45,7 +46,7 @@ export class SupabaseCardRepository implements CardRepository {
       `);
 
     if (error) {
-      throw new Error(`Fetch due cards error: ${error.message}`);
+      handleRepositoryError(error, 'Fetch due cards');
     }
 
     if (!data) {
@@ -166,7 +167,7 @@ export class SupabaseCardRepository implements CardRepository {
     });
 
     if (error) {
-      throw new Error(`Review card failed: ${error.message}`);
+      handleRepositoryError(error, 'Review card');
     }
   }
 }

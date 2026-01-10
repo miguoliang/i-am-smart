@@ -1,5 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { StatsRepository, UserStats, HeatmapPoint } from '../stats.repository';
+import { handleRepositoryError } from '../utils/error-handling';
+import { validateUserStats } from '../utils/validation';
 
 interface HeatmapRow {
   review_date: string;
@@ -13,9 +15,15 @@ export class SupabaseStatsRepository implements StatsRepository {
     const { data, error } = await this.supabase
       .rpc('get_user_stats', { p_user_id: userId });
 
-    if (error) throw error;
+    if (error) {
+      handleRepositoryError(error, 'Get user stats');
+    }
+
+    if (!data) {
+      throw new Error('Get user stats error: No data returned');
+    }
     
-    return data as UserStats;
+    return validateUserStats(data);
   }
 
   async getReviewHeatmap(userId: string, timezoneOffset: number): Promise<HeatmapPoint[]> {

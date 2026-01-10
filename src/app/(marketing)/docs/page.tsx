@@ -39,9 +39,9 @@ export default function DocsPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {docSections.map((section, index) => (
+            {docSections.map((section) => (
               <Link
-                key={index}
+                key={section.href}
                 href={section.href}
                 className="block p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
               >

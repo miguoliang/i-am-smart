@@ -1,15 +1,10 @@
-import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { NextRequest } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import { requireAuth } from "@/lib/middleware/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createRouteHandlerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw ApiError.unauthorized("Unauthorized");
-    }
+    const { user, supabase } = await requireAuth();
 
     const subscription = await req.json();
 

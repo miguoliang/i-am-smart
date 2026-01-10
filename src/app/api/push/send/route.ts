@@ -1,7 +1,7 @@
-import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { NextRequest } from "next/server";
 import webpush from "web-push";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import { requireAuth } from "@/lib/middleware/auth";
 
 // Initialize web-push if keys are available (avoids build errors)
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
@@ -18,12 +18,7 @@ export async function POST(req: NextRequest) {
        throw new Error("VAPID keys not configured");
     }
 
-    const supabase = await createRouteHandlerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw ApiError.unauthorized("Unauthorized");
-    }
+    const { user, supabase } = await requireAuth();
 
     const { title, body } = await req.json();
 

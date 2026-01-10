@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo/structured-data";
 import { Navigation } from "./components/Navigation";
+import { StructuredData } from "@/components/StructuredData";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Be It Forever - 背它一辈子",
@@ -31,18 +32,8 @@ export default function MarketingLayout({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(organizationData),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(websiteData),
-        }}
-      />
+      <StructuredData data={organizationData} />
+      <StructuredData data={websiteData} />
       <Navigation />
       {children}
     </>

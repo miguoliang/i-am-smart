@@ -1,7 +1,7 @@
-import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest } from 'next/server'
 import { createCardService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { requireAuth } from '@/lib/middleware/auth'
 import { MAX_QUALITY, MIN_QUALITY } from '@/lib/constants'
 
 export async function POST(
@@ -16,13 +16,8 @@ export async function POST(
       throw ApiError.validationError(`评分必须在 ${MIN_QUALITY}-${MAX_QUALITY} 之间`)
     }
 
-    const supabase = await createRouteHandlerClient()
+    const { user } = await requireAuth();
     const { id } = await params
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw ApiError.unauthorized('未登录')
-    }
 
     const cardId = parseInt(id, 10)
     if (isNaN(cardId)) {

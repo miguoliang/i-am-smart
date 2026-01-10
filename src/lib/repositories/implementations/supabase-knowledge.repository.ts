@@ -1,6 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { KnowledgeRepository, PaginationParams, PaginatedResult } from '../knowledge.repository';
 import { KnowledgeItem, ImportKnowledgeParams } from '@/lib/services/knowledgeService';
+import { DEFAULT_KNOWLEDGE_LIMIT } from '@/lib/constants';
+import { handleRepositoryError } from '../utils/error-handling';
 
 export class SupabaseKnowledgeRepository implements KnowledgeRepository {
   constructor(private client: SupabaseClient) {}
@@ -10,13 +12,13 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       .from('knowledge')
       .select('code, name, description, metadata, created_at, updated_at')
       .order('created_at', { ascending: false })
-      .limit(1000); // Keep limit for backward compatibility
+      .limit(DEFAULT_KNOWLEDGE_LIMIT);
 
     if (error) {
-      throw new Error(`Fetch knowledge error: ${error.message}`);
+      handleRepositoryError(error, 'Fetch knowledge');
     }
 
-    return data as KnowledgeItem[];
+    return (data as KnowledgeItem[]) || [];
   }
 
   async getPaginated(params: PaginationParams): Promise<PaginatedResult<KnowledgeItem>> {
@@ -30,7 +32,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       .select('*', { count: 'exact', head: true });
 
     if (countError) {
-      throw new Error(`Fetch knowledge count error: ${countError.message}`);
+      handleRepositoryError(countError, 'Fetch knowledge count');
     }
 
     const total = count || 0;
@@ -44,7 +46,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       .range(from, to);
 
     if (error) {
-      throw new Error(`Fetch knowledge error: ${error.message}`);
+      handleRepositoryError(error, 'Fetch paginated knowledge');
     }
 
     return {
@@ -66,7 +68,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       .select("code");
 
     if (error) {
-      throw new Error(`Import error: ${error.message}`);
+      handleRepositoryError(error, 'Import knowledge');
     }
 
     const count = inserted?.length || 0;

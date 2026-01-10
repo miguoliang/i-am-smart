@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Feedback, FeedbackRepository } from '../feedback.repository';
+import { handleRepositoryError } from '../utils/error-handling';
 
 export class SupabaseFeedbackRepository implements FeedbackRepository {
   constructor(private client: SupabaseClient) {}
@@ -15,11 +16,11 @@ export class SupabaseFeedbackRepository implements FeedbackRepository {
       .range(from, to);
 
     if (error) {
-      throw error;
+      handleRepositoryError(error, 'Get feedbacks');
     }
 
     return {
-      data: data as Feedback[],
+      data: (data as Feedback[]) || [],
       total: count || 0,
     };
   }
