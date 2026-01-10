@@ -1,5 +1,4 @@
 import { Feedback } from "@/lib/types/feedback";
-import { t } from "@/lib/i18n";
 
 export interface FeedbacksResponse {
   data: Feedback[];

@@ -1,6 +1,4 @@
 // API functions for accounts
-import { t } from "@/lib/i18n";
-
 export interface Account {
   id: string;
   username: string;

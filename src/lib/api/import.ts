@@ -1,6 +1,4 @@
 // API functions for import
-import { t } from "@/lib/i18n";
-
 export interface ImportResult {
   success: boolean;
   count?: number;
