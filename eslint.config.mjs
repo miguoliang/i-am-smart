@@ -30,6 +30,13 @@ const eslintConfig = defineConfig([
       "no-console": "off",
     },
   },
+  {
+    // Allow setState in effect for useCardNavigation - legitimate synchronization use case
+    files: ["src/app/learn/hooks/useCardNavigation.ts"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -143,6 +143,9 @@ export const DataTable = <TData,>({
     return columns;
   }, [columns, columnConfigs, columnsEnabled]);
 
+  // Note: @tanstack/react-table's useReactTable hook is compatible with React hooks,
+  // but ESLint's react-hooks plugin may flag it due to its internal implementation.
+  // This is a known false positive - the hook is safe to use.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,

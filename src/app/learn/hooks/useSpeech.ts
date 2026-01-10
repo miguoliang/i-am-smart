@@ -1,10 +1,4 @@
-import { useEffect, useCallback } from "react";
-
-declare global {
-  interface Window {
-    speak: (text: string, lang: "en-US" | "en-GB") => void;
-  }
-}
+import { useCallback } from "react";
 
 export function useSpeech() {
   const speak = useCallback((text: string, lang: "en-US" | "en-GB" = "en-US") => {
@@ -16,14 +10,6 @@ export function useSpeech() {
       window.speechSynthesis.speak(utter);
     }
   }, []);
-
-  useEffect(() => {
-    window.speak = speak;
-    return () => {
-      // @ts-expect-error cleanup global function
-      delete window.speak;
-    };
-  }, [speak]);
 
   return { speak };
 }

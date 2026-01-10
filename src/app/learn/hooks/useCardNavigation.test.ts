@@ -28,23 +28,13 @@ describe('useCardNavigation', () => {
       { id: 3, reviewed: false } as Card,
     ];
 
-    jest.useFakeTimers();
     const { result } = renderHook(({ cards }) => useCardNavigation(cards), {
       initialProps: { cards: cardsWithReviewed },
     });
 
-    // Should start at 0 but effect will fire
-    expect(result.current.currentIndex).toBe(0);
-
-    // Fast-forward effect
-    act(() => {
-      jest.runAllTimers();
-    });
-
+    // useLayoutEffect runs synchronously, so it should immediately advance to the next unreviewed card
     expect(result.current.currentIndex).toBe(1);
     expect(result.current.currentCard?.id).toBe(2);
-    
-    jest.useRealTimers();
   });
 
   it('should wrap around to find unreviewed card', () => {
@@ -75,7 +65,6 @@ describe('useCardNavigation', () => {
         { id: 2, reviewed: false } as Card,
     ];
 
-    jest.useFakeTimers();
     const { result, rerender } = renderHook(({ cards }) => useCardNavigation(cards), {
         initialProps: { cards: initialCards }
     });
@@ -90,13 +79,8 @@ describe('useCardNavigation', () => {
 
     rerender({ cards: updatedCards });
 
-    act(() => {
-        jest.runAllTimers();
-    });
-
+    // useLayoutEffect runs synchronously, so it should immediately advance
     expect(result.current.currentIndex).toBe(1);
     expect(result.current.currentCard?.id).toBe(2);
-
-    jest.useRealTimers();
   });
 });

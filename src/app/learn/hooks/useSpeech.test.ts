@@ -26,17 +26,17 @@ describe('useSpeech', () => {
     jest.clearAllMocks();
   });
 
-  it('should attach speak function to window on mount', () => {
-    renderHook(() => useSpeech());
-    expect(window.speak).toBeDefined();
-    expect(typeof window.speak).toBe('function');
+  it('should return speak function', () => {
+    const { result } = renderHook(() => useSpeech());
+    expect(result.current.speak).toBeDefined();
+    expect(typeof result.current.speak).toBe('function');
   });
 
-  it('should call speechSynthesis.speak when window.speak is called', () => {
-    renderHook(() => useSpeech());
+  it('should call speechSynthesis.speak when speak is called', () => {
+    const { result } = renderHook(() => useSpeech());
     
     act(() => {
-      window.speak('Hello', 'en-US');
+      result.current.speak('Hello', 'en-US');
     });
 
     expect(mockCancel).toHaveBeenCalled();
@@ -44,9 +44,15 @@ describe('useSpeech', () => {
     expect(mockSpeak).toHaveBeenCalled();
   });
 
-  it('should cleanup window.speak on unmount', () => {
-    const { unmount } = renderHook(() => useSpeech());
-    unmount();
-    expect(window.speak).toBeUndefined();
+  it('should handle default language parameter', () => {
+    const { result } = renderHook(() => useSpeech());
+    
+    act(() => {
+      result.current.speak('Hello');
+    });
+
+    expect(global.SpeechSynthesisUtterance).toHaveBeenCalledWith('Hello');
+    const utterance = (global.SpeechSynthesisUtterance as jest.Mock).mock.results[0].value;
+    expect(utterance.lang).toBe('en-US');
   });
 });

@@ -1,7 +1,7 @@
 // src/app/page.tsx - Sign In Page
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSignIn } from "./hooks/useSignIn";
@@ -24,9 +24,6 @@ export default function SignIn() {
     handleResendOtp,
   } = useSignIn();
 
-  // Email validation error state
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const validationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce email for validation
   const debouncedEmail = useDebounce(email, 500);
@@ -40,39 +37,14 @@ export default function SignIn() {
   );
 
   // Validate email on debounced change
-  useEffect(() => {
-    if (validationTimerRef.current) {
-      clearTimeout(validationTimerRef.current);
-    }
-    
-    if (debouncedEmail && debouncedEmail.length > 0) {
-      validationTimerRef.current = setTimeout(() => {
-        if (!isValidEmail(debouncedEmail)) {
-          setEmailError("邮箱格式不正确");
-        } else {
-          setEmailError(null);
-        }
-      }, 0);
-    } else {
-      setEmailError(null);
-    }
-    
-    return () => {
-      if (validationTimerRef.current) {
-        clearTimeout(validationTimerRef.current);
-      }
-    };
-  }, [debouncedEmail]);
+  // Using derived state pattern to avoid setState in effect warning
+  const emailError = debouncedEmail && debouncedEmail.length > 0 && !isValidEmail(debouncedEmail)
+    ? "邮箱格式不正确"
+    : null;
 
   // Handle email change
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEmail(value);
-    
-    // Clear error immediately if empty
-    if (!value) {
-      setEmailError(null);
-    }
+    setEmail(e.target.value);
   };
 
   // Start countdown when OTP is sent
@@ -83,16 +55,11 @@ export default function SignIn() {
   }, [otpSent, countdownActive, resetCountdown]);
 
   // Auto-focus OTP input when OTP is sent
-  useEffect(() => {
-    if (otpSent) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        otpInputRef.current?.focus();
-      }, 50);
-      return () => clearTimeout(timer);
+  useLayoutEffect(() => {
+    if (otpSent && otpInputRef.current) {
+      otpInputRef.current.focus();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otpSent]);
+  }, [otpSent, otpInputRef]);
 
 
   // Handle Enter key for email input
@@ -117,39 +84,29 @@ export default function SignIn() {
     const pastedText = e.clipboardData.getData("text");
     // Sanitize: remove all non-digit characters and take first 6 digits
     const sanitized = pastedText.replace(/\D/g, "").slice(0, 6);
-    const previousLength = otp.length;
     setOtp(sanitized);
-    
-    // Auto-submit if exactly 6 digits after paste
-    if (sanitized.length === 6 && previousLength !== 6 && otpSent && !loading && !autoSubmitRef.current) {
-      autoSubmitRef.current = true;
-      // Use setTimeout to defer the call after state update
-      setTimeout(() => {
-        handleVerifyOtp();
-      }, 0);
-    }
   };
 
-  // Handle OTP input change - only allow digits and auto-submit on 6 digits
+  // Handle OTP input change - only allow digits
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow digits, max 6 characters
     const sanitized = value.replace(/\D/g, "").slice(0, 6);
-    const previousLength = otp.length;
     setOtp(sanitized);
     
-    // Auto-submit when reaching exactly 6 digits
-    if (sanitized.length === 6 && previousLength !== 6 && otpSent && !loading && !autoSubmitRef.current) {
-      autoSubmitRef.current = true;
-      // Use setTimeout to defer the call after state update
-      setTimeout(() => {
-        handleVerifyOtp();
-      }, 0);
-    } else if (sanitized.length !== 6) {
-      // Reset ref when OTP length changes away from 6
+    // Reset ref when OTP length changes away from 6
+    if (sanitized.length !== 6) {
       autoSubmitRef.current = false;
     }
   };
+
+  // Auto-submit when OTP reaches 6 digits
+  useEffect(() => {
+    if (otp.length === 6 && otpSent && !loading && !autoSubmitRef.current) {
+      autoSubmitRef.current = true;
+      handleVerifyOtp();
+    }
+  }, [otp.length, otpSent, loading, autoSubmitRef, handleVerifyOtp]);
 
   // Handle resend with countdown
   const handleResendClick = () => {

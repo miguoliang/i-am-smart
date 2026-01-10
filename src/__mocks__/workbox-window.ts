@@ -1,6 +1,6 @@
 // Mock for workbox-window
 export class Workbox {
-  private eventListeners: Map<string, Function[]> = new Map();
+  private eventListeners: Map<string, ((...args: unknown[]) => void)[]> = new Map();
   public register: jest.Mock;
   public addEventListener: jest.Mock;
   public removeEventListener: jest.Mock;
@@ -13,14 +13,14 @@ export class Workbox {
       installing: null,
     });
     
-    this.addEventListener = jest.fn((event: string, handler: Function) => {
+    this.addEventListener = jest.fn((event: string, handler: (...args: unknown[]) => void) => {
       if (!this.eventListeners.has(event)) {
         this.eventListeners.set(event, []);
       }
       this.eventListeners.get(event)!.push(handler);
     });
     
-    this.removeEventListener = jest.fn((event: string, handler: Function) => {
+    this.removeEventListener = jest.fn((event: string, handler: (...args: unknown[]) => void) => {
       const listeners = this.eventListeners.get(event);
       if (listeners) {
         const index = listeners.indexOf(handler);
@@ -34,7 +34,7 @@ export class Workbox {
   }
 
   // Helper method for tests to trigger events
-  trigger(event: string, ...args: any[]) {
+  trigger(event: string, ...args: unknown[]) {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(handler => handler(...args));

@@ -1,13 +1,16 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCards } from './useCards';
 import { Card } from '../types';
+import type { DueCardsResponse } from '@/lib/api/cards';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type { Level } from './useLevel';
 
 // Mock the dependencies with variables that can be updated
-let mockDueCardsQueryReturn: any = {
-  data: null,
+let mockDueCardsQueryReturn: Partial<UseQueryResult<DueCardsResponse, Error>> = {
+  data: undefined,
   isLoading: true,
 };
-let mockLevelReturn: any = { level: 'A1' };
+let mockLevelReturn: { level: Level } = { level: 'A1' };
 
 jest.mock('./useDueCardsQuery', () => ({
   useDueCardsQuery: jest.fn(() => mockDueCardsQueryReturn),
@@ -19,8 +22,20 @@ jest.mock('./useLevel', () => ({
 
 describe('useCards', () => {
   const mockCards: Card[] = [
-    { id: 1, front: 'Card 1', back: 'Answer 1', reviewed: false },
-    { id: 2, front: 'Card 2', back: 'Answer 2', reviewed: false },
+    { 
+      id: 1, 
+      knowledge_code: 'test1',
+      knowledge: { code: 'test1', name: 'Test 1', description: 'Test knowledge 1', metadata: {} },
+      next_review_date: '2024-01-01',
+      reviewed: false 
+    },
+    { 
+      id: 2, 
+      knowledge_code: 'test2',
+      knowledge: { code: 'test2', name: 'Test 2', description: 'Test knowledge 2', metadata: {} },
+      next_review_date: '2024-01-02',
+      reviewed: false 
+    },
   ];
 
   beforeEach(() => {
@@ -28,7 +43,7 @@ describe('useCards', () => {
     // Default mocks - level must be set first
     mockLevelReturn = { level: 'A1' };
     mockDueCardsQueryReturn = {
-      data: null,
+      data: undefined,
       isLoading: true,
     };
   });
@@ -116,7 +131,7 @@ describe('useCards', () => {
   describe('Edge Cases', () => {
     it('should handle loading state changes', () => {
       mockDueCardsQueryReturn = {
-        data: null,
+        data: undefined,
         isLoading: true,
       };
 
@@ -125,7 +140,7 @@ describe('useCards', () => {
       expect(result.current.loading).toBe(true);
 
       mockDueCardsQueryReturn = {
-        data: null,
+        data: undefined,
         isLoading: false,
       };
       rerender();

@@ -3,7 +3,7 @@ import { StatsRepository, UserStats, HeatmapPoint } from '../stats.repository';
 
 interface HeatmapRow {
   review_date: string;
-  review_count: number;
+  review_count: string; // Postgres bigint returns as string
 }
 
 export class SupabaseStatsRepository implements StatsRepository {
@@ -27,10 +27,33 @@ export class SupabaseStatsRepository implements StatsRepository {
 
     if (error) throw error;
     
-    // Postgres returns count as string (bigint), need to convert
-    return (data as unknown as HeatmapRow[] || []).map((row) => ({
-      date: row.review_date,
-      count: Number(row.review_count)
-    }));
+    if (!data) {
+      return [];
+    }
+
+    if (!Array.isArray(data)) {
+      throw new Error('Expected array from get_review_heatmap RPC');
+    }
+
+    // Postgres returns count as string (bigint), validate and convert
+    return data.map((row: HeatmapRow) => {
+      if (!row.review_date || typeof row.review_date !== 'string') {
+        throw new Error(`Invalid heatmap row: missing or invalid review_date`);
+      }
+
+      if (typeof row.review_count !== 'string') {
+        throw new Error(`Invalid heatmap row: review_count must be a string`);
+      }
+
+      const count = parseInt(row.review_count, 10);
+      if (isNaN(count) || count < 0) {
+        throw new Error(`Invalid heatmap row: invalid review_count value: ${row.review_count}`);
+      }
+
+      return {
+        date: row.review_date,
+        count,
+      };
+    });
   }
 }

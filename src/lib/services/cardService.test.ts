@@ -6,18 +6,18 @@ describe('CardService', () => {
   let cardRepository: jest.Mocked<CardRepository>;
   let cardService: CardService;
 
-  const mockCard = {
+  // Helper function to create properly typed mock cards
+  const createMockCard = (overrides?: Partial<Card>): Card => ({
     id: 1,
     knowledge_code: 'k1',
     knowledge: { code: 'k1', name: 'n', description: 'd', metadata: {} },
     next_review_date: '2023-01-01',
-    // Optional fields that might be returned by getCardById
-    account_id: 'user-123',
     ease_factor: 2.5,
     repetitions: 0,
     interval_days: 0,
     last_reviewed_at: '2023-01-01T00:00:00Z', // Old date
-  };
+    ...overrides,
+  });
 
   beforeEach(() => {
     // Create a mock repository with jest functions
@@ -39,8 +39,8 @@ describe('CardService', () => {
       expect(count).toBe(5);
       expect(cardRepository.getReviewedTodayCount).toHaveBeenCalledWith(
         'user-123', 
-        expect.any(String), 
-        expect.any(String)
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/), // ISO date format
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)  // ISO date format
       );
     });
   });
@@ -48,7 +48,8 @@ describe('CardService', () => {
   describe('reviewCard', () => {
     it('should successfully review a card', async () => {
       // Setup
-      cardRepository.getCardById.mockResolvedValue(mockCard as unknown as Card);
+      const mockCard = createMockCard();
+      cardRepository.getCardById.mockResolvedValue(mockCard);
       cardRepository.getReviewedTodayCount.mockResolvedValue(0);
       cardRepository.reviewCard.mockResolvedValue();
 
@@ -67,7 +68,8 @@ describe('CardService', () => {
     });
 
     it('should throw ApiError if daily limit is exceeded', async () => {
-       cardRepository.getCardById.mockResolvedValue(mockCard as unknown as Card);
+       const mockCard = createMockCard();
+       cardRepository.getCardById.mockResolvedValue(mockCard);
        cardRepository.getReviewedTodayCount.mockResolvedValue(10); // Limit reached
 
        await expect(
@@ -76,12 +78,11 @@ describe('CardService', () => {
     });
 
     it('should NOT check daily limit if card was already reviewed today', async () => {
-        const todayCard = {
-            ...mockCard,
-            last_reviewed_at: new Date().toISOString() // Reviewed just now
-        };
+        const todayCard = createMockCard({
+          last_reviewed_at: new Date().toISOString() // Reviewed just now
+        });
         
-        cardRepository.getCardById.mockResolvedValue(todayCard as unknown as Card);
+        cardRepository.getCardById.mockResolvedValue(todayCard);
         cardRepository.reviewCard.mockResolvedValue();
         
         await cardService.reviewCard('user-123', 1, 4);
@@ -112,8 +113,9 @@ describe('CardService', () => {
       });
 
       it('should fetch due cards with remaining limit', async () => {
+          const mockCard = createMockCard();
           cardRepository.getReviewedTodayCount.mockResolvedValue(5);
-          cardRepository.getDueCards.mockResolvedValue([mockCard as unknown as Card]);
+          cardRepository.getDueCards.mockResolvedValue([mockCard]);
 
           const result = await cardService.getDueCards('user-123');
 
@@ -124,8 +126,9 @@ describe('CardService', () => {
       });
 
       it('should fetch due cards with level filter', async () => {
+          const mockCard = createMockCard();
           cardRepository.getReviewedTodayCount.mockResolvedValue(5);
-          cardRepository.getDueCards.mockResolvedValue([mockCard as unknown as Card]);
+          cardRepository.getDueCards.mockResolvedValue([mockCard]);
 
           const result = await cardService.getDueCards('user-123', 'A1');
 

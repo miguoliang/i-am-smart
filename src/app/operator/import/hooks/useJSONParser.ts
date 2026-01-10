@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CefrKnowledgeItem } from "@/lib/api/import";
 
 export interface JSONData {
@@ -9,6 +9,7 @@ export function useJSONParser() {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<JSONData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -58,8 +59,9 @@ export function useJSONParser() {
     setFile(null);
     setPreviewData(null);
     setError(null);
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) fileInput.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return {
@@ -68,6 +70,7 @@ export function useJSONParser() {
     error,
     handleFileChange,
     reset,
+    fileInputRef,
   };
 }
 

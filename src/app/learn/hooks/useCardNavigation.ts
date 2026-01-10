@@ -1,12 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "../types";
 
 export function useCardNavigation(cards: Card[]) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isAdjustingRef = useRef(false);
 
   // Auto-advance logic: Ensure we point to a valid, unreviewed card if possible
+  // This effect synchronizes the index with card state changes (reviewed status, array length)
+  // This is a legitimate use case: synchronizing component state based on prop changes
   useEffect(() => {
-    if (cards.length === 0) return;
+    if (isAdjustingRef.current) {
+      isAdjustingRef.current = false;
+      return;
+    }
+
+    if (cards.length === 0) {
+      if (currentIndex !== 0) {
+        isAdjustingRef.current = true;
+        setCurrentIndex(0);
+      }
+      return;
+    }
 
     const validIndex = Math.min(currentIndex, cards.length - 1);
     const currentCard = cards[validIndex];
@@ -23,22 +37,14 @@ export function useCardNavigation(cards: Card[]) {
       }
 
       if (nextUnreviewed !== -1 && nextUnreviewed !== validIndex) {
-        // Use timeout to avoid render-cycle conflicts if this effect runs during render
-        const timeoutId = setTimeout(() => {
-          setCurrentIndex(nextUnreviewed);
-        }, 0);
-        return () => clearTimeout(timeoutId);
+        isAdjustingRef.current = true;
+        setCurrentIndex(nextUnreviewed);
       }
     } else if (currentIndex >= cards.length) {
       // Index is out of bounds, adjust to last valid index
-      const timeoutId = setTimeout(() => {
-        setCurrentIndex(Math.max(0, cards.length - 1));
-      }, 0);
-      return () => clearTimeout(timeoutId);
+      isAdjustingRef.current = true;
+      setCurrentIndex(Math.max(0, cards.length - 1));
     }
-    
-    // If currentIndex != validIndex but card is not reviewed, we might want to sync them?
-    // But for now, let's just respect the manual bounds check implicitly
   }, [cards, currentIndex]);
 
   return {

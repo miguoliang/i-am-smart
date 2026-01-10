@@ -9,7 +9,7 @@ import { saveJSONData } from "./utils/jsonStorage";
 export default function ImportLibrary() {
   useOperatorAuth();
 
-  const { file, previewData, error, handleFileChange } = useJSONParser();
+  const { file, previewData, error, handleFileChange, fileInputRef } = useJSONParser();
 
   const handleNext = () => {
     if (previewData && file) {
@@ -29,6 +29,7 @@ export default function ImportLibrary() {
       </div>
 
       <FileInput
+        ref={fileInputRef}
         onFileChange={handleFileChange}
         fileName={file?.name || null}
         recordCount={previewData?.items.length || null}

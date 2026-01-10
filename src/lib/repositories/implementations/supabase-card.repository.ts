@@ -2,23 +2,6 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { CardRepository, ReviewCardParams } from '../card.repository';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
 
-interface RawCardData {
-  id: number;
-  knowledge_code: string;
-  card_type_code: string;
-  ease_factor: number;
-  interval_days: number;
-  repetitions: number;
-  next_review_date: string;
-  last_reviewed_at: string | null;
-  knowledge: {
-    code: string;
-    name: string;
-    description: string;
-    metadata: KnowledgeMetadata;
-  };
-}
-
 export class SupabaseCardRepository implements CardRepository {
   constructor(private client: SupabaseClient) {}
 
@@ -65,9 +48,52 @@ export class SupabaseCardRepository implements CardRepository {
       throw new Error(`Fetch due cards error: ${error.message}`);
     }
 
-    const cards = (data as unknown as RawCardData[]).map((card) => ({
-      ...card,
-    }));
+    if (!data) {
+      return [];
+    }
+
+    if (!Array.isArray(data)) {
+      throw new Error('Expected array from get_due_cards RPC');
+    }
+
+    // Validate and transform data properly
+    const cards: Card[] = data.map((card: unknown) => {
+      // Type guard to validate card structure
+      if (!card || typeof card !== 'object') {
+        throw new Error(`Invalid card data: not an object`);
+      }
+
+      const cardData = card as Record<string, unknown>;
+
+      // Validate required fields
+      if (!cardData.id || !cardData.knowledge_code || !cardData.next_review_date) {
+        throw new Error(`Invalid card data: missing required fields`);
+      }
+
+      // Handle knowledge - Supabase returns it as an object (not array) with !inner
+      const knowledgeData = cardData.knowledge;
+      if (!knowledgeData || typeof knowledgeData !== 'object' || Array.isArray(knowledgeData)) {
+        throw new Error(`Invalid card data: missing or invalid knowledge object`);
+      }
+
+      const knowledge = knowledgeData as Record<string, unknown>;
+
+      return {
+        id: cardData.id as number,
+        knowledge_code: cardData.knowledge_code as string,
+        knowledge: {
+          code: knowledge.code as string,
+          name: knowledge.name as string,
+          description: knowledge.description as string,
+          metadata: (knowledge.metadata || {}) as KnowledgeMetadata,
+        },
+        next_review_date: cardData.next_review_date as string,
+        last_reviewed_at: (cardData.last_reviewed_at ?? undefined) as string | undefined,
+        ease_factor: (cardData.ease_factor ?? undefined) as number | undefined,
+        interval_days: (cardData.interval_days ?? undefined) as number | undefined,
+        repetitions: (cardData.repetitions ?? undefined) as number | undefined,
+      };
+    });
 
     return cards;
   }
@@ -75,7 +101,21 @@ export class SupabaseCardRepository implements CardRepository {
   async getCardById(cardId: number, userId: string): Promise<Card | null> {
     const { data, error } = await this.client
       .from('account_cards')
-      .select('*')
+      .select(`
+        id,
+        knowledge_code,
+        ease_factor,
+        interval_days,
+        repetitions,
+        next_review_date,
+        last_reviewed_at,
+        knowledge (
+          code,
+          name,
+          description,
+          metadata
+        )
+      `)
       .eq('id', cardId)
       .eq('account_id', userId)
       .single();
@@ -84,14 +124,34 @@ export class SupabaseCardRepository implements CardRepository {
       return null;
     }
 
-    // Note: This returns the raw DB shape, but the Card interface is used in the app.
-    // The current service code also fetches 'account_cards' and casts it.
-    // However, 'account_cards' table structure might not perfectly match 'Card' interface 
-    // which includes 'knowledge' object if we don't join. 
-    // The 'reviewCard' method in service fetches specific card without joining knowledge.
-    // The 'getDueCards' fetches WITH knowledge.
-    // For `getCardById`, the service mainly used it to check existence and review data.
-    return data as unknown as Card;
+    // Validate required fields
+    if (!data.id || !data.knowledge_code || !data.next_review_date) {
+      throw new Error(`Invalid card data from database: missing required fields`);
+    }
+
+    // Validate knowledge object - Supabase returns it as an object (not array) with single()
+    const knowledgeData = data.knowledge;
+    if (!knowledgeData || typeof knowledgeData !== 'object' || Array.isArray(knowledgeData)) {
+      throw new Error(`Invalid card data: missing or invalid knowledge object`);
+    }
+
+    const knowledge = knowledgeData as Record<string, unknown>;
+
+    return {
+      id: data.id as number,
+      knowledge_code: data.knowledge_code as string,
+      knowledge: {
+        code: knowledge.code as string,
+        name: knowledge.name as string,
+        description: knowledge.description as string,
+        metadata: (knowledge.metadata || {}) as KnowledgeMetadata,
+      },
+      next_review_date: data.next_review_date as string,
+      last_reviewed_at: (data.last_reviewed_at ?? undefined) as string | undefined,
+      ease_factor: (data.ease_factor ?? undefined) as number | undefined,
+      interval_days: (data.interval_days ?? undefined) as number | undefined,
+      repetitions: (data.repetitions ?? undefined) as number | undefined,
+    };
   }
 
   async reviewCard(params: ReviewCardParams): Promise<void> {
