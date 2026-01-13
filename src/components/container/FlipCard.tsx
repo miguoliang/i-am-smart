@@ -31,7 +31,7 @@ export const FlipCard = ({
 
   return (
     <div
-      className="group w-full max-w-2xl [perspective:1000px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-3xl"
+      className="group w-full max-w-2xl perspective-[1000px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-3xl"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onClick={onFlip}
@@ -43,17 +43,17 @@ export const FlipCard = ({
     >
       <div
         className={cn(
-          "relative grid transition-all duration-500 [transform-style:preserve-3d]",
-          flipped ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
+          "relative grid transition-all duration-500 transform-3d",
+          flipped ? "transform-[rotateY(180deg)]" : "transform-[rotateY(0deg)]"
         )}
       >
         {/* Front Side */}
-        <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden]">
+        <div className="col-start-1 row-start-1 h-full w-full backface-hidden">
           <CardFace>{front}</CardFace>
         </div>
 
         {/* Back Side */}
-        <div className="col-start-1 row-start-1 h-full w-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
+        <div className="col-start-1 row-start-1 h-full w-full backface-hidden transform-[rotateY(180deg)]">
           <CardFace>{back}</CardFace>
         </div>
       </div>

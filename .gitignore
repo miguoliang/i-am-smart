@@ -54,3 +54,4 @@ public/sw 2.js
 
 *storybook.log
 storybook-static
+.aider*
