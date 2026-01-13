@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/form/Button";
 import { Card } from "@/components/container/Card";
+import { Desktop } from "@/components/container/Desktop";
 import { MacOSWindow } from "@/components/container/MacOSWindow";
+import { IPhoneFrame } from "@/components/container/IPhoneFrame";
 import { Brain, Mic, BarChart3, Smartphone, TrendingUp, Cloud } from "lucide-react";
 
 export default function HomePage() {
@@ -27,21 +29,35 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right: MacOSWindow */}
+          {/* Right: Desktop with MacOSWindow and IPhoneFrame */}
           <div className="w-full lg:w-[70%] flex items-center justify-center overflow-hidden">
-            <div className="w-full scale-75">
+            <Desktop className="h-[500px]">
               <MacOSWindow
                 title="卡片复习"
-                className="w-full"
+                className="w-[600px] h-[400px]"
+                defaultPosition={{ x: 50, y: 50 }}
                 contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
               >
-                <div className="min-h-[400px] flex items-center justify-center">
+                <div className="min-h-full flex items-center justify-center">
                   <p className="text-gray-500 dark:text-gray-400 text-center">
                     卡片复习界面预览
                   </p>
                 </div>
               </MacOSWindow>
-            </div>
+              <IPhoneFrame
+                className="scale-75"
+                defaultPosition={{ x: 400, y: 100 }}
+              >
+                <div className="p-4 space-y-4">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    移动学习
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    随时随地学习
+                  </p>
+                </div>
+              </IPhoneFrame>
+            </Desktop>
           </div>
         </div>
       </section>

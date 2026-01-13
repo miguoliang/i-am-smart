@@ -135,16 +135,19 @@ export function Desktop({ children, className, background }: DesktopProps) {
         [windowId]: maxZIndexRef.current,
       }));
 
-      // Store the position at drag start
-      setDragStartPositions((prev) => {
-        const currentPosition = windowPositions[windowId];
+      // Store the position at drag start - always use current position from state
+      setWindowPositions((currentPositions) => {
+        const currentPosition = currentPositions[windowId];
         if (currentPosition) {
-          return { ...prev, [windowId]: currentPosition };
+          setDragStartPositions((prev) => ({
+            ...prev,
+            [windowId]: currentPosition,
+          }));
         }
-        return prev;
+        return currentPositions;
       });
     },
-    [windowPositions]
+    []
   );
 
   const handleWindowFocus = useCallback((windowId: string) => {
@@ -160,11 +163,12 @@ export function Desktop({ children, className, background }: DesktopProps) {
       const { active, delta } = event;
       const windowId = active.id as string;
 
-      if (delta) {
+      if (delta && (delta.x !== 0 || delta.y !== 0)) {
         // Get the position at drag start (this is the position before transform was applied)
-        const startPosition = dragStartPositions[windowId] || windowPositions[windowId];
-
+        const startPosition = dragStartPositions[windowId];
+        
         if (startPosition) {
+          // Calculate new position based on start position and delta
           const newPosition = {
             x: Math.max(0, startPosition.x + delta.x),
             y: Math.max(0, startPosition.y + delta.y),
@@ -174,6 +178,20 @@ export function Desktop({ children, className, background }: DesktopProps) {
             ...prev,
             [windowId]: newPosition,
           }));
+        } else {
+          // Fallback: use current position if start position wasn't stored
+          const currentPosition = windowPositions[windowId];
+          if (currentPosition) {
+            const newPosition = {
+              x: Math.max(0, currentPosition.x + delta.x),
+              y: Math.max(0, currentPosition.y + delta.y),
+            };
+
+            setWindowPositions((prev) => ({
+              ...prev,
+              [windowId]: newPosition,
+            }));
+          }
         }
 
         // Clear the drag start position
