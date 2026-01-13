@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { DndContext, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -39,15 +39,12 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
   };
 
   // Handle click to bring window to front
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      // Only bring to front if clicking on the window itself, not if it's a drag
-      if (!isDragging) {
-        onFocus();
-      }
-    },
-    [onFocus, isDragging]
-  );
+  const handleClick = useCallback(() => {
+    // Only bring to front if clicking on the window itself, not if it's a drag
+    if (!isDragging) {
+      onFocus();
+    }
+  }, [onFocus, isDragging]);
 
   // Handle mouse down to bring window to front immediately
   const handleMouseDown = useCallback(
@@ -121,7 +118,7 @@ export function Desktop({ children, className, background }: DesktopProps) {
   }, [children]);
   
   const [windowZIndices, setWindowZIndices] = useState<Record<string, number>>(initialZIndices);
-  const [maxZIndex, setMaxZIndex] = useState(React.Children.count(children));
+  const maxZIndexRef = useRef(React.Children.count(children));
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: "desktop",
@@ -132,14 +129,11 @@ export function Desktop({ children, className, background }: DesktopProps) {
       const windowId = event.active.id as string;
 
       // Bring window to front when dragging starts
-      setMaxZIndex((prev) => {
-        const newZIndex = prev + 1;
-        setWindowZIndices((zIndices) => ({
-          ...zIndices,
-          [windowId]: newZIndex,
-        }));
-        return newZIndex;
-      });
+      maxZIndexRef.current += 1;
+      setWindowZIndices((zIndices) => ({
+        ...zIndices,
+        [windowId]: maxZIndexRef.current,
+      }));
 
       // Store the position at drag start
       setDragStartPositions((prev) => {
@@ -154,14 +148,11 @@ export function Desktop({ children, className, background }: DesktopProps) {
   );
 
   const handleWindowFocus = useCallback((windowId: string) => {
-    setMaxZIndex((prev) => {
-      const newZIndex = prev + 1;
-      setWindowZIndices((zIndices) => ({
-        ...zIndices,
-        [windowId]: newZIndex,
-      }));
-      return newZIndex;
-    });
+    maxZIndexRef.current += 1;
+    setWindowZIndices((zIndices) => ({
+      ...zIndices,
+      [windowId]: maxZIndexRef.current,
+    }));
   }, []);
 
   const handleDragEnd = useCallback(
