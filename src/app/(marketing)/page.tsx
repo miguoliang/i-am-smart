@@ -8,70 +8,46 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-gray-900 dark:text-white">
-            掌握知识的最佳方式
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8">
-            基于科学验证的间隔重复算法，让学习更高效、记忆更持久
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signin">
-              <Button size="lg" className="text-lg px-8 py-6 w-full sm:w-auto">
-                开始学习
-              </Button>
-            </Link>
-            <Link href="/signin">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 w-full sm:w-auto">
-                下载应用
-              </Button>
-            </Link>
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+        <div className="flex flex-col lg:flex-row gap-12 items-center">
+          {/* Left: Text Content */}
+          <div className="w-full lg:w-[30%]">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
+              掌握知识的最佳方式
+            </h1>
+            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 mb-6">
+              基于科学验证的间隔重复算法，让学习更高效、记忆更持久
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/signin">
+                <Button size="lg" className="text-lg px-8 py-6 w-full sm:w-auto">
+                  开始学习
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right: MacOSWindow */}
+          <div className="w-full lg:w-[70%] flex items-center justify-center overflow-hidden">
+            <div className="w-full scale-75">
+              <MacOSWindow
+                title="卡片复习"
+                className="w-full"
+                contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
+              >
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400 text-center">
+                    卡片复习界面预览
+                  </p>
+                </div>
+              </MacOSWindow>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Interactive Demo Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
-        <div className="max-w-6xl mx-auto">
-          <MacOSWindow
-            title="卡片复习"
-            className="w-full"
-            contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
-          >
-            <div className="space-y-6">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
-                  智能间隔重复系统
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  让您高效掌握每个知识点
-                </p>
-              </div>
-              <div className="grid md:grid-cols-3 gap-4 mt-8">
-                <Card className="p-4 text-center">
-                  <div className="text-3xl mb-2">📚</div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">新卡片</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">开始学习</p>
-                </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-3xl mb-2">🔄</div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">复习中</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">巩固记忆</p>
-                </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-3xl mb-2">✅</div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">已掌握</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">长期记忆</p>
-                </Card>
-              </div>
-            </div>
-          </MacOSWindow>
-        </div>
-      </section>
-
       {/* Smart Review Feature */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col lg:flex-row gap-12 items-center">
           {/* Content */}
           <div className="flex-1">
@@ -116,7 +92,7 @@ export default function HomePage() {
       </section>
 
       {/* Text-to-Speech Feature */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col lg:flex-row-reverse gap-12 items-center">
           {/* Content */}
           <div className="flex-1">
@@ -161,7 +137,7 @@ export default function HomePage() {
       </section>
 
       {/* Visual Statistics Feature */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col lg:flex-row gap-12 items-center">
           {/* Content */}
           <div className="flex-1">
@@ -206,7 +182,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20 bg-gray-50 dark:bg-gray-900/50">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-gray-900 dark:text-white">
             每天被数千学习者信赖使用
@@ -259,7 +235,7 @@ export default function HomePage() {
       </section>
 
       {/* Additional Features Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-gray-900 dark:text-white">
             强大而灵活
@@ -303,7 +279,7 @@ export default function HomePage() {
       </section>
 
       {/* Changelog Preview Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
             更新日志
@@ -320,7 +296,7 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20 bg-gray-50 dark:bg-gray-900/50">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
             立即开始学习

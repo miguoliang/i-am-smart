@@ -1,30 +1,59 @@
 "use client";
 
 import type { ReactNode } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
+
+interface WindowPosition {
+  x: number;
+  y: number;
+}
 
 interface MacOSWindowProps {
   title?: string;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  style?: React.CSSProperties;
+  defaultPosition?: WindowPosition;
+  "data-dragging"?: boolean;
+  dragAttributes?: Record<string, unknown>;
+  dragListeners?: Record<string, unknown>;
 }
 
-export function MacOSWindow({
-  title = "Window",
-  children,
-  className,
-  contentClassName,
-}: MacOSWindowProps) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col rounded-2xl bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.48)] overflow-hidden border border-gray-200/50 dark:border-gray-700/50",
-        className
-      )}
-    >
-      {/* Title Bar - macOS Sequoia Style */}
-      <div className="flex items-center justify-between px-4 h-11 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 rounded-t-2xl">
+export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
+  function MacOSWindow(
+    {
+      title = "Window",
+      children,
+      className,
+      contentClassName,
+      style,
+      "data-dragging": isDragging,
+      dragAttributes,
+      dragListeners,
+    },
+    ref
+  ) {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "flex flex-col rounded-2xl bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.48)] overflow-hidden border border-gray-200/50 dark:border-gray-700/50",
+          className
+        )}
+        style={style}
+      >
+        {/* Title Bar - macOS Sequoia Style */}
+        <div
+          data-drag-handle
+          {...dragListeners}
+          {...dragAttributes}
+          className={cn(
+            "flex items-center justify-between px-4 h-11 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 rounded-t-2xl",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          )}
+        >
         {/* Traffic Light Buttons - macOS Sequoia Style (Monochrome, Non-interactive) */}
         <div className="flex items-center gap-2.5">
           <div
@@ -50,17 +79,18 @@ export function MacOSWindow({
 
         {/* Spacer to balance the layout */}
         <div className="w-[76px]" />
-      </div>
+        </div>
 
-      {/* Content Area */}
-      <div
-        className={cn(
-          "flex-1 overflow-auto bg-white dark:bg-gray-800 rounded-b-2xl",
-          contentClassName
-        )}
-      >
-        {children}
+        {/* Content Area */}
+        <div
+          className={cn(
+            "flex-1 overflow-auto bg-white dark:bg-gray-800 rounded-b-2xl",
+            contentClassName
+          )}
+        >
+          {children}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
