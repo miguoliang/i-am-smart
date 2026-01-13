@@ -3,11 +3,7 @@
 import type { ReactNode } from "react";
 import React from "react";
 import { cn } from "@/lib/utils";
-
-interface WindowPosition {
-  x: number;
-  y: number;
-}
+import type { WindowPosition } from "./types";
 
 interface IPhoneFrameProps {
   children: ReactNode;
@@ -45,6 +41,9 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
           className
         )}
         style={style}
+        role="application"
+        aria-label="iPhone frame"
+        tabIndex={0}
         {...dragListeners}
         {...dragAttributes}
       >

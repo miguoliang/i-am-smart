@@ -3,11 +3,7 @@
 import type { ReactNode } from "react";
 import React from "react";
 import { cn } from "@/lib/utils";
-
-interface WindowPosition {
-  x: number;
-  y: number;
-}
+import type { WindowPosition } from "./types";
 
 interface MacOSWindowProps {
   title?: string;
