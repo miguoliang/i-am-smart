@@ -15,6 +15,8 @@ interface MacOSWindowProps {
   "data-dragging"?: boolean;
   dragAttributes?: Record<string, unknown>;
   dragListeners?: Record<string, unknown>;
+  onClick?: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
@@ -28,6 +30,8 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
+      onClick,
+      onMouseDown,
     },
     ref
   ) {
@@ -39,6 +43,8 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
           className
         )}
         style={style}
+        onClick={onClick}
+        onMouseDown={onMouseDown}
       >
         {/* Title Bar - macOS Sequoia Style */}
         <div

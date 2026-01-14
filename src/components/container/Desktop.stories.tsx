@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Desktop } from "./Desktop";
 import { MacOSWindow } from "./MacOSWindow";
+import { IPhoneFrame } from "./IPhoneFrame";
 
 const meta: Meta<typeof Desktop> = {
   title: "Container/Desktop",
@@ -57,6 +58,37 @@ export const SingleWindow: Story = {
           </p>
         </div>
       </MacOSWindow>
+    </Desktop>
+  ),
+};
+
+export const WithIPhoneFrame: Story = {
+  render: () => (
+    <Desktop className="h-screen">
+      <MacOSWindow
+        title="Desktop App"
+        className="w-[600px] h-[400px]"
+        defaultPosition={{ x: 50, y: 50 }}
+        contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
+      >
+        <div className="min-h-full flex items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400 text-center">
+            桌面应用界面
+          </p>
+        </div>
+      </MacOSWindow>
+      <IPhoneFrame
+        defaultPosition={{ x: 500, y: 100 }}
+      >
+        <div className="p-4 space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            移动学习
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            随时随地学习
+          </p>
+        </div>
+      </IPhoneFrame>
     </Desktop>
   ),
 };
