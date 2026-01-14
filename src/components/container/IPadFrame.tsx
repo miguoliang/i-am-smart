@@ -5,7 +5,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
 
-interface IPadFrameProps {
+interface IPadFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "style" | "className"> {
   children: ReactNode;
   className?: string;
   variant?: "light" | "dark";
@@ -25,9 +25,11 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
       variant = "light",
       orientation = "portrait",
       style,
+      defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
+      ...props
     },
     ref
   ) {
@@ -54,6 +56,7 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
         tabIndex={0}
         {...dragListeners}
         {...dragAttributes}
+        {...props}
       >
         {/* Screen */}
         <div className="relative w-full h-full rounded-3xl overflow-hidden bg-white dark:bg-gray-950">

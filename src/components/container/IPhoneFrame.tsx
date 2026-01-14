@@ -5,7 +5,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
 
-interface IPhoneFrameProps {
+interface IPhoneFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "style" | "className"> {
   children: ReactNode;
   className?: string;
   variant?: "light" | "dark";
@@ -23,9 +23,11 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
       className,
       variant = "light",
       style,
+      defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
+      ...props
     },
     ref
   ) {
@@ -46,6 +48,7 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
         tabIndex={0}
         {...dragListeners}
         {...dragAttributes}
+        {...props}
       >
       {/* Screen */}
       <div className="relative w-full h-full rounded-[3rem] overflow-hidden bg-white dark:bg-gray-950">

@@ -4,6 +4,7 @@ import { Card } from "@/components/container/Card";
 import { Desktop } from "@/components/container/Desktop";
 import { MacOSWindow } from "@/components/container/MacOSWindow";
 import { IPhoneFrame } from "@/components/container/IPhoneFrame";
+import { IPadFrame } from "@/components/container/IPadFrame";
 import { Brain, Mic, BarChart3, Smartphone, TrendingUp, Cloud } from "lucide-react";
 
 export default function HomePage() {
@@ -26,9 +27,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Desktop with MacOSWindow and IPhoneFrame */}
+          {/* Desktop with MacOSWindow, IPhoneFrame, and IPadFrame */}
           <div className="w-full flex items-center justify-center overflow-hidden">
-            <Desktop className="h-[500px] w-full">
+            <Desktop className="h-[800px] w-full">
               <MacOSWindow
                 title="卡片复习"
                 className="w-[600px] h-[400px]"
@@ -53,6 +54,19 @@ export default function HomePage() {
                   </p>
                 </div>
               </IPhoneFrame>
+              <IPadFrame
+                orientation="landscape"
+                defaultPosition={{ x: 200, y: 200 }}
+              >
+                <div className="p-6 space-y-4">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    平板学习
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    大屏体验，更舒适的学习
+                  </p>
+                </div>
+              </IPadFrame>
             </Desktop>
           </div>
         </div>

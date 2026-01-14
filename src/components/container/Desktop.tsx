@@ -28,13 +28,49 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
     id,
   });
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
+  // Get child's style to extract scale
+  const childStyle = React.isValidElement(children)
+    ? ((children.props as DraggableChildProps)?.style || {})
+    : {};
+  
+  const childTransform = childStyle.transform as string | undefined;
+
+  // Combine transforms: translate first (drag), then child transforms (e.g. scale)
+  // We apply drag translation first so that it operates in the parent's coordinate system (screen coordinates),
+  // ensuring the window moves 1:1 with the mouse cursor regardless of any scaling applied by the child.
+  const combinedTransform = React.useMemo(() => {
+    const transforms: string[] = [];
+    
+    // Always add translate transform from drag (even if null/zero, @dnd-kit needs it for real-time updates)
+    const translateStr = CSS.Translate.toString(transform);
+    if (translateStr) {
+      transforms.push(translateStr);
+    }
+    
+    // Add child transform (e.g. scale) AFTER translate
+    if (childTransform) {
+      transforms.push(childTransform);
+    }
+    
+    return transforms.length > 0 ? transforms.join(" ") : undefined;
+  }, [transform, childTransform]);
+
+  const style: React.CSSProperties = {
     left: `${position.x}px`,
     top: `${position.y}px`,
     position: "absolute" as const,
     zIndex,
   };
+
+  // Only add transform if it exists
+  if (combinedTransform) {
+    style.transform = combinedTransform;
+  }
+  
+  // Add transformOrigin if scale exists
+  if (childTransform) {
+    style.transformOrigin = childStyle.transformOrigin || "top left";
+  }
 
   // Handle click to bring window to front
   const handleClick = useCallback(() => {
@@ -74,13 +110,22 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
   );
 
   // Clone the child and pass drag props
+  // Remove transform from child style since we're merging it with drag transform
+  const childStyleWithoutTransform = React.isValidElement(children)
+    ? (() => {
+        const originalStyle = (children.props as DraggableChildProps)?.style || {};
+        const { transform: _, transformOrigin: __, ...rest } = originalStyle;
+        return rest;
+      })()
+    : {};
+
   const childWithDrag = React.isValidElement(children)
     ? React.cloneElement(
         children as React.ReactElement<DraggableChildProps>,
         {
           ref: setNodeRef,
           style: {
-            ...((children.props as DraggableChildProps)?.style || {}),
+            ...childStyleWithoutTransform,
             ...style,
           },
           "data-dragging": isDragging,
