@@ -1,18 +1,12 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
 import createMDX from "@next/mdx";
-import remarkGfm from "remark-gfm";
-import rehypePrettyCode from "rehype-pretty-code";
 
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-});
-
+// Use string references for plugins to ensure serializable options
 const withMDX = createMDX({
   options: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [rehypePrettyCode],
+    remarkPlugins: ["remark-gfm"],
+    rehypePlugins: ["rehype-pretty-code"],
   },
 });
 
@@ -28,4 +22,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(withMDX(nextConfig));
+// Conditionally apply Serwist only if not disabled
+const isSWDisabled = process.env.DISABLE_SW === "true";
+
+export default isSWDisabled
+  ? withMDX(nextConfig)
+  : withSerwistInit({
+      swSrc: "src/app/sw.ts",
+      swDest: "public/sw.js",
+    })(withMDX(nextConfig));

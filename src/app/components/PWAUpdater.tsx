@@ -10,6 +10,11 @@ export function PWAUpdater() {
   const controllingHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    // Disable service worker if DISABLE_SW environment variable is set
+    if (process.env.NEXT_PUBLIC_DISABLE_SW === "true") {
+      return;
+    }
+
     if (
       typeof window !== "undefined" &&
       "serviceWorker" in navigator

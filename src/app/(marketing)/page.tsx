@@ -10,16 +10,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <div className="flex flex-col lg:flex-row gap-12 items-center">
-          {/* Left: Text Content */}
-          <div className="w-full lg:w-[30%]">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
-              掌握知识的最佳方式
+      <section className="max-w-7xl mx-auto px-4 pt-16 md:pt-24 pb-8 md:pb-12">
+        <div className="flex flex-col gap-12 items-center">
+          {/* Text Content */}
+          <div className="w-full">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-normal mb-6 text-gray-900 dark:text-white">
+              让学习像呼吸一样轻松且可持续。
             </h1>
-            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 mb-6">
-              基于科学验证的间隔重复算法，让学习更高效、记忆更持久
-            </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/signin">
                 <Button size="lg" className="text-lg px-8 py-6 w-full sm:w-auto">
@@ -29,9 +26,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right: Desktop with MacOSWindow and IPhoneFrame */}
-          <div className="w-full lg:w-[70%] flex items-center justify-center overflow-hidden">
-            <Desktop className="h-[500px]">
+          {/* Desktop with MacOSWindow and IPhoneFrame */}
+          <div className="w-full flex items-center justify-center overflow-hidden">
+            <Desktop className="h-[500px] w-full">
               <MacOSWindow
                 title="卡片复习"
                 className="w-[600px] h-[400px]"
@@ -198,7 +195,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-gray-900/50">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-black/50">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-gray-900 dark:text-white">
             每天被数千学习者信赖使用
@@ -312,7 +309,7 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-gray-900/50">
+      <section className="max-w-7xl mx-auto px-4 py-8 md:py-12 bg-gray-50 dark:bg-black/50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
             立即开始学习
