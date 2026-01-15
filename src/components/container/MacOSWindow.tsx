@@ -33,7 +33,7 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
       scale = 1,
       width,
       height,
-      defaultPosition, // Destructure to remove from rest props
+      defaultPosition: _defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
@@ -56,9 +56,12 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
 
       // Merge transform with existing transform (e.g. from drag)
       // Apply scale last to ensure translation happens in unscaled coordinates
-      const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
-      baseStyle.transform = `${existingTransform}scale(${scale})`;
-      baseStyle.transformOrigin = "top left";
+      // Only add scale transform if it's not 1 (to avoid hydration mismatch)
+      if (scale !== 1) {
+        const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
+        baseStyle.transform = `${existingTransform}scale(${scale})`;
+        baseStyle.transformOrigin = "top left";
+      }
 
       return baseStyle;
     }, [scale, style, width, height]);

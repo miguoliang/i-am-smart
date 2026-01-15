@@ -114,8 +114,12 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
   const childStyleWithoutTransform = React.isValidElement(children)
     ? (() => {
         const originalStyle = (children.props as DraggableChildProps)?.style || {};
-        const { transform: _, transformOrigin: __, ...rest } = originalStyle;
-        return rest;
+        // Filter out transform and transformOrigin properties
+        return Object.fromEntries(
+          Object.entries(originalStyle).filter(
+            ([key]) => key !== "transform" && key !== "transformOrigin"
+          )
+        ) as React.CSSProperties;
       })()
     : {};
 
@@ -138,7 +142,8 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
           onClick: handleClick,
           onMouseDown: handleMouseDown,
           onKeyDown: handleKeyDown,
-        } as Partial<DraggableChildProps> & { ref: typeof setNodeRef; "aria-label": string; "aria-describedby": string; role: string; tabIndex: number }
+          suppressHydrationWarning: true, // Suppress hydration warning for @dnd-kit dynamic attributes
+        } as Partial<DraggableChildProps> & { ref: typeof setNodeRef; "aria-label": string; "aria-describedby": string; role: string; tabIndex: number; suppressHydrationWarning?: boolean }
       )
     : children;
 
@@ -205,6 +210,7 @@ export function Desktop({ children, className, background }: DesktopProps) {
         style={background ? { background } : undefined}
         role="application"
         aria-label="Desktop workspace with draggable windows"
+        suppressHydrationWarning
       >
         {childrenWithDrag}
       </div>
