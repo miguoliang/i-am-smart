@@ -175,7 +175,7 @@ describe("useDesktopDrag", () => {
       expect(result.current.windowPositions["window-0"]).toEqual(initialPosition);
     });
 
-    it("should prevent negative positions", () => {
+    it("should allow negative positions", () => {
       const children = (
         <MacOSWindow title="Window 1" defaultPosition={{ x: 10, y: 10 }}>
           Content
@@ -206,7 +206,8 @@ describe("useDesktopDrag", () => {
         result.current.handleDragEnd(endEvent);
       });
 
-      expect(result.current.windowPositions["window-0"]).toEqual({ x: 0, y: 0 });
+      // Allow negative positions so windows can be moved outside visible area
+      expect(result.current.windowPositions["window-0"]).toEqual({ x: -40, y: -40 });
     });
 
     it("should clear drag start position after drag ends", () => {

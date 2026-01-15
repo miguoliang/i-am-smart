@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import React, { useCallback, useMemo } from "react";
 import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/form/Button";
 import type { WindowPosition, DraggableChildProps } from "./types";
 import { useDesktopDrag } from "./hooks/useDesktopDrag";
 import { useWindowZIndex } from "./hooks/useWindowZIndex";
@@ -170,7 +172,7 @@ export function Desktop({ children, className, background }: DesktopProps) {
     [bringToFront]
   );
 
-  const { windowPositions, handleDragStart, handleDragEnd } = useDesktopDrag({
+  const { windowPositions, handleDragStart, handleDragEnd, resetPositions } = useDesktopDrag({
     children,
     onWindowFocus: handleWindowFocus,
   });
@@ -220,6 +222,17 @@ export function Desktop({ children, className, background }: DesktopProps) {
         suppressHydrationWarning
       >
         {childrenWithDrag}
+        {/* Reset button in bottom right corner */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={resetPositions}
+          className="absolute bottom-4 right-4 z-50 shadow-lg"
+          aria-label="Reset window positions"
+          title="Reset window positions"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
     </DndContext>
   );

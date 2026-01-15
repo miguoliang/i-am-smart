@@ -14,6 +14,8 @@ interface UseDesktopDragReturn {
   dragStartPositions: Record<string, WindowPosition>;
   handleDragStart: (event: DragStartEvent) => void;
   handleDragEnd: (event: DragEndEvent) => void;
+  resetPositions: () => void;
+  initialPositions: Record<string, WindowPosition>;
 }
 
 export function useDesktopDrag({
@@ -76,9 +78,10 @@ export function useDesktopDrag({
 
         if (startPosition) {
           // Calculate new position based on start position and delta
+          // Allow negative positions so windows can be moved outside visible area
           const newPosition = {
-            x: Math.max(0, startPosition.x + delta.x),
-            y: Math.max(0, startPosition.y + delta.y),
+            x: startPosition.x + delta.x,
+            y: startPosition.y + delta.y,
           };
 
           setWindowPositions((prev) => ({
@@ -90,9 +93,10 @@ export function useDesktopDrag({
           setWindowPositions((currentPositions) => {
             const currentPosition = currentPositions[windowId];
             if (currentPosition) {
+              // Allow negative positions so windows can be moved outside visible area
               const newPosition = {
-                x: Math.max(0, currentPosition.x + delta.x),
-                y: Math.max(0, currentPosition.y + delta.y),
+                x: currentPosition.x + delta.x,
+                y: currentPosition.y + delta.y,
               };
 
               return {
@@ -115,10 +119,17 @@ export function useDesktopDrag({
     [dragStartPositions]
   );
 
+  const resetPositions = useCallback(() => {
+    setWindowPositions(initialPositions);
+    setDragStartPositions({});
+  }, [initialPositions]);
+
   return {
     windowPositions,
     dragStartPositions,
     handleDragStart,
     handleDragEnd,
+    resetPositions,
+    initialPositions,
   };
 }
