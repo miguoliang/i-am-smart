@@ -9,7 +9,7 @@ import type { WindowPosition, DraggableChildProps } from "./types";
 import { useDesktopDrag } from "./hooks/useDesktopDrag";
 import { useWindowZIndex } from "./hooks/useWindowZIndex";
 
-interface DesktopProps {
+export interface DesktopProps {
   children: ReactNode;
   className?: string;
   background?: string;
@@ -24,6 +24,7 @@ interface DraggableWindowProps {
 }
 
 function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableWindowProps) {
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id,
   });
@@ -123,6 +124,19 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
       })()
     : {};
 
+  const clientOnlyProps = {
+    "data-dragging": isDragging,
+    "aria-label": `Draggable window ${id}`,
+    "aria-describedby": `${id}-description`,
+    role: "application",
+    tabIndex: 0,
+    dragAttributes: attributes,
+    dragListeners: listeners,
+    onClick: handleClick,
+    onMouseDown: handleMouseDown,
+    onKeyDown: handleKeyDown,
+  };
+
   const childWithDrag = React.isValidElement(children)
     ? React.cloneElement(
         children as React.ReactElement<DraggableChildProps>,
@@ -132,18 +146,8 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
             ...childStyleWithoutTransform,
             ...style,
           },
-          "data-dragging": isDragging,
-          "aria-label": `Draggable window ${id}`,
-          "aria-describedby": `${id}-description`,
-          role: "application",
-          tabIndex: 0,
-          dragAttributes: attributes,
-          dragListeners: listeners,
-          onClick: handleClick,
-          onMouseDown: handleMouseDown,
-          onKeyDown: handleKeyDown,
-          suppressHydrationWarning: true, // Suppress hydration warning for @dnd-kit dynamic attributes
-        } as Partial<DraggableChildProps> & { ref: typeof setNodeRef; "aria-label": string; "aria-describedby": string; role: string; tabIndex: number; suppressHydrationWarning?: boolean }
+          ...clientOnlyProps,
+        }
       )
     : children;
 
@@ -151,6 +155,7 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
 }
 
 export function Desktop({ children, className, background }: DesktopProps) {
+
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: "desktop",
   });
@@ -171,14 +176,11 @@ export function Desktop({ children, className, background }: DesktopProps) {
   });
 
   // Clone children and wrap them in DraggableWindow
-  // Memoize to avoid re-processing children on every render
-  // Only recompute when children, positions, or z-indices change
   const childrenWithDrag = useMemo(() => {
     return React.Children.map(children, (child, index) => {
       if (React.isValidElement(child)) {
         const windowId = `window-${index}`;
         const currentPosition = windowPositions[windowId];
-        // Default z-index is based on index, but can be overridden by windowZIndices
         const zIndex = getZIndex(windowId, index + 1);
 
         return (
@@ -196,16 +198,21 @@ export function Desktop({ children, className, background }: DesktopProps) {
       return child;
     });
   }, [children, windowPositions, getZIndex, handleWindowFocus]);
+  
+  const containerClassName = cn(
+    "relative w-full h-full min-h-[600px] overflow-hidden",
+    !background && "bg-linear-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800",
+    className
+  );
 
+  // Render the full interactive component only on the client.
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div
         ref={setDroppableRef}
         className={cn(
-          "relative w-full h-full min-h-[600px] overflow-hidden",
-          !background && "bg-linear-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800",
-          isOver && "ring-2 ring-blue-400 ring-offset-2",
-          className
+          containerClassName,
+          isOver && "ring-2 ring-blue-400 ring-offset-2"
         )}
         style={background ? { background } : undefined}
         role="application"

@@ -33,7 +33,6 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
       scale = 1,
       width,
       height,
-      defaultPosition: _defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,

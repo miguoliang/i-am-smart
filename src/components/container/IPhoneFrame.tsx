@@ -23,7 +23,6 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
       className,
       variant = "light",
       style,
-      defaultPosition: _defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,

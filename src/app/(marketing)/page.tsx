@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/form/Button";
 import { Card } from "@/components/container/Card";
-import { Desktop } from "@/components/container/Desktop";
 import { MacOSWindow } from "@/components/container/MacOSWindow";
 import { IPhoneFrame } from "@/components/container/IPhoneFrame";
 import { IPadFrame } from "@/components/container/IPadFrame";
 import { Brain, Mic, BarChart3, Smartphone, TrendingUp, Cloud } from "lucide-react";
+import { DesktopWrapper } from "@/components/container/DesktopWrapper";
 
 export default function HomePage() {
   return (
@@ -29,10 +29,12 @@ export default function HomePage() {
 
           {/* Desktop with MacOSWindow, IPhoneFrame, and IPadFrame */}
           <div className="w-full flex items-center justify-center overflow-hidden">
-            <Desktop className="h-[800px] w-full">
+            <DesktopWrapper className="h-[800px] w-full">
               <MacOSWindow
                 title="卡片复习"
-                className="w-[600px] h-[400px]"
+                width={600}
+                height={400}
+                scale={0.75}
                 defaultPosition={{ x: 50, y: 50 }}
                 contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
               >
@@ -67,7 +69,7 @@ export default function HomePage() {
                   </p>
                 </div>
               </IPadFrame>
-            </Desktop>
+            </DesktopWrapper>
           </div>
         </div>
       </section>

@@ -25,7 +25,6 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
       variant = "light",
       orientation = "portrait",
       style,
-      defaultPosition: _defaultPosition, // Destructure to remove from rest props
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
