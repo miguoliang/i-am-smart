@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React from "react";
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
 
@@ -11,6 +11,7 @@ interface IPadFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "sty
   variant?: "light" | "dark";
   orientation?: "portrait" | "landscape";
   defaultPosition?: WindowPosition;
+  scale?: number;
   style?: React.CSSProperties;
   "data-dragging"?: boolean;
   dragAttributes?: Record<string, unknown>;
@@ -24,6 +25,7 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
       className,
       variant = "light",
       orientation = "portrait",
+      scale = 1,
       style,
       "data-dragging": isDragging,
       dragAttributes,
@@ -37,6 +39,21 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
       ? "w-[1024px] h-[768px]"
       : "w-[768px] h-[1024px]";
 
+    const scaledStyle = useMemo(() => {
+      const baseStyle: React.CSSProperties = { ...style };
+
+      // Merge transform with existing transform (e.g. from drag)
+      // Apply scale last to ensure translation happens in unscaled coordinates
+      // Only add scale transform if it's not 1 (to avoid hydration mismatch)
+      if (scale !== 1) {
+        const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
+        baseStyle.transform = `${existingTransform}scale(${scale})`;
+        baseStyle.transformOrigin = "top left";
+      }
+
+      return baseStyle;
+    }, [scale, style]);
+
     return (
       <div
         ref={ref}
@@ -49,7 +66,7 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
           isDragging && "cursor-grabbing",
           className
         )}
-        style={style}
+        style={scaledStyle}
         role="application"
         aria-label={`iPad frame in ${orientation} orientation`}
         tabIndex={0}

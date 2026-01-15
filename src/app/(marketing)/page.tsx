@@ -45,6 +45,7 @@ export default function HomePage() {
                 </div>
               </MacOSWindow>
               <IPhoneFrame
+                scale={0.75}
                 defaultPosition={{ x: 400, y: 100 }}
               >
                 <div className="p-4 space-y-4">
@@ -58,6 +59,7 @@ export default function HomePage() {
               </IPhoneFrame>
               <IPadFrame
                 orientation="landscape"
+                scale={0.75}
                 defaultPosition={{ x: 200, y: 200 }}
               >
                 <div className="p-6 space-y-4">

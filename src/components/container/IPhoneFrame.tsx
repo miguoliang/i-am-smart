@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React from "react";
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
 
@@ -10,6 +10,7 @@ interface IPhoneFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "s
   className?: string;
   variant?: "light" | "dark";
   defaultPosition?: WindowPosition;
+  scale?: number;
   style?: React.CSSProperties;
   "data-dragging"?: boolean;
   dragAttributes?: Record<string, unknown>;
@@ -22,6 +23,7 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
       children,
       className,
       variant = "light",
+      scale = 1,
       style,
       "data-dragging": isDragging,
       dragAttributes,
@@ -30,6 +32,21 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
     },
     ref
   ) {
+    const scaledStyle = useMemo(() => {
+      const baseStyle: React.CSSProperties = { ...style };
+
+      // Merge transform with existing transform (e.g. from drag)
+      // Apply scale last to ensure translation happens in unscaled coordinates
+      // Only add scale transform if it's not 1 (to avoid hydration mismatch)
+      if (scale !== 1) {
+        const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
+        baseStyle.transform = `${existingTransform}scale(${scale})`;
+        baseStyle.transformOrigin = "top left";
+      }
+
+      return baseStyle;
+    }, [scale, style]);
+
     return (
       <div
         ref={ref}
@@ -41,7 +58,7 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
           isDragging && "cursor-grabbing",
           className
         )}
-        style={style}
+        style={scaledStyle}
         role="application"
         aria-label="iPhone frame"
         tabIndex={0}
