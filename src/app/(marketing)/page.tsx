@@ -29,11 +29,14 @@ export default function HomePage() {
 
           {/* Desktop with MacOSWindow, IPhoneFrame, and IPadFrame */}
           <div className="w-full flex items-center justify-center overflow-hidden">
-            <DesktopWrapper className="h-[800px] w-full">
+            <DesktopWrapper 
+              className="h-[800px] w-full"
+              background="url('/homepage-section-1.webp') center / cover no-repeat"
+            >
               <MacOSWindow
                 title="卡片复习"
-                width={600}
-                height={400}
+                width={1100}
+                height={800}
                 scale={0.75}
                 defaultPosition={{ x: 50, y: 50 }}
                 contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
@@ -44,23 +47,10 @@ export default function HomePage() {
                   </p>
                 </div>
               </MacOSWindow>
-              <IPhoneFrame
-                scale={0.75}
-                defaultPosition={{ x: 400, y: 100 }}
-              >
-                <div className="p-4 space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    移动学习
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    随时随地学习
-                  </p>
-                </div>
-              </IPhoneFrame>
               <IPadFrame
                 orientation="landscape"
                 scale={0.75}
-                defaultPosition={{ x: 200, y: 200 }}
+                defaultPosition={{ x: 600, y: 150 }}
               >
                 <div className="p-6 space-y-4">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -71,6 +61,19 @@ export default function HomePage() {
                   </p>
                 </div>
               </IPadFrame>
+              <IPhoneFrame
+                scale={0.75}
+                defaultPosition={{ x: 900, y: 300 }}
+              >
+                <div className="p-4 space-y-4">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    移动学习
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    随时随地学习
+                  </p>
+                </div>
+              </IPhoneFrame>
             </DesktopWrapper>
           </div>
         </div>

@@ -72,3 +72,63 @@ export const WithCard: Story = {
     </IPhoneFrame>
   ),
 };
+
+export const ScaleSmall: Story = {
+  render: () => (
+    <IPhoneFrame scale={0.25}>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Small Scale (0.25)
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          iPhone frame scaled to 25% of its original size.
+        </p>
+      </div>
+    </IPhoneFrame>
+  ),
+};
+
+export const ScaleMedium: Story = {
+  render: () => (
+    <IPhoneFrame scale={0.5}>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Medium Scale (0.5)
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          iPhone frame scaled to 50% of its original size.
+        </p>
+      </div>
+    </IPhoneFrame>
+  ),
+};
+
+export const ScaleLarge: Story = {
+  render: () => (
+    <IPhoneFrame scale={0.75}>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Large Scale (0.75)
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          iPhone frame scaled to 75% of its original size.
+        </p>
+      </div>
+    </IPhoneFrame>
+  ),
+};
+
+export const ScaleExtraLarge: Story = {
+  render: () => (
+    <IPhoneFrame scale={1.25}>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Extra Large Scale (1.25)
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          iPhone frame scaled to 125% of its original size.
+        </p>
+      </div>
+    </IPhoneFrame>
+  ),
+};

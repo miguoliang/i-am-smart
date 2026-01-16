@@ -117,3 +117,51 @@ export const DarkMode: Story = {
     ),
   },
 };
+
+export const ScaleSmall: Story = {
+  args: {
+    title: "Small Scale (0.5)",
+    width: 600,
+    height: 400,
+    scale: 0.5,
+    children: (
+      <div className="p-6">
+        <p className="text-gray-700 dark:text-gray-300">
+          This window is scaled to 50% of its original size.
+        </p>
+      </div>
+    ),
+  },
+};
+
+export const ScaleMedium: Story = {
+  args: {
+    title: "Medium Scale (0.75)",
+    width: 600,
+    height: 400,
+    scale: 0.75,
+    children: (
+      <div className="p-6">
+        <p className="text-gray-700 dark:text-gray-300">
+          This window is scaled to 75% of its original size.
+        </p>
+      </div>
+    ),
+  },
+};
+
+export const ScaleLarge: Story = {
+  args: {
+    title: "Large Scale (1.25)",
+    width: 600,
+    height: 400,
+    scale: 1.25,
+    children: (
+      <div className="p-6">
+        <p className="text-gray-700 dark:text-gray-300">
+          This window is scaled to 125% of its original size.
+        </p>
+      </div>
+    ),
+  },
+};

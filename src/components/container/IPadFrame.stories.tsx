@@ -93,3 +93,63 @@ export const Landscape: Story = {
     </IPadFrame>
   ),
 };
+
+export const ScaleSmall: Story = {
+  render: () => (
+    <IPadFrame scale={0.25}>
+      <div className="p-8 space-y-6">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          Small Scale (0.25)
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          iPad frame scaled to 25% of its original size.
+        </p>
+      </div>
+    </IPadFrame>
+  ),
+};
+
+export const ScaleMedium: Story = {
+  render: () => (
+    <IPadFrame scale={0.5}>
+      <div className="p-8 space-y-6">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          Medium Scale (0.5)
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          iPad frame scaled to 50% of its original size.
+        </p>
+      </div>
+    </IPadFrame>
+  ),
+};
+
+export const ScaleLarge: Story = {
+  render: () => (
+    <IPadFrame scale={0.75}>
+      <div className="p-8 space-y-6">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          Large Scale (0.75)
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          iPad frame scaled to 75% of its original size.
+        </p>
+      </div>
+    </IPadFrame>
+  ),
+};
+
+export const ScaleExtraLarge: Story = {
+  render: () => (
+    <IPadFrame scale={1.25}>
+      <div className="p-8 space-y-6">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          Extra Large Scale (1.25)
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          iPad frame scaled to 125% of its original size.
+        </p>
+      </div>
+    </IPadFrame>
+  ),
+};

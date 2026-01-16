@@ -45,12 +45,12 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
     const scaledStyle = useMemo(() => {
       const baseStyle: React.CSSProperties = { ...style };
 
-      // Apply width and height props
+      // Apply width and height props - convert numbers to pixel strings
       if (width !== undefined) {
-        baseStyle.width = width;
+        baseStyle.width = typeof width === "number" ? `${width}px` : width;
       }
       if (height !== undefined) {
-        baseStyle.height = height;
+        baseStyle.height = typeof height === "number" ? `${height}px` : height;
       }
 
       // Merge transform with existing transform (e.g. from drag)
