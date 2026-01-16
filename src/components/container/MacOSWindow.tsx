@@ -33,6 +33,7 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
       scale = 1,
       width,
       height,
+      defaultPosition: _defaultPosition, // Extract to prevent it from being passed to DOM
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,

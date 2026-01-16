@@ -25,6 +25,7 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
       variant = "light",
       scale = 1,
       style,
+      defaultPosition: _defaultPosition, // Extract to prevent it from being passed to DOM
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,

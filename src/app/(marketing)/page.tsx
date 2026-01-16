@@ -6,6 +6,7 @@ import { IPhoneFrame } from "@/components/container/IPhoneFrame";
 import { IPadFrame } from "@/components/container/IPadFrame";
 import { Brain, Mic, BarChart3, Smartphone, TrendingUp, Cloud } from "lucide-react";
 import { DesktopWrapper } from "@/components/container/DesktopWrapper";
+import { MockLearnScreen } from "@/components/learn/MockLearnScreen";
 
 export default function HomePage() {
   return (
@@ -39,13 +40,9 @@ export default function HomePage() {
                 height={800}
                 scale={0.75}
                 defaultPosition={{ x: 50, y: 50 }}
-                contentClassName="p-8 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800"
+                contentClassName="p-0 overflow-hidden"
               >
-                <div className="min-h-full flex items-center justify-center">
-                  <p className="text-gray-500 dark:text-gray-400 text-center">
-                    卡片复习界面预览
-                  </p>
-                </div>
+                <MockLearnScreen />
               </MacOSWindow>
               <IPadFrame
                 orientation="landscape"
