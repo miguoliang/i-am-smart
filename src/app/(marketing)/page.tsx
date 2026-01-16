@@ -31,7 +31,7 @@ export default function HomePage() {
           {/* Desktop with MacOSWindow, IPhoneFrame, and IPadFrame */}
           <div className="w-full flex items-center justify-center overflow-hidden">
             <DesktopWrapper 
-              className="h-[800px] w-full"
+              className="h-[800px] w-full rounded-lg overflow-hidden"
               background="url('/homepage-section-1.webp') center / cover no-repeat"
             >
               <MacOSWindow
