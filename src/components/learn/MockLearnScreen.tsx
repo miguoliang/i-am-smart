@@ -81,7 +81,7 @@ export function MockLearnScreen() {
 
   return (
     <div className="h-full w-full min-h-[400px] bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
-      <div className="w-full flex-shrink-0 mb-2 md:mb-4">
+      <div className="w-full shrink-0 mb-2 md:mb-4">
         <ProgressIndicator reviewed={reviewedCount} total={total} />
       </div>
 
@@ -114,7 +114,7 @@ export function MockLearnScreen() {
       </div>
 
       {isFlipped && (
-        <div className="mt-2 md:mt-4 w-full max-w-2xl px-2 flex-shrink-0">
+        <div className="mt-2 md:mt-4 w-full max-w-2xl px-2 shrink-0">
           <RatingButtons onRate={handleRate} />
         </div>
       )}
