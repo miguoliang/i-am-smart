@@ -81,7 +81,7 @@ export function MockLearnScreen() {
 
   return (
     <div className="h-full w-full min-h-[400px] bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
-      <div className="w-full shrink-0 mb-2 md:mb-4">
+      <div className="w-full shrink-0 mb-2 md:mb-4 flex justify-center">
         <ProgressIndicator reviewed={reviewedCount} total={total} />
       </div>
 
