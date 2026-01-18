@@ -6,6 +6,7 @@ import { CardContent } from "@/app/learn/components/CardContent";
 import { ProgressIndicator } from "@/app/learn/components/ProgressIndicator";
 import { RatingButtons } from "@/app/learn/components/RatingButtons";
 import type { Card } from "@/app/learn/types";
+import { logger } from "@/lib/utils/logger";
 
 // Screen layout constants
 const MIN_SCREEN_HEIGHT = 400; // Minimum height for the mock learn screen
@@ -80,6 +81,11 @@ export function MockLearnScreen() {
   };
 
   if (!currentCard) {
+    logger.error("Current card is undefined", {
+      currentIndex,
+      total: MOCK_CARDS.length,
+      context: "MockLearnScreen",
+    });
     return null;
   }
 

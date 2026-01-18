@@ -79,10 +79,20 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
               <span className="text-gray-900 dark:text-white text-sm font-semibold">9:41</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-4 border border-gray-900 dark:border-white rounded-sm">
-                <div className="w-full h-full bg-gray-900 dark:bg-white rounded-sm" style={{ width: "75%" }} />
+              <div 
+                className="w-5 h-4 border border-gray-900 dark:border-white rounded-sm"
+                aria-label="Battery level indicator"
+                role="img"
+              >
+                <div className="w-3/4 h-full bg-gray-900 dark:bg-white rounded-sm" />
               </div>
-              <svg className="w-6 h-4 text-gray-900 dark:text-white" fill="currentColor" viewBox="0 0 24 12">
+              <svg 
+                className="w-6 h-4 text-gray-900 dark:text-white" 
+                fill="currentColor" 
+                viewBox="0 0 24 12"
+                aria-label="Signal strength indicator"
+                role="img"
+              >
                 <path d="M1 6h22M1 6l4-4M1 6l4 4M23 6l-4-4M23 6l-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" />
               </svg>
             </div>
@@ -100,7 +110,10 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
           </div>
 
           {/* Home Indicator */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[134px] h-[5px] bg-gray-400 dark:bg-gray-600 rounded-full" />
+          <div 
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[134px] h-[5px] bg-gray-400 dark:bg-gray-600 rounded-full"
+            aria-hidden="true"
+          />
         </div>
       </div>
     );

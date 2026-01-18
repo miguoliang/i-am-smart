@@ -22,6 +22,11 @@ export function wrapDragListeners(
   for (const [key, value] of Object.entries(listeners)) {
     if (typeof value === 'function') {
       // Wrap event handlers to check if click is in content area
+      // Use proper type guard instead of type assertion
+      const originalListener = value as (
+        e: React.PointerEvent | React.MouseEvent | React.TouchEvent | Event
+      ) => void;
+      
       wrapped[key] = ((e: React.PointerEvent | React.MouseEvent | React.TouchEvent | Event) => {
         // Check if click/touch is in content area
         const target = 'target' in e ? e.target : null;
@@ -31,7 +36,7 @@ export function wrapDragListeners(
           return;
         }
         // Call original listener for clicks outside content area
-        (value as (e: React.PointerEvent | React.MouseEvent | React.TouchEvent | Event) => void)(e);
+        originalListener(e);
       });
     } else {
       wrapped[key] = value;
