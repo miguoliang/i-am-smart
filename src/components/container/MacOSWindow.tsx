@@ -33,7 +33,7 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
       scale = 1,
       width,
       height,
-      defaultPosition: _defaultPosition, // Extract to prevent it from being passed to DOM
+      defaultPosition,
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
@@ -43,6 +43,9 @@ export const MacOSWindow = React.forwardRef<HTMLDivElement, MacOSWindowProps>(
     },
     ref
   ) {
+    // Extract defaultPosition to prevent it from being passed to DOM (used by useDesktopDrag hook)
+    void defaultPosition;
+    
     const scaledStyle = useMemo(() => {
       const baseStyle: React.CSSProperties = { ...style };
 

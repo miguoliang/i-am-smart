@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { FlipCard } from "./FlipCard";
+import { logger } from "@/lib/utils/logger";
 
 const meta: Meta<typeof FlipCard> = {
   title: "Container/FlipCard",
@@ -34,8 +35,7 @@ export const FrontSide: Story = {
     ),
     flipped: false,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},
@@ -70,8 +70,7 @@ export const BackSide: Story = {
     ),
     flipped: true,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},
@@ -152,8 +151,7 @@ export const LongText: Story = {
     ),
     flipped: false,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},
@@ -186,8 +184,7 @@ export const WithIcons: Story = {
     ),
     flipped: false,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},
@@ -265,8 +262,7 @@ export const CustomContent: Story = {
     ),
     flipped: false,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},
@@ -295,8 +291,7 @@ export const MinimalContent: Story = {
     ),
     flipped: false,
     onFlip: () => {
-      // eslint-disable-next-line no-console
-      console.log("Card flipped");
+      logger.debug("Card flipped");
     },
     onTouchStart: () => {},
     onTouchEnd: () => {},

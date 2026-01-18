@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { useMemo } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
+import { useScaledStyle } from "./hooks/useScaledStyle";
 
 interface IPadFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "style" | "className"> {
   children: ReactNode;
@@ -27,7 +28,7 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
       orientation = "portrait",
       scale = 1,
       style,
-      defaultPosition: _defaultPosition, // Extract to prevent it from being passed to DOM
+      defaultPosition,
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
@@ -35,25 +36,15 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
     },
     ref
   ) {
+    // Extract defaultPosition to prevent it from being passed to DOM (used by useDesktopDrag hook)
+    void defaultPosition;
+    
     const isLandscape = orientation === "landscape";
     const dimensions = isLandscape
       ? "w-[1024px] h-[768px]"
       : "w-[768px] h-[1024px]";
 
-    const scaledStyle = useMemo(() => {
-      const baseStyle: React.CSSProperties = { ...style };
-
-      // Merge transform with existing transform (e.g. from drag)
-      // Apply scale last to ensure translation happens in unscaled coordinates
-      // Only add scale transform if it's not 1 (to avoid hydration mismatch)
-      if (scale !== 1) {
-        const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
-        baseStyle.transform = `${existingTransform}scale(${scale})`;
-        baseStyle.transformOrigin = "top left";
-      }
-
-      return baseStyle;
-    }, [scale, style]);
+    const scaledStyle = useScaledStyle(scale, style);
 
     return (
       <div
@@ -78,7 +69,12 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
         {/* Screen */}
         <div className="relative w-full h-full rounded-3xl overflow-hidden bg-white dark:bg-gray-950">
           {/* Status Bar Area */}
-          <div className="absolute top-0 left-0 right-0 h-12 z-10 flex items-center justify-between px-8 pt-2 bg-white dark:bg-gray-950">
+          <div 
+            className={cn(
+              "absolute top-0 left-0 right-0 h-12 z-10 flex items-center justify-between px-8 pt-2 bg-white dark:bg-gray-950",
+              isDragging && "cursor-grabbing"
+            )}
+          >
             <div className="flex items-center gap-2">
               <span className="text-gray-900 dark:text-white text-sm font-semibold">9:41</span>
             </div>
@@ -93,7 +89,13 @@ export const IPadFrame = React.forwardRef<HTMLDivElement, IPadFrameProps>(
           </div>
 
           {/* Content */}
-          <div className="w-full h-full pt-12 pb-4 overflow-auto">
+          <div 
+            data-content-area="true"
+            className="w-full h-full pt-12 pb-4 overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
             {children}
           </div>
 

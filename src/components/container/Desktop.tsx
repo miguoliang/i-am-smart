@@ -10,6 +10,7 @@ import { Button } from "@/components/form/Button";
 import type { WindowPosition, DraggableChildProps } from "./types";
 import { useDesktopDrag } from "./hooks/useDesktopDrag";
 import { useWindowZIndex } from "./hooks/useWindowZIndex";
+import { wrapDragListeners } from "./hooks/wrapDragListeners";
 
 export interface DesktopProps {
   children: ReactNode;
@@ -75,17 +76,37 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
     style.transformOrigin = childStyle.transformOrigin || "top left";
   }
 
+  // Check if click is inside content area (should not trigger drag/focus)
+  const isClickInContentArea = useCallback((target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof Element)) return false;
+    const element = target as Element;
+    // Check if target is inside a content area using data attribute
+    // Content areas are marked with data-content-area="true"
+    const contentArea = element.closest('[data-content-area="true"]');
+    return contentArea !== null;
+  }, []);
+
   // Handle click to bring window to front
-  const handleClick = useCallback(() => {
-    // Only bring to front if clicking on the window itself, not if it's a drag
-    if (!isDragging) {
-      onFocus();
-    }
-  }, [onFocus, isDragging]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Don't bring to front if clicking inside content area or if it's a drag
+      if (isClickInContentArea(e.target)) {
+        return; // Allow click to propagate to content
+      }
+      if (!isDragging) {
+        onFocus();
+      }
+    },
+    [onFocus, isDragging, isClickInContentArea]
+  );
 
   // Handle mouse down to bring window to front immediately
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      // Don't handle if clicking inside content area
+      if (isClickInContentArea(e.target)) {
+        return; // Allow event to propagate to content
+      }
       // Stop propagation to prevent conflicts
       e.stopPropagation();
       // Bring to front on mouse down (before drag starts)
@@ -98,7 +119,7 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
         }
       }
     },
-    [onFocus, children]
+    [onFocus, children, isClickInContentArea]
   );
 
   // Handle keyboard navigation
@@ -126,6 +147,12 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
       })()
     : {};
 
+  // Wrap drag listeners to only activate when not clicking in content area
+  const wrappedDragListeners = React.useMemo(
+    () => wrapDragListeners(listeners, isClickInContentArea),
+    [listeners, isClickInContentArea]
+  );
+
   const clientOnlyProps = {
     "data-dragging": isDragging,
     "aria-label": `Draggable window ${id}`,
@@ -133,7 +160,7 @@ function DraggableWindow({ id, children, position, zIndex, onFocus }: DraggableW
     role: "application",
     tabIndex: 0,
     dragAttributes: attributes,
-    dragListeners: listeners,
+    dragListeners: wrappedDragListeners,
     onClick: handleClick,
     onMouseDown: handleMouseDown,
     onKeyDown: handleKeyDown,

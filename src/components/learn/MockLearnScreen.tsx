@@ -7,6 +7,10 @@ import { ProgressIndicator } from "@/app/learn/components/ProgressIndicator";
 import { RatingButtons } from "@/app/learn/components/RatingButtons";
 import type { Card } from "@/app/learn/types";
 
+// Screen layout constants
+const MIN_SCREEN_HEIGHT = 400; // Minimum height for the mock learn screen
+const MAX_CARD_HEIGHT_MOBILE = 300; // Maximum card height on mobile devices
+
 // Mock cards for demonstration
 const MOCK_CARDS: Card[] = [
   {
@@ -56,7 +60,7 @@ export function MockLearnScreen() {
     setIsFlipped(!isFlipped);
   };
 
-  const handleRate = (_quality: number) => {
+  const handleRate = () => {
     // Move to next card
     if (currentIndex < MOCK_CARDS.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -70,7 +74,7 @@ export function MockLearnScreen() {
     }
   };
 
-  const handleSpeak = (_text: string, _locale: string) => {
+  const handleSpeak = () => {
     // Mock speech - in real app this would use the speech API
     // No-op for mock screen
   };
@@ -79,14 +83,33 @@ export function MockLearnScreen() {
     return null;
   }
 
+  // No-op touch handlers - FlipCard requires these props but we don't need touch handling
+  // in the mock screen since it's displayed in frames that handle touch events separately
+  const handleTouchStart = () => {
+    // Intentionally empty - touch handling not needed in mock screen context
+  };
+
+  const handleTouchEnd = () => {
+    // Intentionally empty - touch handling not needed in mock screen context
+  };
+
   return (
-    <div className="h-full w-full min-h-[400px] bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
+    <div 
+      className="h-full w-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden"
+      style={{ minHeight: `${MIN_SCREEN_HEIGHT}px` }}
+    >
       <div className="w-full shrink-0 mb-2 md:mb-4 flex justify-center">
         <ProgressIndicator reviewed={reviewedCount} total={total} />
       </div>
 
       <div className="flex-1 flex items-center justify-center w-full max-w-2xl min-h-0 px-2">
-        <div className="w-full h-full max-h-[300px] md:max-h-[400px]">
+        {/* Mobile uses MAX_CARD_HEIGHT_MOBILE (300px), desktop responsive handled by Tailwind md: breakpoint (400px) */}
+        <div 
+          className="w-full h-full max-h-[300px] md:max-h-[400px]"
+          style={{
+            maxHeight: `${MAX_CARD_HEIGHT_MOBILE}px`,
+          }}
+        >
           <FlipCard
             key={currentCard.id}
             front={
@@ -107,8 +130,8 @@ export function MockLearnScreen() {
             }
             flipped={isFlipped}
             onFlip={handleFlip}
-            onTouchStart={() => {}}
-            onTouchEnd={() => {}}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           />
         </div>
       </div>

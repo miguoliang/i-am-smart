@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { useMemo } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 import type { WindowPosition } from "./types";
+import { useScaledStyle } from "./hooks/useScaledStyle";
 
 interface IPhoneFrameProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "style" | "className"> {
   children: ReactNode;
@@ -25,7 +26,7 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
       variant = "light",
       scale = 1,
       style,
-      defaultPosition: _defaultPosition, // Extract to prevent it from being passed to DOM
+      defaultPosition,
       "data-dragging": isDragging,
       dragAttributes,
       dragListeners,
@@ -33,20 +34,10 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
     },
     ref
   ) {
-    const scaledStyle = useMemo(() => {
-      const baseStyle: React.CSSProperties = { ...style };
-
-      // Merge transform with existing transform (e.g. from drag)
-      // Apply scale last to ensure translation happens in unscaled coordinates
-      // Only add scale transform if it's not 1 (to avoid hydration mismatch)
-      if (scale !== 1) {
-        const existingTransform = baseStyle.transform ? `${baseStyle.transform} ` : "";
-        baseStyle.transform = `${existingTransform}scale(${scale})`;
-        baseStyle.transformOrigin = "top left";
-      }
-
-      return baseStyle;
-    }, [scale, style]);
+    // Extract defaultPosition to prevent it from being passed to DOM (used by useDesktopDrag hook)
+    void defaultPosition;
+    
+    const scaledStyle = useScaledStyle(scale, style);
 
     return (
       <div
@@ -75,20 +66,26 @@ export const IPhoneFrame = React.forwardRef<HTMLDivElement, IPhoneFrameProps>(
         {/* Status Bar Area */}
         <div className="absolute top-0 left-0 right-0 h-12 z-10 flex items-center justify-between px-6 pt-1">
           <div className="flex items-center gap-1">
-            <span className="text-white text-xs font-semibold">9:41</span>
+            <span className="text-gray-900 dark:text-white text-xs font-semibold">9:41</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-3 border border-white rounded-sm">
-              <div className="w-full h-full bg-white rounded-sm" style={{ width: "75%" }} />
+            <div className="w-4 h-3 border border-gray-900 dark:border-white rounded-sm">
+              <div className="w-full h-full bg-gray-900 dark:bg-white rounded-sm" style={{ width: "75%" }} />
             </div>
-            <svg className="w-5 h-3 text-white" fill="currentColor" viewBox="0 0 24 12">
+            <svg className="w-5 h-3 text-gray-900 dark:text-white" fill="currentColor" viewBox="0 0 24 12">
               <path d="M1 6h22M1 6l4-4M1 6l4 4M23 6l-4-4M23 6l-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" />
             </svg>
           </div>
         </div>
 
         {/* Content */}
-        <div className="w-full h-full pt-12 pb-8 overflow-auto">
+        <div 
+          data-content-area="true"
+          className="w-full h-full pt-12 pb-8 overflow-auto"
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
           {children}
         </div>
 
