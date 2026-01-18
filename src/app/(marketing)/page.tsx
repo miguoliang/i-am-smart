@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/form/Button";
-import { ImagePlaceholder } from "@/components/marketing/ImagePlaceholder";
 
 export default function HomePage() {
   return (
@@ -65,39 +64,55 @@ export default function HomePage() {
 
           {/* 温馨图片网格 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <ImagePlaceholder
-              alt="父子一起开心学习，孩子眼睛发亮"
-              variant="joy"
-              className="aspect-3/4 rounded-lg shadow-md"
-            />
-            <ImagePlaceholder
-              alt="孩子开心记住单词，自信的笑容"
-              variant="joy"
-              className="aspect-3/4 rounded-lg shadow-md"
-            />
-            <ImagePlaceholder
-              alt="地铁上刷闪卡学习"
-              variant="commute"
-              className="aspect-3/4 rounded-lg shadow-md"
-            />
-            <ImagePlaceholder
-              alt="睡前一起学习，温馨的亲子时光"
-              variant="bedtime"
-              className="aspect-3/4 rounded-lg shadow-md"
-            />
+            <div className="relative aspect-3/4 rounded-lg overflow-hidden shadow-md">
+              <Image
+                src="/section-2-1.webp"
+                alt="父子一起开心学习，孩子眼睛发亮"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-3/4 rounded-lg overflow-hidden shadow-md">
+              <Image
+                src="/section-2-2.webp"
+                alt="孩子开心记住单词，自信的笑容"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-3/4 rounded-lg overflow-hidden shadow-md">
+              <Image
+                src="/section-2-3.webp"
+                alt="地铁上刷闪卡学习"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-3/4 rounded-lg overflow-hidden shadow-md">
+              <Image
+                src="/section-2-4.webp"
+                alt="睡前一起学习，温馨的亲子时光"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
+              />
+            </div>
           </div>
         </div>
       </section>
 
       {/* 行动区 - CTA */}
-      <section className="max-w-4xl mx-auto px-4 py-16 md:py-24">
-        <div className="bg-linear-to-br from-amber-50 to-blue-50 rounded-2xl p-8 md:p-12 shadow-lg">
-          <div className="space-y-8 text-center">
-            <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-medium text-gray-900">
+      <section className="w-full py-16 md:py-24 bg-linear-to-br from-amber-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+          <div className="space-y-8 md:space-y-12 text-center">
+            <div className="space-y-6">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-medium text-gray-900">
                 零负担开始，就今天
               </h2>
-              <div className="space-y-3 text-base md:text-lg text-gray-700 max-w-2xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 text-base md:text-lg text-gray-700">
                 <p>• PWA，浏览器直接打开，无需下载</p>
                 <p>• A1到C2全覆盖，KET到雅思一路陪伴</p>
                 <p>• 一张闪卡 → 点认识/不认识 → 下一张</p>
@@ -116,7 +131,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <p className="text-sm text-gray-600 pt-4">
+            <p className="text-sm md:text-base text-gray-600 pt-4">
               无需注册，打开即用。你的学习数据只属于你。
             </p>
           </div>
