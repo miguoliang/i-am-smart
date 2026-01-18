@@ -49,27 +49,13 @@ export default function HomePage() {
                 scale={0.75}
                 defaultPosition={{ x: 600, y: 150 }}
               >
-                <div className="p-6 space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    平板学习
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    大屏体验，更舒适的学习
-                  </p>
-                </div>
+                <MockLearnScreen />
               </IPadFrame>
               <IPhoneFrame
                 scale={0.75}
                 defaultPosition={{ x: 900, y: 300 }}
               >
-                <div className="p-4 space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    移动学习
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    随时随地学习
-                  </p>
-                </div>
+                <MockLearnScreen />
               </IPhoneFrame>
             </DesktopWrapper>
           </div>
