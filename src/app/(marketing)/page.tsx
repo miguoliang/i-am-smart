@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/form/Button";
 import { ImagePlaceholder } from "@/components/marketing/ImagePlaceholder";
 
@@ -23,16 +24,26 @@ export default function HomePage() {
 
           {/* 挫败图片区 */}
           <div className="w-full lg:w-1/2 grid grid-cols-2 gap-4">
-            <ImagePlaceholder
-              alt="孩子写作业疲惫的场景"
-              variant="pain"
-              className="aspect-4/5 rounded-lg shadow-lg"
-            />
-            <ImagePlaceholder
-              alt="家长无奈看孩子学习的场景"
-              variant="pain"
-              className="aspect-4/5 rounded-lg shadow-lg mt-8"
-            />
+            <div className="relative aspect-4/5 rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src="/section-1-1.webp"
+                alt="孩子写作业疲惫的场景"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+              />
+            </div>
+            <div className="relative aspect-4/5 rounded-lg overflow-hidden shadow-lg mt-8">
+              <Image
+                src="/section-1-2.webp"
+                alt="家长无奈看孩子学习的场景"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+              />
+            </div>
           </div>
         </div>
       </section>
