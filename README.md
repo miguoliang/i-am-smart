@@ -65,6 +65,10 @@
 
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## 📝 更新日志
+
+查看 [CHANGELOG.md](./CHANGELOG.md) 了解详细的更新记录。
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
