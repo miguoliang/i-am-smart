@@ -21,17 +21,10 @@ export function NavigationAuthButtons() {
     );
   }
 
-  // User is not logged in - show "登录" and "注册" buttons
-  // Note: Since signin page handles both login and registration via OTP,
-  // both buttons go to /signin
+  // User is not logged in - show "立即使用" button
   return (
-    <div className="flex items-center gap-2 md:gap-3">
-      <Button variant="ghost" size="sm" className="text-xs md:text-sm" asChild>
-        <Link href="/signin">登录</Link>
-      </Button>
-      <Button size="sm" className="text-xs md:text-sm" asChild>
-        <Link href="/signin">注册</Link>
-      </Button>
-    </div>
+    <Button size="sm" className="text-xs md:text-sm" asChild>
+      <Link href="/signin">立即使用</Link>
+    </Button>
   );
 }
