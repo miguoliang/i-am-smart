@@ -6,6 +6,7 @@ import {
 } from "@/lib/seo/structured-data";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { MarketingFooter } from "./components/MarketingFooter";
+import { Navigation } from "./components/Navigation";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Be It Forever - 背它一辈子",
@@ -38,6 +39,7 @@ export default function MarketingLayout({
     <>
       <StructuredData data={organizationData} />
       <StructuredData data={websiteData} />
+      <Navigation />
       {children}
       <MarketingFooter />
     </>

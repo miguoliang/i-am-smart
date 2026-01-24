@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavigationAuthButtons } from "./NavigationAuthButtons";
 
 export function Navigation() {
   return (
@@ -44,6 +45,11 @@ export function Navigation() {
             >
               关于
             </Link>
+          </div>
+
+          {/* Right side - Auth buttons (Client Component) */}
+          <div className="ml-auto flex items-center gap-2 md:gap-3">
+            <NavigationAuthButtons />
           </div>
         </div>
       </div>

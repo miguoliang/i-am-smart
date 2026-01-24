@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavigationAuthButtons } from "@/app/(marketing)/components/NavigationAuthButtons";
 
 export function Navigation() {
   return (
@@ -47,8 +48,10 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Right side - spacer to balance layout */}
-          <div className="hidden md:block w-[120px]"></div>
+          {/* Right side - Auth buttons (Client Component) */}
+          <div className="hidden md:flex items-center gap-2 md:gap-3 z-10">
+            <NavigationAuthButtons />
+          </div>
         </div>
       </div>
     </nav>

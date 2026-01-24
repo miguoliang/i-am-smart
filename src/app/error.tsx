@@ -81,9 +81,11 @@ export default function Error({ error, reset }: ErrorProps) {
             {translations.errorBoundary.tryAgain}
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/" className="gap-2">
-              <Home className="h-4 w-4" />
-              {translations.errorBoundary.goHome}
+            <Link href="/">
+              <span className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                {translations.errorBoundary.goHome}
+              </span>
             </Link>
           </Button>
         </div>
