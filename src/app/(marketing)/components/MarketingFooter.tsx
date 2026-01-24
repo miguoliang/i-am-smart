@@ -16,13 +16,13 @@ export function MarketingFooter() {
           {/* Bottom Right - All links in one line */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link
-              href="/features"
+              href="/#features"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               功能特性
             </Link>
             <Link
-              href="/pricing"
+              href="/#pricing"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               定价
@@ -32,18 +32,6 @@ export function MarketingFooter() {
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               更新日志
-            </Link>
-            <Link
-              href="/docs"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              文档
-            </Link>
-            <Link
-              href="/blog"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              博客
             </Link>
             <Link
               href="/terms"

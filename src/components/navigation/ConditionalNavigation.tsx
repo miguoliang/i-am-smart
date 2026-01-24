@@ -10,11 +10,7 @@ const NO_NAV_ROUTES = ["/operator"];
 // Marketing routes - navigation is handled by MarketingLayout
 const MARKETING_ROUTES = [
   "/",
-  "/features",
-  "/pricing",
   "/changelog",
-  "/docs",
-  "/blog",
   "/about",
 ];
 

@@ -9,27 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
-      url: "/features",
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: "/pricing",
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
       url: "/changelog",
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: "/docs",
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: "/blog",
       changeFrequency: "weekly",
       priority: 0.7,
     },

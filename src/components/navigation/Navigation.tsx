@@ -34,18 +34,6 @@ export function Navigation() {
             >
               更新日志
             </Link>
-            <Link
-              href="/docs"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              文档
-            </Link>
-            <Link
-              href="/blog"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              博客
-            </Link>
           </div>
 
           {/* Right side - Auth buttons (Client Component) */}

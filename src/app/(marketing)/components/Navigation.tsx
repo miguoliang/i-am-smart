@@ -5,7 +5,7 @@ export function Navigation() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4">
-        <div className="relative flex h-16 items-center">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo on the left */}
           <Link
             href="/"
@@ -14,41 +14,8 @@ export function Navigation() {
             背它一辈子
           </Link>
 
-          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              首页
-            </Link>
-            <Link
-              href="/features"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              功能
-            </Link>
-            <Link
-              href="/docs"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              文档
-            </Link>
-            <Link
-              href="/blog"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              博客
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              关于
-            </Link>
-          </div>
-
           {/* Right side - Auth buttons (Client Component) */}
-          <div className="ml-auto flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <NavigationAuthButtons />
           </div>
         </div>
