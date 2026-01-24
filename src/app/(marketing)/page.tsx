@@ -3,86 +3,25 @@ import { Button } from "@/components/form/Button";
 import { Card } from "@/components/container/Card";
 
 export default function HomePage() {
-  const coreFeatures = [
+  const features = [
     {
-      icon: "🧠",
-      title: "智能复习",
-      description: "让系统自动安排复习计划，您只需专注于学习。",
-      features: [
-        "SM-2 算法：基于科学验证的间隔重复算法，根据记忆表现自动调整复习间隔",
-        "自适应学习：根据您的评分（0-5分）动态调整难度和复习频率",
-        "记忆曲线优化：在最佳遗忘点进行复习，最大化记忆效率",
-        "学习状态跟踪：新卡片 → 学习中 → 已掌握，清晰的学习路径",
-      ],
+      title: "随时随地开始学",
+      description: "地铁、睡前、排队、蹲坑……打开就是学，不用等、不用找借口",
     },
     {
-      icon: "🗣️",
-      title: "文本转语音",
-      description: "正确掌握每个单词的发音，提升口语能力。",
-      features: [
-        "多口音支持：美式英语和英式英语发音",
-        "即时播放：点击即可听到标准发音",
-        "沉浸式学习：通过听觉强化记忆",
-        "发音练习：帮助纠正发音，提升口语水平",
-      ],
+      title: "AI 自动懂你、陪你提分",
+      description: "根据你的水平、弱项、做题习惯，智能出题 + 秒批 + 针对性讲解",
     },
     {
-      icon: "📊",
-      title: "可视化统计",
-      description: "清晰了解您的学习进度和成果。",
-      features: [
-        "学习热力图：每日学习活动一目了然",
-        "掌握程度图表：跟踪每个知识点的掌握情况",
-        "连续学习记录：保持学习习惯，记录学习天数",
-        "详细分析：复习次数、正确率、学习趋势等",
-      ],
+      title: "0 下载 · 打开浏览器就用",
+      description: "不占手机内存、不用安装任何东西，随时想用就用",
+    },
+    {
+      title: "手机 · 平板 · 电脑无缝同步",
+      description: "今天手机背了50个单词，回家电脑直接接着背，进度永不掉线",
     },
   ];
 
-  const plans = [
-    {
-      name: "免费版",
-      price: "免费",
-      description: "适合个人学习者",
-      features: [
-        "基础间隔重复学习",
-        "每日复习限制",
-        "基础统计功能",
-        "社区支持",
-      ],
-      cta: "免费开始",
-      href: "/signin",
-    },
-    {
-      name: "专业版",
-      price: "¥29/月",
-      description: "适合认真学习者",
-      features: [
-        "无限复习次数",
-        "高级统计和分析",
-        "多设备同步",
-        "优先支持",
-        "自定义学习计划",
-      ],
-      cta: "开始使用",
-      href: "/signin",
-      featured: true,
-    },
-    {
-      name: "企业版",
-      price: "定制",
-      description: "适合团队和教育机构",
-      features: [
-        "所有专业版功能",
-        "团队管理",
-        "批量导入",
-        "定制化服务",
-        "专属客户经理",
-      ],
-      cta: "联系销售",
-      href: "/signin",
-    },
-  ];
 
   return (
     <div className="min-h-screen">
@@ -116,54 +55,24 @@ export default function HomePage() {
 
       {/* Features Section */}
       <section id="features" className="max-w-7xl mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
-            掌握知识的最佳方式
-          </h2>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300">
-            基于科学验证的间隔重复算法，让学习更高效、记忆更持久
-          </p>
-        </div>
-
-        <div className="space-y-24">
-          {coreFeatures.map((feature, index) => (
-            <div
-              key={feature.title}
-              className={`flex flex-col ${
-                index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
-              } gap-12 items-center`}
-            >
-              {/* Content */}
-              <div className="flex-1">
-                <div className="text-5xl mb-6">{feature.icon}</div>
-                <h3 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-                  {feature.title}
-                </h3>
-                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                  {feature.description}
-                </p>
-                <ul className="space-y-4">
-                  {feature.features.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      className="flex items-start gap-3 text-gray-700 dark:text-gray-300"
-                    >
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Placeholder for demo */}
-              <div className="flex-1 w-full">
-                <div className="aspect-video bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-800">
-                  <p className="text-gray-600 dark:text-gray-400 text-center px-8">
-                    功能演示区域
-                  </p>
+        <div className="grid md:grid-cols-2 gap-8">
+          {features.map((feature) => (
+            <Card key={feature.title} className="overflow-hidden">
+              <div className="relative w-full aspect-video bg-gradient-to-br from-blue-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                <div className="text-center px-4">
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">图片占位符</p>
+                  <p className="text-xs text-gray-300 dark:text-gray-600">{feature.title}</p>
                 </div>
               </div>
-            </div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -171,63 +80,132 @@ export default function HomePage() {
       {/* Pricing Section */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 py-20 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-              定价方案
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
+              选择适合你的提分计划
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              选择最适合您的学习计划，开始您的终身学习之旅。
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
+              从免费开始，用AI把碎片时间变成高分
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {plans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={`p-8 relative ${
-                  plan.featured
-                    ? "border-2 border-primary shadow-lg scale-105"
-                    : ""
-                }`}
-              >
-                {plan.featured && (
-                  <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-sm font-medium rounded-bl-lg">
-                    推荐
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
-                    {plan.name}
-                  </h3>
-                  <div className="text-4xl font-bold mb-2 text-gray-900 dark:text-white">
-                    {plan.price}
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {plan.description}
-                  </p>
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-8">
+            {/* 免费版 */}
+            <Card className="p-8 relative">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+                  免费版（Free）
+                </h3>
+                <div className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
+                  ¥0 <span className="text-lg font-normal text-gray-600 dark:text-gray-400">/ 永久免费</span>
                 </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, index) => (
-                    <li
-                      key={index}
-                      className="flex items-start text-gray-700 dark:text-gray-300"
-                    >
-                      <span className="mr-2 text-primary">✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href} className="block">
-                  <Button
-                    variant={plan.featured ? "default" : "outline"}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {plan.cta}
-                  </Button>
-                </Link>
-              </Card>
-            ))}
+              </div>
+              
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
+                  <span>每天限量学习</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
+                  <span>A1-A2单词</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
+                  <span>随时随地、多端使用，多端同步</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
+                  <span>基础 AI 辅助功能</span>
+                </li>
+              </ul>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                适合人群：想先试用、零成本体验的学生
+              </p>
+
+              <Link href="/signin" className="block">
+                <Button
+                  variant="outline"
+                  className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-gray-700"
+                  size="lg"
+                >
+                  立即免费开始
+                </Button>
+              </Link>
+            </Card>
+
+            {/* Pro版（推荐） */}
+            <Card className="p-8 relative border-2 border-amber-400 dark:border-amber-500 shadow-xl scale-105">
+              <div className="absolute top-0 right-0 bg-amber-400 dark:bg-amber-500 text-gray-900 dark:text-white px-4 py-1 text-sm font-bold rounded-bl-lg">
+                推荐
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+                  Pro版
+                </h3>
+                <div className="mb-2">
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    ¥29 <span className="text-lg font-normal">/ 月</span>
+                  </div>
+                  <div className="text-lg text-gray-700 dark:text-gray-300">
+                    或 <span className="font-bold text-amber-600 dark:text-amber-400">¥199</span> / 年
+                    <span className="ml-2 text-sm">
+                      <span className="line-through text-gray-400 dark:text-gray-500">原价 ¥348</span>
+                      <span className="text-red-600 dark:text-red-400 font-bold ml-1">省 ¥149</span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">≈ 58% off</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
+                  <span><strong>无限AI使用</strong>（不限时、不限量）</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
+                  <span><strong>个性化提分计划</strong> + 智能错题分析</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
+                  <span><strong>口语纠音</strong> + 高级批改（写作/阅读）</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
+                  <span><strong>无广告</strong> + 优先AI响应速度</span>
+                </li>
+                <li className="flex items-start text-gray-700 dark:text-gray-300">
+                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
+                  <span><strong>专注高频提分路径</strong>，学生实测3周见效</span>
+                </li>
+              </ul>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                适合人群：想大幅提分、追求效率的学生党
+              </p>
+
+              <Link href="/signin" className="block">
+                <Button
+                  className="w-full bg-amber-400 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-600 text-gray-900 dark:text-white font-bold shadow-lg"
+                  size="lg"
+                >
+                  立即升级 Pro
+                </Button>
+              </Link>
+            </Card>
+          </div>
+
+          {/* 底部信任信息 */}
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+            7天无理由退款 · 随时取消订阅 · 已帮助数百学生提分
+          </div>
+
+          {/* 支付方式 */}
+          <div className="text-center text-xs text-gray-400 dark:text-gray-500">
+            微信支付 · 支付宝 · 银行卡
           </div>
         </div>
       </section>
