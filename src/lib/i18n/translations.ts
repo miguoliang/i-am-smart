@@ -86,6 +86,16 @@ export interface Translations {
   stats: {
     noData: string;
   };
+
+  // Error Boundaries
+  errorBoundary: {
+    somethingWentWrong: string;
+    unexpectedError: string;
+    tryAgain: string;
+    goHome: string;
+    errorDetails: string;
+    errorId: string;
+  };
 }
 
 export const translations: Record<Locale, Translations> = {
@@ -151,6 +161,14 @@ export const translations: Record<Locale, Translations> = {
     },
     stats: {
       noData: "暂无数据",
+    },
+    errorBoundary: {
+      somethingWentWrong: "出错了",
+      unexpectedError: "发生了意外错误",
+      tryAgain: "重试",
+      goHome: "返回首页",
+      errorDetails: "错误详情",
+      errorId: "错误ID",
     },
   },
 };
