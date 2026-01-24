@@ -1,3 +1,8 @@
+import type {
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+} from '@dnd-kit/core';
+
 export interface WindowPosition {
   x: number;
   y: number;
@@ -12,10 +17,8 @@ export interface DraggableChildProps {
   defaultPosition?: WindowPosition;
   style?: React.CSSProperties;
   "data-dragging"?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dragAttributes?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dragListeners?: any;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
   onMouseDown?: (e: React.MouseEvent) => void;
   onClick?: (e: React.MouseEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;

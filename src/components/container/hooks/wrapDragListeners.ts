@@ -1,3 +1,5 @@
+import type { DraggableSyntheticListeners } from '@dnd-kit/core';
+
 /**
  * Wraps drag listeners to prevent drag activation when clicking inside content areas.
  * 
@@ -11,12 +13,14 @@
  * @returns Wrapped listeners that skip drag activation for content area clicks
  */
 export function wrapDragListeners(
-  listeners: Record<string, unknown> | undefined,
+  listeners: DraggableSyntheticListeners,
   isClickInContentArea: (target: EventTarget | null) => boolean
-): Record<string, unknown> | undefined {
+): DraggableSyntheticListeners {
   if (!listeners) return listeners;
 
-  const wrapped: Record<string, unknown> = {};
+  // DraggableSyntheticListeners is Record<string, Function> but we need to be more specific
+  // for the intermediate type to satisfy ESLint
+  const wrapped: Record<string, (e: React.PointerEvent | React.MouseEvent | React.TouchEvent | Event) => void> = {};
   
   // @dnd-kit listeners are typically event handlers like onPointerDown, onMouseDown, etc.
   for (const [key, value] of Object.entries(listeners)) {
@@ -43,5 +47,5 @@ export function wrapDragListeners(
     }
   }
   
-  return wrapped;
+  return wrapped as DraggableSyntheticListeners;
 }
