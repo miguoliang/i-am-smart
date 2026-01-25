@@ -28,12 +28,6 @@ export function MarketingFooter() {
               定价
             </Link>
             <Link
-              href="/changelog"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              更新日志
-            </Link>
-            <Link
               href="/terms"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >

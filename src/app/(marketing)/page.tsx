@@ -121,7 +121,7 @@ export default function HomePage() {
               </ul>
 
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                适合人群：想先试用、零成本体验的学生
+                适合人群：零成本体验，慢节奏学习，准备低级别考试的学生
               </p>
 
               <Link href="/signin" className="block">
@@ -163,28 +163,24 @@ export default function HomePage() {
               <ul className="space-y-3 mb-6">
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>无限AI使用</strong>（不限时、不限量）</span>
+                  <span><strong>无限学习</strong>（不限时、不限量）</span>
                 </li>
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>个性化提分计划</strong> + 智能错题分析</span>
+                  <span><strong>全级别单词</strong>（A1-C2，KET到雅思）</span>
                 </li>
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>口语纠音</strong> + 高级批改（写作/阅读）</span>
+                  <span><strong>随时随地、多端使用，多端同步</strong></span>
                 </li>
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>无广告</strong> + 优先AI响应速度</span>
-                </li>
-                <li className="flex items-start text-gray-700 dark:text-gray-300">
-                  <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>专注高频提分路径</strong>，学生实测3周见效</span>
+                  <span><strong>高级 AI 辅助功能</strong>（个性化提分计划、智能错题分析、口语纠音、高级批改）</span>
                 </li>
               </ul>
 
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                适合人群：想大幅提分、追求效率的学生党
+                适合人群：追求极致效率，快节奏学习，准备高级别考试的学生
               </p>
 
               <Link href="/signin" className="block">

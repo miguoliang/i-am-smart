@@ -28,12 +28,6 @@ export function Navigation() {
             >
               定价
             </Link>
-            <Link
-              href="/changelog"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              更新日志
-            </Link>
           </div>
 
           {/* Right side - Auth buttons (Client Component) */}

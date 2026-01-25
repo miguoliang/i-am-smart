@@ -17,7 +17,6 @@ export async function proxy(req: NextRequest) {
     const publicRoutes = [
       '/',
       '/signin',
-      '/changelog',
     ]
 
     // Protected routes that require authentication
