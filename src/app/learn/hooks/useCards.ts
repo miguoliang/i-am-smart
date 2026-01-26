@@ -44,7 +44,7 @@ export function useCards() {
 
   const [{ localCards, lastValidLevel }, dispatch] = useReducer(cardsReducer, {
     localCards: null,
-    lastValidLevel: null,
+    lastValidLevel: level,
   });
 
   const apiReviewedCount = data?.reviewedCount || 0;
