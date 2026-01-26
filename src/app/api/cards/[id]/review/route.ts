@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { quality } = await request.json() // 0-5
+    const { quality, timezoneOffset } = await request.json() // 0-5
     
     // Validate quality parameter
     if (typeof quality !== 'number' || quality < MIN_QUALITY || quality > MAX_QUALITY) {
@@ -28,7 +28,7 @@ export async function POST(
     }
 
     const cardService = await createCardService()
-    const result = await cardService.reviewCard(user.id, cardId, quality)
+    const result = await cardService.reviewCard(user.id, cardId, quality, timezoneOffset)
 
     return apiSuccess(result)
   } catch (error) {

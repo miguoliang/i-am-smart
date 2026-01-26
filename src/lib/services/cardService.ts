@@ -18,8 +18,8 @@ export interface ReviewCardResult {
 export class CardService {
   constructor(private cardRepository: CardRepository) {}
 
-  async getReviewedTodayCount(userId: string): Promise<number> {
-    const { startOfToday, endOfToday } = getTodayDateRange();
+  async getReviewedTodayCount(userId: string, timezoneOffset?: number): Promise<number> {
+    const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
     return this.cardRepository.getReviewedTodayCount(
       userId, 
       startOfToday.toISOString(), 
@@ -27,8 +27,8 @@ export class CardService {
     );
   }
 
-  async getDueCards(userId: string, level?: string): Promise<DueCardsResult> {
-    const currentReviewedCount = await this.getReviewedTodayCount(userId);
+  async getDueCards(userId: string, level?: string, timezoneOffset?: number): Promise<DueCardsResult> {
+    const currentReviewedCount = await this.getReviewedTodayCount(userId, timezoneOffset);
 
     if (currentReviewedCount >= DAILY_REVIEW_LIMIT) {
       return {
@@ -46,7 +46,7 @@ export class CardService {
     };
   }
 
-  async reviewCard(userId: string, cardId: number, quality: number): Promise<ReviewCardResult> {
+  async reviewCard(userId: string, cardId: number, quality: number, timezoneOffset?: number): Promise<ReviewCardResult> {
     // 1. Fetch card
     const card = await this.cardRepository.getCardById(cardId, userId);
     if (!card) {
@@ -54,7 +54,7 @@ export class CardService {
     }
 
     // 2. Check daily limit
-    const { startOfToday, endOfToday } = getTodayDateRange();
+    const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
     
     // Check if this card was already reviewed today
     const isCardReviewedToday =
@@ -63,7 +63,7 @@ export class CardService {
       new Date(card.last_reviewed_at) <= endOfToday;
 
     if (!isCardReviewedToday) {
-      const reviewedTodayCount = await this.getReviewedTodayCount(userId);
+      const reviewedTodayCount = await this.getReviewedTodayCount(userId, timezoneOffset);
       if (reviewedTodayCount >= DAILY_REVIEW_LIMIT) {
         throw ApiError.dailyLimitExceeded(
           translate(t().cards.dailyLimitExceeded, { limit: DAILY_REVIEW_LIMIT })

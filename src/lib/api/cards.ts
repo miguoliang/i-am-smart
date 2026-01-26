@@ -18,6 +18,12 @@ export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCa
     searchParams.set('level', params.level);
   }
 
+  // Add timezone offset
+  // getTimezoneOffset() returns the difference in minutes between UTC and local time
+  // e.g., -480 for UTC+8, 480 for UTC-8
+  const timezoneOffset = new Date().getTimezoneOffset();
+  searchParams.set('timezoneOffset', timezoneOffset.toString());
+
   const url = `/api/cards/due${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   const res = await fetch(url);
   if (!res.ok) {
@@ -31,10 +37,11 @@ export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCa
 }
 
 export async function reviewCard(cardId: number, quality: number): Promise<void> {
+  const timezoneOffset = new Date().getTimezoneOffset();
   const res = await fetch(`/api/cards/${cardId}/review`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quality }),
+    body: JSON.stringify({ quality, timezoneOffset }),
   });
 
   if (!res.ok) {

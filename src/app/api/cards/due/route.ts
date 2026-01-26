@@ -12,6 +12,9 @@ export async function GET(req: NextRequest) {
     // Parse optional level query parameter
     const searchParams = req.nextUrl.searchParams;
     const level = searchParams.get('level') || undefined;
+    const timezoneOffset = searchParams.get('timezoneOffset') 
+      ? parseInt(searchParams.get('timezoneOffset')!, 10) 
+      : undefined;
 
     // Validate level if provided
     if (level && !['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) {
@@ -19,7 +22,7 @@ export async function GET(req: NextRequest) {
     }
 
     const cardService = await createCardService();
-    const result = await cardService.getDueCards(user.id, level)
+    const result = await cardService.getDueCards(user.id, level, timezoneOffset)
 
     return apiSuccess(result)
   } catch (error) {

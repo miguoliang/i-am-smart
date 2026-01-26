@@ -6,9 +6,21 @@ dayjs.extend(utc)
 
 /**
  * Get today's date range in UTC (start and end of the day)
+ * @param timezoneOffset - Optional timezone offset in minutes (from Date.prototype.getTimezoneOffset())
  * @returns {Object} { startOfToday, endOfToday } as Date objects
  */
-export function getTodayDateRange() {
+export function getTodayDateRange(timezoneOffset?: number) {
+  // If offset is provided, use it. Note: getTimezoneOffset returns (UTC - Local),
+  // so we negate it to get (Local - UTC) for dayjs.
+  if (timezoneOffset !== undefined) {
+    const offset = -timezoneOffset
+    const localNow = dayjs.utc().utcOffset(offset)
+    return {
+      startOfToday: localNow.startOf('day').toDate(),
+      endOfToday: localNow.endOf('day').toDate()
+    }
+  }
+
   const now = dayjs.utc()
   return {
     startOfToday: now.startOf('day').toDate(),
