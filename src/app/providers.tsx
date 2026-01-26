@@ -42,12 +42,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       if (!isMounted) return;
 
       if (event === 'SIGNED_IN') {
+        // Invalidate cards query cache to ensure fresh data after sign-in
+        queryClient.invalidateQueries({ queryKey: ["cards"] });
         // Only refresh if we're on a valid page (not during navigation or 404)
         if (pathname && VALID_ROUTES.includes(pathname)) {
           router.refresh()
         }
       }
       if (event === 'SIGNED_OUT') {
+        // Clear all queries on sign out
+        queryClient.clear()
         router.push('/')
       }
     })
@@ -56,7 +60,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       isMounted = false;
       subscription.unsubscribe();
     }
-  }, [supabase, router, pathname])
+  }, [supabase, router, pathname, queryClient])
 
   return (
     <QueryClientProvider client={queryClient}>

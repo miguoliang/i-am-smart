@@ -21,7 +21,7 @@ export function useDueCardsQuery(params?: UseDueCardsQueryParams) {
     queryFn: () => fetchDueCards(queryParams),
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnReconnect: false,
   });
 
