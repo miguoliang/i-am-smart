@@ -135,7 +135,20 @@ Comprehensive review of the Be It Forever codebase covering architecture, TypeSc
 - Call `onCompleteRef.current()` in the interval callback instead of `onComplete()`
 - Prevents effect from re-running when callback changes and avoids stale closures
 
-### 6. Providers effect deps (low)
+### 6. Integration tests for critical flows (low) ✅ **COMPLETED**
+
+**Issue:** No integration tests covering critical user flows (API route + service, learn flow).
+
+**Resolution:**
+- **API route integration tests** (run with `@jest-environment node`):
+  - `src/app/api/cards/due/route.integration.test.ts`: GET /api/cards/due with mocked requireAuth and createCardService; asserts 200 + data shape, 401 on auth error, 400 on invalid level.
+  - `src/app/api/cards/[id]/review/route.integration.test.ts`: POST /api/cards/[id]/review with mocked auth and CardService; asserts 200 + nextReview, 401 on auth error, 400 on invalid quality or card id.
+- **Learn flow integration test** (jsdom, mocked API client to avoid loading next/server):
+  - `src/app/learn/learn-flow.integration.test.tsx`: Renders Learn page with QueryClient + ThemeProvider; mocks fetchDueCards and reviewCard; asserts load due cards → display first card, flip → rating buttons visible, rate card → reviewCard(1, 5) called.
+
+**Tests:** 17 suites, 134 tests (11 new integration tests). All passing.
+
+### 7. Providers effect deps (low)
 
 **Location:** `src/app/providers.tsx`.
 
@@ -152,7 +165,7 @@ Comprehensive review of the Be It Forever codebase covering architecture, TypeSc
 | Architecture    | ⭐⭐⭐⭐⭐ | Repository pattern, clear layering         |
 | Type safety     | ⭐⭐⭐⭐⭐ | Strict TS, minimal `any`                   |
 | Code quality    | ⭐⭐⭐⭐⭐ | Clean, maintainable, principles followed   |
-| Testing         | ⭐⭐⭐⭐   | Good unit coverage; more integration possible |
+| Testing         | ⭐⭐⭐⭐⭐ | Unit + integration tests for critical flows |
 | Security        | ⭐⭐⭐⭐⭐ | Auth, validation, env handling             |
 | Accessibility   | ⭐⭐⭐⭐   | Skip link, ARIA, keyboard, Storybook a11y  |
 | Error handling  | ⭐⭐⭐⭐⭐ | Consistent error parsing across all API clients |
@@ -170,7 +183,7 @@ Comprehensive review of the Be It Forever codebase covering architecture, TypeSc
 | Medium   | ~~Add JSDoc for SM-2 and complex logic~~ | ✅ Done |
 | Low      | ~~Extract SM-2 constants~~ | ✅ Done |
 | Low      | ~~Fix useCountdown callback ref~~ | ✅ Done |
-| Low      | Add integration tests for critical flows | Pending |
+| Low      | ~~Add integration tests for critical flows~~ | ✅ Done |
 
 ---
 
@@ -222,5 +235,6 @@ Comprehensive review of the Be It Forever codebase covering architecture, TypeSc
 - `src/lib/services/cardService.ts` — Comprehensive JSDoc for SM-2 algorithm + uses SM2_ALGORITHM constants
 - `src/lib/constants.ts` — Added SM2_ALGORITHM constant object with all magic numbers
 - `src/app/hooks/useCountdown.ts` — Fixed onComplete stale closure with useRef pattern
+- Integration tests added: `src/app/api/cards/due/route.integration.test.ts`, `src/app/api/cards/[id]/review/route.integration.test.ts`, `src/app/learn/learn-flow.integration.test.tsx`
 
-**Tests:** All existing tests pass (14 suites, 123 tests including useCountdown and cardService)
+**Tests:** 17 suites, 134 tests (including 11 new integration tests). All passing.
