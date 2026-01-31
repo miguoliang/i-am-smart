@@ -1,8 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { reviewCard as reviewCardAPI } from "@/lib/api/cards";
+import type { DueCardsResponse } from "@/lib/api/cards";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { nowISO } from "@/lib/utils/dateUtils";
+import { useLevel } from "./useLevel";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
@@ -20,6 +22,9 @@ export function useCardReview({
   setCards,
   resetFlip,
 }: UseCardReviewParams) {
+  const queryClient = useQueryClient();
+  const { level } = useLevel();
+
   const { mutate: reviewCard, isPending } = useMutation({
     mutationFn: ({ cardId, quality }: { cardId: number; quality: number }) =>
       reviewCardAPI(cardId, quality),
@@ -60,13 +65,17 @@ export function useCardReview({
 
       return { previousCards };
     },
-    // After successful review, no refetch needed
-    // The card is marked as reviewed (today), and its next_review_date
-    // is set to the future, so it won't appear in future due queries.
-    // The API also updates last_reviewed_at in the database.
-    onSuccess: () => {
-      // Card already marked as reviewed (today) in onMutate
-      // No additional action needed
+    // Sync React Query cache so navigating away and back shows correct state
+    // (reviewed cards are removed from cache; otherwise stale cache would show them again)
+    onSuccess: (_data, { cardId }) => {
+      const queryKey = ["cards", "due", level];
+      queryClient.setQueryData<DueCardsResponse>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          reviewedCount: old.reviewedCount + 1,
+          cards: old.cards.filter((c) => c.id !== cardId),
+        };
+      });
     },
     // If mutation fails, rollback to previous state
     onError: (error, variables, context) => {
