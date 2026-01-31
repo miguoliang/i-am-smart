@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
  * Custom hook for countdown timer
@@ -45,14 +45,14 @@ export function useCountdown(
     };
   }, [isActive, seconds, onComplete]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setSeconds(initialSeconds);
     setIsActive(true);
-  };
+  }, [initialSeconds]);
 
-  const start = () => {
+  const start = useCallback(() => {
     setIsActive(true);
-  };
+  }, []);
 
   return {
     seconds,
