@@ -1,7 +1,7 @@
 import { CardRepository } from '@/lib/repositories/card.repository';
 import { getTodayDateRange } from '@/lib/utils/dateUtils';
 import { Card } from '@/app/learn/types';
-import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
+import { DAILY_REVIEW_LIMIT, SM2_ALGORITHM } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
 import { t, translate } from '@/lib/i18n';
 
@@ -92,22 +92,25 @@ export class CardService {
     }
 
     /** SM-2: compute new ease factor, repetitions, and interval from quality (0–5). */
-    let newEase = Number(card.ease_factor ?? 2.5);
+    let newEase = Number(card.ease_factor ?? SM2_ALGORITHM.DEFAULT_EASE_FACTOR);
     let newReps = Number(card.repetitions ?? 0);
     let newInterval = Number(card.interval_days ?? 0);
 
-    if (quality >= 3) {
-      if (newReps === 0) newInterval = 1;
-      else if (newReps === 1) newInterval = 6;
+    if (quality >= SM2_ALGORITHM.QUALITY_THRESHOLD) {
+      if (newReps === 0) newInterval = SM2_ALGORITHM.FIRST_INTERVAL;
+      else if (newReps === 1) newInterval = SM2_ALGORITHM.SECOND_INTERVAL;
       else newInterval = Math.round(newInterval * newEase);
       newReps += 1;
     } else {
       newReps = 0;
-      newInterval = 1;
+      newInterval = SM2_ALGORITHM.FIRST_INTERVAL;
     }
 
-    newEase += 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02);
-    if (newEase < 1.3) newEase = 1.3;
+    newEase += SM2_ALGORITHM.EASE_ADJUSTMENT_BASE - 
+      (SM2_ALGORITHM.MAX_QUALITY - quality) * 
+      (SM2_ALGORITHM.EASE_ADJUSTMENT_FACTOR + 
+       (SM2_ALGORITHM.MAX_QUALITY - quality) * SM2_ALGORITHM.EASE_ADJUSTMENT_PENALTY);
+    if (newEase < SM2_ALGORITHM.MIN_EASE_FACTOR) newEase = SM2_ALGORITHM.MIN_EASE_FACTOR;
 
     const nextReview = new Date();
     nextReview.setUTCDate(nextReview.getUTCDate() + newInterval);

@@ -18,6 +18,12 @@ export function useCountdown(
   const [seconds, setSeconds] = useState(initialSeconds);
   const [isActive, setIsActive] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const onCompleteRef = useRef(onComplete);
+
+  // Keep onComplete ref up to date without re-creating the effect
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (isActive && seconds > 0) {
@@ -25,8 +31,8 @@ export function useCountdown(
         setSeconds((prev) => {
           if (prev <= 1) {
             setIsActive(false);
-            if (onComplete) {
-              onComplete();
+            if (onCompleteRef.current) {
+              onCompleteRef.current();
             }
             return 0;
           }
@@ -43,7 +49,7 @@ export function useCountdown(
         clearInterval(intervalRef.current);
       }
     };
-  }, [isActive, seconds, onComplete]);
+  }, [isActive, seconds]);
 
   const reset = useCallback(() => {
     setSeconds(initialSeconds);

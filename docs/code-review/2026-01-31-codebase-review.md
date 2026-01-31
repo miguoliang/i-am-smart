@@ -73,25 +73,23 @@ Comprehensive review of the Be It Forever codebase covering architecture, TypeSc
 - Helper safely parses JSON body once, extracts `error.message`, and falls back to default
 - Preserves special handling for 401/403 status codes
 
-### 2. Magic numbers in SM-2 (low)
+### 2. Magic numbers in SM-2 (low) ✅ **COMPLETED**
 
 **Location:** `src/lib/services/cardService.ts`.
 
 **Issue:** SM-2 constants (1, 6, 3, 1.3, 0.1, 0.08, 0.02) are inline.
 
-**Recommendation:** Move to `src/lib/constants.ts`:
-
-```typescript
-export const SM2_ALGORITHM = {
-  FIRST_INTERVAL: 1,
-  SECOND_INTERVAL: 6,
-  QUALITY_THRESHOLD: 3,
-  MIN_EASE_FACTOR: 1.3,
-  EASE_ADJUSTMENT_BASE: 0.1,
-  EASE_ADJUSTMENT_FACTOR: 0.08,
-  EASE_ADJUSTMENT_PENALTY: 0.02,
-} as const;
-```
+**Resolution:**
+- Created `SM2_ALGORITHM` constant object in `src/lib/constants.ts`
+- Extracted all magic numbers with descriptive names:
+  - `DEFAULT_EASE_FACTOR: 2.5`
+  - `FIRST_INTERVAL: 1`, `SECOND_INTERVAL: 6`
+  - `QUALITY_THRESHOLD: 3`
+  - `MIN_EASE_FACTOR: 1.3`
+  - `EASE_ADJUSTMENT_BASE: 0.1`, `EASE_ADJUSTMENT_FACTOR: 0.08`, `EASE_ADJUSTMENT_PENALTY: 0.02`
+  - `MAX_QUALITY: 5`
+- Added JSDoc with Wikipedia link to constant definition
+- Updated `cardService.ts` to use constants throughout the SM-2 algorithm
 
 ### 3. Documentation (low) ✅ **COMPLETED**
 
@@ -124,13 +122,18 @@ export const SM2_ALGORITHM = {
 - Removed all manual type guards and `as` casts
 - Better error messages showing exact validation failures (e.g., "index 2: knowledge.code: Expected string, received number")
 
-### 5. useCountdown — onComplete dependency (low)
+### 5. useCountdown — onComplete dependency (low) ✅ **COMPLETED**
 
 **Location:** `src/app/hooks/useCountdown.ts`.
 
 **Issue:** `onComplete` in `useEffect` deps can cause effect re-runs and stale closure concerns.
 
-**Recommendation:** Store callback in a ref and call `onCompleteRef.current()` inside the effect; omit `onComplete` from effect deps.
+**Resolution:**
+- Added `onCompleteRef = useRef(onComplete)` to store the callback
+- Added separate effect to sync `onCompleteRef.current = onComplete` whenever `onComplete` changes
+- Removed `onComplete` from main effect dependencies (now only `[isActive, seconds]`)
+- Call `onCompleteRef.current()` in the interval callback instead of `onComplete()`
+- Prevents effect from re-running when callback changes and avoids stale closures
 
 ### 6. Providers effect deps (low)
 
@@ -165,8 +168,8 @@ export const SM2_ALGORITHM = {
 | Medium   | ~~Improve API client error parsing~~ | ✅ Done |
 | Medium   | ~~Consider Zod in repositories~~ | ✅ Done |
 | Medium   | ~~Add JSDoc for SM-2 and complex logic~~ | ✅ Done |
-| Low      | Extract SM-2 constants | Pending |
-| Low      | Fix useCountdown callback ref | Pending |
+| Low      | ~~Extract SM-2 constants~~ | ✅ Done |
+| Low      | ~~Fix useCountdown callback ref~~ | ✅ Done |
 | Low      | Add integration tests for critical flows | Pending |
 
 ---
@@ -216,6 +219,8 @@ export const SM2_ALGORITHM = {
 - `src/lib/api/feedback.ts` — Uses parseApiErrorResponse for consistency
 - `src/lib/api/import.ts` — Type-safe error extraction from already-parsed body
 - `src/lib/repositories/implementations/supabase-card.repository.ts` — Zod validation with detailed errors
-- `src/lib/services/cardService.ts` — Comprehensive JSDoc for SM-2 algorithm
+- `src/lib/services/cardService.ts` — Comprehensive JSDoc for SM-2 algorithm + uses SM2_ALGORITHM constants
+- `src/lib/constants.ts` — Added SM2_ALGORITHM constant object with all magic numbers
+- `src/app/hooks/useCountdown.ts` — Fixed onComplete stale closure with useRef pattern
 
-**Tests:** All existing tests pass (cardService.test.ts, apiError.test.ts)
+**Tests:** All existing tests pass (14 suites, 123 tests including useCountdown and cardService)
