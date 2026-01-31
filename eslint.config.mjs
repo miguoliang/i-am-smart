@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     "public/sw.js",
     "public/sw 2.js",
     "public/workbox-*.js",
+    "storybook-static/**",
     "docker/**",
   ]),
   {
