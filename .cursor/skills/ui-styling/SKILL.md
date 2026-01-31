@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: ui-styling
+description: Shadcn, Radix, Tailwind 4, responsive UI. Use when styling, building UI, or using components.
 ---
 
 # UI & Styling Standards

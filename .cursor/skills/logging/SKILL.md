@@ -1,3 +1,8 @@
+---
+name: logging
+description: Uses project logger utility; no console.log. Use when adding logs, log levels, or debugging.
+---
+
 # Logging Standards
 
 Follow these standards for logging in the application.

@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: error-handling
+description: Explicit errors, types, messages, fail-safe, React error boundaries. Use when adding or changing error handling, logging, or recovery.
 ---
 
 # Error Handling Principles

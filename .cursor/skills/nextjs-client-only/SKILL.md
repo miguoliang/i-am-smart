@@ -1,5 +1,6 @@
 ---
-alwaysApply: false
+name: nextjs-client-only
+description: Client-only code in Next.js; dynamic(ssr false) via wrapper. Use when code must run only in the browser or when fixing hydration.
 ---
 
 # Next.js App Router 专家规则（专用于 Cursor / AI 代码助手）

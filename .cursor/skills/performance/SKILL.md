@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: performance
+description: Frontend/backend/network optimization. Use when optimizing performance, bundle size, or queries.
 ---
 
 # Performance Optimization

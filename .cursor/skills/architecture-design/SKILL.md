@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: architecture-design
+description: SOLID, separation of concerns, design patterns. Use when designing modules, refactoring structure, or discussing architecture.
 ---
 
 # Architecture & Design Principles

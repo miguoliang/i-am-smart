@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: accessibility
+description: Ensures WCAG 2.1 AA, keyboard access, ARIA, and contrast. Use when building or reviewing UI, forms, or accessibility.
 ---
 
 # Accessibility Standards

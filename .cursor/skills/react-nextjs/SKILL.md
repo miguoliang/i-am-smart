@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: react-nextjs
+description: React 19, Next.js 16, Server/Client Components, data fetching. Use when writing or changing React/Next.js code.
 ---
 
 # React & Next.js Standards

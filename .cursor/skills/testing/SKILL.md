@@ -1,6 +1,6 @@
 ---
-description: Standards for writing and organizing tests
-globs: ["**/*.test.ts", "**/*.test.tsx", "src/**/*"]
+name: testing
+description: Jest, Testing Library, test structure and mocking. Use when writing or reviewing tests, or when the user mentions tests.
 ---
 
 # Testing Standards

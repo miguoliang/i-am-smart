@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: api-design
+description: REST, HTTP methods, status codes, request/response design. Use when designing or changing APIs, endpoints, or backend routes.
 ---
 
 # API Design Principles

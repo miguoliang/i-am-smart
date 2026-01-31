@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: process-workflow
+description: Version control, reviews, docs, refactors, CI. Use when discussing workflow, commits, or process.
 ---
 
 # Process & Workflow Principles
