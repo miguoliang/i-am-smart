@@ -1,7 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CardRepository, ReviewCardParams } from '../card.repository';
-import { Card, KnowledgeMetadata } from '@/app/learn/types';
+import type { Card } from '@/app/learn/types';
 import { handleRepositoryError } from '../utils/error-handling';
+import { CardRowSchema } from '../schemas/card.schema';
 
 export class SupabaseCardRepository implements CardRepository {
   constructor(private client: SupabaseClient) {}
@@ -57,43 +58,13 @@ export class SupabaseCardRepository implements CardRepository {
       throw new Error('Expected array from get_due_cards RPC');
     }
 
-    // Validate and transform data properly
-    const cards: Card[] = data.map((card: unknown) => {
-      // Type guard to validate card structure
-      if (!card || typeof card !== 'object') {
-        throw new Error(`Invalid card data: not an object`);
+    const cards: Card[] = data.map((row: unknown, index: number) => {
+      const parsed = CardRowSchema.safeParse(row);
+      if (parsed.success === false) {
+        const details = parsed.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join('; ');
+        throw new Error(`Invalid card data at index ${index}: ${details}`);
       }
-
-      const cardData = card as Record<string, unknown>;
-
-      // Validate required fields
-      if (!cardData.id || !cardData.knowledge_code || !cardData.next_review_date) {
-        throw new Error(`Invalid card data: missing required fields`);
-      }
-
-      // Handle knowledge - Supabase returns it as an object (not array) with !inner
-      const knowledgeData = cardData.knowledge;
-      if (!knowledgeData || typeof knowledgeData !== 'object' || Array.isArray(knowledgeData)) {
-        throw new Error(`Invalid card data: missing or invalid knowledge object`);
-      }
-
-      const knowledge = knowledgeData as Record<string, unknown>;
-
-      return {
-        id: cardData.id as number,
-        knowledge_code: cardData.knowledge_code as string,
-        knowledge: {
-          code: knowledge.code as string,
-          name: knowledge.name as string,
-          description: knowledge.description as string,
-          metadata: (knowledge.metadata || {}) as KnowledgeMetadata,
-        },
-        next_review_date: cardData.next_review_date as string,
-        last_reviewed_at: (cardData.last_reviewed_at ?? undefined) as string | undefined,
-        ease_factor: (cardData.ease_factor ?? undefined) as number | undefined,
-        interval_days: (cardData.interval_days ?? undefined) as number | undefined,
-        repetitions: (cardData.repetitions ?? undefined) as number | undefined,
-      };
+      return parsed.data as Card;
     });
 
     return cards;
@@ -125,34 +96,12 @@ export class SupabaseCardRepository implements CardRepository {
       return null;
     }
 
-    // Validate required fields
-    if (!data.id || !data.knowledge_code || !data.next_review_date) {
-      throw new Error(`Invalid card data from database: missing required fields`);
+    const parsed = CardRowSchema.safeParse(data);
+    if (parsed.success === false) {
+      const details = parsed.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join('; ');
+      throw new Error(`Invalid card data from database: ${details}`);
     }
-
-    // Validate knowledge object - Supabase returns it as an object (not array) with single()
-    const knowledgeData = data.knowledge;
-    if (!knowledgeData || typeof knowledgeData !== 'object' || Array.isArray(knowledgeData)) {
-      throw new Error(`Invalid card data: missing or invalid knowledge object`);
-    }
-
-    const knowledge = knowledgeData as Record<string, unknown>;
-
-    return {
-      id: data.id as number,
-      knowledge_code: data.knowledge_code as string,
-      knowledge: {
-        code: knowledge.code as string,
-        name: knowledge.name as string,
-        description: knowledge.description as string,
-        metadata: (knowledge.metadata || {}) as KnowledgeMetadata,
-      },
-      next_review_date: data.next_review_date as string,
-      last_reviewed_at: (data.last_reviewed_at ?? undefined) as string | undefined,
-      ease_factor: (data.ease_factor ?? undefined) as number | undefined,
-      interval_days: (data.interval_days ?? undefined) as number | undefined,
-      repetitions: (data.repetitions ?? undefined) as number | undefined,
-    };
+    return parsed.data as Card;
   }
 
   async reviewCard(params: ReviewCardParams): Promise<void> {

@@ -1,5 +1,6 @@
 // API functions for knowledge
 import { t } from "@/lib/i18n";
+import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
 export interface KnowledgeMetadata {
   [key: string]: unknown;
@@ -39,7 +40,8 @@ export async function fetchKnowledges(params: FetchKnowledgesParams = {}): Promi
     if (res.status === 401 || res.status === 403) {
       throw new Error(t().auth.forbidden);
     }
-    throw new Error("Failed to load knowledge");
+    const message = await parseApiErrorResponse(res, "Failed to load knowledge");
+    throw new Error(message);
   }
   const json = await res.json();
   // API returns { data: { data, total, page, pageSize, totalPages } }

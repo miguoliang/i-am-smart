@@ -1,4 +1,6 @@
 // API functions for import
+import type { ApiResponse } from "@/lib/utils/apiError";
+
 export interface ImportResult {
   success: boolean;
   count?: number;
@@ -31,9 +33,10 @@ export async function importKnowledge(items: CefrKnowledgeItem[]): Promise<Impor
     // API returns { data: { success, count, total, skipped, message } }
     const data = result.data;
     return { success: true, count: data?.count };
-  } else {
-    const errorMessage = result.error?.message || result.error || "Failed to import knowledge";
-    throw new Error(errorMessage);
   }
+  const body = result as ApiResponse | null;
+  const message =
+    (typeof body?.error === "object" && body?.error?.message) || "Failed to import knowledge";
+  throw new Error(message);
 }
 

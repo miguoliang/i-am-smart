@@ -1,4 +1,5 @@
 import { Feedback } from "@/lib/types/feedback";
+import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
 export interface FeedbacksResponse {
   data: Feedback[];
@@ -8,8 +9,8 @@ export interface FeedbacksResponse {
 export async function fetchFeedbacks(page: number = 1, limit: number = 10): Promise<FeedbacksResponse> {
   const res = await fetch(`/api/feedback?page=${page}&limit=${limit}`);
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error?.message || data.error || "Failed to fetch feedbacks");
+    const message = await parseApiErrorResponse(res, "Failed to fetch feedbacks");
+    throw new Error(message);
   }
   const json = await res.json();
   return json.data;

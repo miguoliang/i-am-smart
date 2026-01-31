@@ -13,6 +13,30 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+/**
+ * Parses an API error response body and returns a user-facing message.
+ * Use when handling non-ok fetch responses to surface server error messages.
+ *
+ * @param response - The fetch Response (non-ok)
+ * @param defaultMessage - Fallback message if body is not JSON or has no error.message
+ * @returns Promise resolving to the error message to throw
+ */
+export async function parseApiErrorResponse(
+  response: Response,
+  defaultMessage: string
+): Promise<string> {
+  try {
+    const body = (await response.json()) as ApiResponse | null;
+    const message = body?.error?.message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  } catch {
+    // Response body was not JSON or was empty
+  }
+  return defaultMessage;
+}
+
 export function handleApiError(error: unknown) {
   logger.error('API Error', { error });
 

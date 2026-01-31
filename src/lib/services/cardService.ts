@@ -15,9 +15,15 @@ export interface ReviewCardResult {
   nextReview: string;
 }
 
+/**
+ * Card service: due cards, today's review count, and card review (SM-2).
+ */
 export class CardService {
   constructor(private cardRepository: CardRepository) {}
 
+  /**
+   * Returns how many cards the user has already reviewed today (in their timezone).
+   */
   async getReviewedTodayCount(userId: string, timezoneOffset?: number): Promise<number> {
     const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
     return this.cardRepository.getReviewedTodayCount(
@@ -27,6 +33,10 @@ export class CardService {
     );
   }
 
+  /**
+   * Returns due cards for the user, respecting the daily review limit.
+   * If the user has already reached the limit today, returns an empty list.
+   */
   async getDueCards(userId: string, level?: string, timezoneOffset?: number): Promise<DueCardsResult> {
     const currentReviewedCount = await this.getReviewedTodayCount(userId, timezoneOffset);
 
@@ -46,17 +56,27 @@ export class CardService {
     };
   }
 
+  /**
+   * Records a review for a card using the SM-2 spaced repetition algorithm.
+   *
+   * Steps: (1) load card and enforce daily limit, (2) compute new interval/ease/reps via SM-2,
+   * (3) persist via repository.
+   *
+   * @see https://en.wikipedia.org/wiki/SuperMemo#SM-2_algorithm
+   * @param userId - Account ID
+   * @param cardId - Card ID
+   * @param quality - User rating 0–5: 0–2 = incorrect, 3–5 = correct (higher = easier)
+   * @param timezoneOffset - Minutes offset from UTC (e.g. from Date.getTimezoneOffset()) for “today”
+   * @returns Next review date (ISO string) and success
+   * @throws ApiError.notFound if card missing, ApiError.dailyLimitExceeded if daily limit reached
+   */
   async reviewCard(userId: string, cardId: number, quality: number, timezoneOffset?: number): Promise<ReviewCardResult> {
-    // 1. Fetch card
     const card = await this.cardRepository.getCardById(cardId, userId);
     if (!card) {
       throw ApiError.notFound(t().cards.cardNotFound);
     }
 
-    // 2. Check daily limit
     const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
-    
-    // Check if this card was already reviewed today
     const isCardReviewedToday =
       card.last_reviewed_at &&
       new Date(card.last_reviewed_at) >= startOfToday &&
@@ -71,25 +91,21 @@ export class CardService {
       }
     }
 
-    // 3. SM-2 Algorithm
-    let newEase = Number(card.ease_factor || 2.5);
-    let newReps = Number(card.repetitions || 0);
-    let newInterval = Number(card.interval_days || 0);
+    /** SM-2: compute new ease factor, repetitions, and interval from quality (0–5). */
+    let newEase = Number(card.ease_factor ?? 2.5);
+    let newReps = Number(card.repetitions ?? 0);
+    let newInterval = Number(card.interval_days ?? 0);
 
     if (quality >= 3) {
-      // Correct answer
       if (newReps === 0) newInterval = 1;
       else if (newReps === 1) newInterval = 6;
       else newInterval = Math.round(newInterval * newEase);
-
       newReps += 1;
     } else {
-      // Incorrect, reset
       newReps = 0;
       newInterval = 1;
     }
 
-    // Adjust Ease Factor
     newEase += 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02);
     if (newEase < 1.3) newEase = 1.3;
 
@@ -97,7 +113,6 @@ export class CardService {
     nextReview.setUTCDate(nextReview.getUTCDate() + newInterval);
     nextReview.setUTCHours(0, 0, 0, 0);
 
-    // 4. Update via Repository
     await this.cardRepository.reviewCard({
       cardId,
       userId,

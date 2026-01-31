@@ -1,6 +1,7 @@
 // API functions for cards
 import type { Card } from "@/app/learn/types";
 import type { ApiResponse } from "@/lib/utils/apiError";
+import { parseApiErrorResponse } from "@/lib/utils/apiError";
 import { t } from "@/lib/i18n";
 
 export interface DueCardsResponse {
@@ -30,7 +31,8 @@ export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCa
     if (res.status === 401) {
       throw new Error(t().auth.unauthorized);
     }
-    throw new Error("Failed to fetch cards");
+    const message = await parseApiErrorResponse(res, "Failed to fetch cards");
+    throw new Error(message);
   }
   const json: ApiResponse<DueCardsResponse> = await res.json();
   return json.data ?? { reviewedCount: 0, cards: [] };
@@ -45,7 +47,8 @@ export async function reviewCard(cardId: number, quality: number): Promise<void>
   });
 
   if (!res.ok) {
-    throw new Error("Failed to review card");
+    const message = await parseApiErrorResponse(res, "Failed to review card");
+    throw new Error(message);
   }
 }
 

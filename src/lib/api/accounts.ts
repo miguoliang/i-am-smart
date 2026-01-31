@@ -1,4 +1,6 @@
 // API functions for accounts
+import { parseApiErrorResponse } from "@/lib/utils/apiError";
+
 export interface Account {
   id: string;
   username: string;
@@ -25,8 +27,8 @@ export async function fetchAccounts(
 ): Promise<AccountsResponse> {
   const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error?.message || data.error || "Failed to fetch accounts");
+    const message = await parseApiErrorResponse(res, "Failed to fetch accounts");
+    throw new Error(message);
   }
   const json = await res.json();
   // API returns { data: {...} }, extract the data object
@@ -42,8 +44,8 @@ export async function distributeCards(accountId: string): Promise<{ count: numbe
   });
 
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error?.message || data.error || "Failed to distribute cards");
+    const message = await parseApiErrorResponse(res, "Failed to distribute cards");
+    throw new Error(message);
   }
 
   const json = await res.json();
