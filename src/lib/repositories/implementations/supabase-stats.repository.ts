@@ -5,7 +5,8 @@ import { validateUserStats } from '../utils/validation';
 
 interface HeatmapRow {
   review_date: string;
-  review_count: string; // Postgres bigint returns as string
+  // Postgres bigint can be returned as string (node-pg) or number (PostgREST/Supabase)
+  review_count: string | number;
 }
 
 export class SupabaseStatsRepository implements StatsRepository {
@@ -43,17 +44,20 @@ export class SupabaseStatsRepository implements StatsRepository {
       throw new Error('Expected array from get_review_heatmap RPC');
     }
 
-    // Postgres returns count as string (bigint), validate and convert
+    // Postgres bigint may return as string (node-pg) or number (PostgREST/Supabase)
     return data.map((row: HeatmapRow) => {
       if (!row.review_date || typeof row.review_date !== 'string') {
         throw new Error(`Invalid heatmap row: missing or invalid review_date`);
       }
 
-      if (typeof row.review_count !== 'string') {
-        throw new Error(`Invalid heatmap row: review_count must be a string`);
+      if (row.review_count == null) {
+        throw new Error(`Invalid heatmap row: missing review_count`);
       }
 
-      const count = parseInt(row.review_count, 10);
+      const count =
+        typeof row.review_count === 'string'
+          ? parseInt(row.review_count, 10)
+          : Math.floor(Number(row.review_count));
       if (isNaN(count) || count < 0) {
         throw new Error(`Invalid heatmap row: invalid review_count value: ${row.review_count}`);
       }
