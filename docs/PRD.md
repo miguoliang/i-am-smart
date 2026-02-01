@@ -75,11 +75,13 @@ End-users focused on mastering content.
 1. **Onboarding**:
    * (Covered in Sign Up) - Immediate access to learning content upon first login.
 2. **Daily Review**:
-   * View cards due for review (`next_review_date <= today`).
+   * View cards due for review (`next_review_date <= today`), up to the user's daily due limit.
    * Reveal answer and rate quality (0-5).
    * System reschedules the card.
 3. **Progress Tracking**:
    * View dashboard with statistics (Total, New, Learning, Due Today).
+4. **Settings**:
+   * Set **daily due limit**: maximum number of cards to review per day (1–500). Default is 10. Due cards fetched and review submissions respect this limit.
 
 ### 3.2 Content Managers (Operators)
 
@@ -117,6 +119,7 @@ Internal users who manage the learning content.
 
 * **Initialization**: Users get access to ALL current knowledge items upon signup.
 * **Isolation**: One user's progress does not affect another's.
+* **Daily due limit**: Each account has a configurable `daily_due_limit` (1–500, default 10). The number of due cards returned and the ability to submit a review are capped by this limit per calendar day (in the user's timezone).
 
 ---
 

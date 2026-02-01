@@ -36,18 +36,24 @@ export class CardService {
   /**
    * Returns due cards for the user, respecting the daily review limit.
    * If the user has already reached the limit today, returns an empty list.
+   * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
    */
-  async getDueCards(userId: string, level?: string, timezoneOffset?: number): Promise<DueCardsResult> {
+  async getDueCards(
+    userId: string,
+    level?: string,
+    timezoneOffset?: number,
+    dailyLimit: number = DAILY_REVIEW_LIMIT
+  ): Promise<DueCardsResult> {
     const currentReviewedCount = await this.getReviewedTodayCount(userId, timezoneOffset);
 
-    if (currentReviewedCount >= DAILY_REVIEW_LIMIT) {
+    if (currentReviewedCount >= dailyLimit) {
       return {
-        reviewedCount: DAILY_REVIEW_LIMIT,
+        reviewedCount: dailyLimit,
         cards: [],
       };
     }
 
-    const remainingSlots = DAILY_REVIEW_LIMIT - currentReviewedCount;
+    const remainingSlots = dailyLimit - currentReviewedCount;
     const cards = await this.cardRepository.getDueCards(userId, remainingSlots, level);
 
     return {
@@ -68,9 +74,16 @@ export class CardService {
    * @param quality - User rating 0–5: 0–2 = incorrect, 3–5 = correct (higher = easier)
    * @param timezoneOffset - Minutes offset from UTC (e.g. from Date.getTimezoneOffset()) for “today”
    * @returns Next review date (ISO string) and success
+   * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
    * @throws ApiError.notFound if card missing, ApiError.dailyLimitExceeded if daily limit reached
    */
-  async reviewCard(userId: string, cardId: number, quality: number, timezoneOffset?: number): Promise<ReviewCardResult> {
+  async reviewCard(
+    userId: string,
+    cardId: number,
+    quality: number,
+    timezoneOffset?: number,
+    dailyLimit: number = DAILY_REVIEW_LIMIT
+  ): Promise<ReviewCardResult> {
     const card = await this.cardRepository.getCardById(cardId, userId);
     if (!card) {
       throw ApiError.notFound(t().cards.cardNotFound);
@@ -84,9 +97,9 @@ export class CardService {
 
     if (!isCardReviewedToday) {
       const reviewedTodayCount = await this.getReviewedTodayCount(userId, timezoneOffset);
-      if (reviewedTodayCount >= DAILY_REVIEW_LIMIT) {
+      if (reviewedTodayCount >= dailyLimit) {
         throw ApiError.dailyLimitExceeded(
-          translate(t().cards.dailyLimitExceeded, { limit: DAILY_REVIEW_LIMIT })
+          translate(t().cards.dailyLimitExceeded, { limit: dailyLimit })
         );
       }
     }

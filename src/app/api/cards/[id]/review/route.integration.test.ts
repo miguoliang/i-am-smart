@@ -18,12 +18,21 @@ const mockCreateCardService = createCardService as jest.MockedFunction<
 
 describe("POST /api/cards/[id]/review (integration)", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
+  const mockSupabase = {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn().mockResolvedValue({ data: { daily_due_limit: 10 }, error: null }),
+        })),
+      })),
+    })),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAuth.mockResolvedValue({
       user: mockUser as never,
-      supabase: {} as never,
+      supabase: mockSupabase as never,
     });
   });
 
@@ -55,7 +64,8 @@ describe("POST /api/cards/[id]/review (integration)", () => {
       "user-123",
       1,
       5,
-      -480
+      -480,
+      10
     );
   });
 

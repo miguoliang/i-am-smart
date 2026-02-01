@@ -87,6 +87,17 @@ export interface Translations {
     noData: string;
   };
 
+  // Settings
+  settings: {
+    loadFailed: string;
+    updateFailed: string;
+    dailyDueLimitRange: string;
+    dailyDueLimitLabel: string;
+    dailyDueLimitDescription: string;
+    save: string;
+    saved: string;
+  };
+
   // Error Boundaries
   errorBoundary: {
     somethingWentWrong: string;
@@ -161,6 +172,15 @@ export const translations: Record<Locale, Translations> = {
     },
     stats: {
       noData: "暂无数据",
+    },
+    settings: {
+      loadFailed: "加载设置失败",
+      updateFailed: "保存设置失败",
+      dailyDueLimitRange: "每日复习数量需在 1–500 之间",
+      dailyDueLimitLabel: "每日复习数量",
+      dailyDueLimitDescription: "每天最多复习多少张卡片（1–500）",
+      save: "保存",
+      saved: "已保存",
     },
     errorBoundary: {
       somethingWentWrong: "出错了",
