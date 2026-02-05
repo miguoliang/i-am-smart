@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 
 export function MarketingFooter() {
   const currentYear = new Date().getFullYear();
@@ -9,8 +10,17 @@ export function MarketingFooter() {
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Bottom Left */}
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>© {currentYear} 背它一辈子</span>
+            <Separator orientation="vertical" className="h-4" />
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              湘ICP备2026003808号
+            </a>
           </div>
 
           {/* Bottom Right - All links in one line */}

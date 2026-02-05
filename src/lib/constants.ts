@@ -1,6 +1,9 @@
 export const DAILY_REVIEW_LIMIT = 10;
 export const MIN_DAILY_DUE_LIMIT = 1;
 export const MAX_DAILY_DUE_LIMIT = 500;
+
+/** Preset options for daily due limit in settings (no save button; selection applies immediately). */
+export const DAILY_DUE_LIMIT_PRESETS = [10, 50, 200] as const;
 export const MAX_QUALITY = 5;
 export const MIN_QUALITY = 0;
 

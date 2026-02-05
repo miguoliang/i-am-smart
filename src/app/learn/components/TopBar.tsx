@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/form/Button";
-import { Input } from "@/components/form/Input";
-import { Label } from "@/components/form/Label";
 import { LogOut, Settings, Bell, BellOff, Loader2, Check, Lock } from "lucide-react";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -19,7 +17,7 @@ import {
   SheetTrigger,
 } from "@/components/overlay/Sheet";
 import { t } from "@/lib/i18n";
-import { MIN_DAILY_DUE_LIMIT, MAX_DAILY_DUE_LIMIT } from "@/lib/constants";
+import { DAILY_DUE_LIMIT_PRESETS } from "@/lib/constants";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
 interface TopBarProps {
@@ -45,59 +43,55 @@ async function updateDailyDueLimit(value: number) {
   return data as { daily_due_limit: number };
 }
 
-interface DailyDueLimitFieldProps {
+interface DailyDueLimitPresetsProps {
   me: { username: string | null; daily_due_limit: number } | undefined;
-  onSave: (n: number) => void;
+  onSelect: (value: number) => void;
   isPending: boolean;
+  pendingValue: number | undefined;
 }
 
-function DailyDueLimitField({ me, onSave, isPending }: DailyDueLimitFieldProps) {
-  const [dailyDueInput, setDailyDueInput] = useState<string>(
-    () => (me?.daily_due_limit != null ? String(me.daily_due_limit) : "")
-  );
-
-  const handleSave = () => {
-    const n = parseInt(dailyDueInput, 10);
-    if (!Number.isInteger(n) || n < MIN_DAILY_DUE_LIMIT || n > MAX_DAILY_DUE_LIMIT) {
-      toast.error(t().settings.dailyDueLimitRange);
-      return;
-    }
-    onSave(n);
-  };
+function DailyDueLimitPresets({ me, onSelect, isPending, pendingValue }: DailyDueLimitPresetsProps) {
+  const currentLimit = me?.daily_due_limit;
+  const effectiveLimit = pendingValue !== undefined ? pendingValue : currentLimit;
 
   return (
-    <div className="flex gap-2 items-end">
-      <div className="flex-1">
-        <Label htmlFor="daily-due-limit" className="sr-only">
-          {t().settings.dailyDueLimitDescription}
-        </Label>
-        <Input
-          id="daily-due-limit"
-          type="number"
-          min={MIN_DAILY_DUE_LIMIT}
-          max={MAX_DAILY_DUE_LIMIT}
-          value={dailyDueInput}
-          onChange={(e) => setDailyDueInput(e.target.value)}
-          aria-describedby="daily-due-limit-desc"
-          disabled={isPending}
-          className="h-10"
-        />
-        <p id="daily-due-limit-desc" className="text-xs text-muted-foreground mt-1">
-          {t().settings.dailyDueLimitDescription}
-        </p>
-      </div>
-      <Button
-        type="button"
-        size="sm"
-        onClick={handleSave}
-        disabled={isPending}
+    <div className="space-y-2">
+      <div
+        className="flex gap-2"
+        role="group"
+        aria-labelledby="daily-due-limit-label"
+        aria-describedby="daily-due-limit-desc"
       >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          t().settings.save
-        )}
-      </Button>
+        <span id="daily-due-limit-label" className="sr-only">
+          {t().settings.dailyDueLimitLabel}
+        </span>
+        {DAILY_DUE_LIMIT_PRESETS.map((value) => {
+          const isSelected = effectiveLimit === value;
+          const isUpdating = isPending && pendingValue === value;
+          return (
+            <Button
+              key={value}
+              type="button"
+              variant={isSelected ? "default" : "outline"}
+              size="sm"
+              onClick={() => onSelect(value)}
+              disabled={isPending}
+              aria-pressed={isSelected}
+              aria-busy={isUpdating}
+              className="flex-1"
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                value
+              )}
+            </Button>
+          );
+        })}
+      </div>
+      <p id="daily-due-limit-desc" className="text-xs text-muted-foreground">
+        {t().settings.dailyDueLimitDescription}
+      </p>
     </div>
   );
 }
@@ -122,7 +116,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
     onError: (err) => toast.error(err instanceof Error ? err.message : t().common.error),
   });
 
-  const handleSaveDailyLimit = (n: number) => updateLimitMutation.mutate(n);
+  const handleSelectDailyLimit = (n: number) => updateLimitMutation.mutate(n);
 
   const {
     isSupported: isPushSupported,
@@ -178,11 +172,11 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                   {t().common.loading}
                 </div>
               ) : (
-                <DailyDueLimitField
-                  key={me?.daily_due_limit ?? "loading"}
+                <DailyDueLimitPresets
                   me={me}
-                  onSave={handleSaveDailyLimit}
+                  onSelect={handleSelectDailyLimit}
                   isPending={updateLimitMutation.isPending}
+                  pendingValue={updateLimitMutation.variables}
                 />
               )}
             </div>
