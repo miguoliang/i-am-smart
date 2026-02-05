@@ -91,6 +91,11 @@ describe('SignIn', () => {
     });
   });
 
+  function agreeToTerms() {
+    const checkbox = screen.getByRole('checkbox', { name: /使用即表示同意/ });
+    fireEvent.click(checkbox);
+  }
+
   describe('Accessibility', () => {
     it('should have no accessibility violations', async () => {
       const { container } = render(
@@ -234,6 +239,7 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      agreeToTerms();
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       fireEvent.keyDown(emailInput, { key: 'Enter' });
 
@@ -459,6 +465,30 @@ describe('SignIn', () => {
       expect(sendButton).toBeDisabled();
     });
 
+    it('should disable send button when terms not agreed', () => {
+      (useSignIn as jest.Mock).mockReturnValue({
+        email: 'test@example.com',
+        setEmail: mockSetEmail,
+        otp: '',
+        setOtp: mockSetOtp,
+        otpSent: false,
+        loading: false,
+        otpInputRef: mockOtpInputRef,
+        handleSendOtp: mockHandleSendOtp,
+        handleVerifyOtp: mockHandleVerifyOtp,
+        handleResendOtp: mockHandleResendOtp,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const sendButton = screen.getByRole('button', { name: /发送验证码/i });
+      expect(sendButton).toBeDisabled();
+    });
+
     it('should call handleSendOtp when send button is clicked', () => {
       (useSignIn as jest.Mock).mockReturnValue({
         email: 'test@example.com',
@@ -479,6 +509,7 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      agreeToTerms();
       const sendButton = screen.getByRole('button', { name: /发送验证码/i });
       fireEvent.click(sendButton);
 

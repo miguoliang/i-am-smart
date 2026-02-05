@@ -1,9 +1,12 @@
 // src/app/signin/page.tsx - Sign In Page
 "use client";
 
-import { useEffect, useLayoutEffect, useCallback, useMemo, useReducer } from "react";
+import { useEffect, useLayoutEffect, useCallback, useMemo, useReducer, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
+import { Checkbox } from "@/components/form/Checkbox";
+import { Label } from "@/components/form/Label";
 import { useSignIn } from "../hooks/useSignIn";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCountdown } from "../hooks/useCountdown";
@@ -50,6 +53,7 @@ export default function SignIn() {
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
   });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Debounce email for validation
   const debouncedEmail = useDebounce(email, EMAIL_DEBOUNCE_MS);
@@ -97,12 +101,12 @@ export default function SignIn() {
   // Handle Enter key for email input
   const handleEmailKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !loading && !otpSent && !emailError) {
+      if (e.key === "Enter" && !loading && !otpSent && !emailError && agreedToTerms) {
         e.preventDefault();
         handleSendOtp();
       }
     },
-    [loading, otpSent, emailError, handleSendOtp]
+    [loading, otpSent, emailError, agreedToTerms, handleSendOtp]
   );
 
   // Handle Enter key for OTP input
@@ -245,12 +249,41 @@ export default function SignIn() {
             )}
           </div>
 
+          <div className="flex items-start gap-2 text-left my-4">
+            <Checkbox
+              id="agree-terms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+              aria-describedby="agree-terms-desc"
+              className="mt-0.5 shrink-0"
+            />
+            <Label
+              htmlFor="agree-terms"
+              className="text-sm text-gray-600 dark:text-gray-400 font-normal cursor-pointer leading-snug"
+            >
+              <span id="agree-terms-desc">使用即表示同意</span>{" "}
+              <Link
+                href="/terms"
+                className="text-primary underline underline-offset-2 hover:no-underline"
+              >
+                《服务条款》
+              </Link>{" "}
+              <span>和</span>{" "}
+              <Link
+                href="/privacy"
+                className="text-primary underline underline-offset-2 hover:no-underline"
+              >
+                《隐私政策》
+              </Link>
+            </Label>
+          </div>
+
           <div className="my-6 md:my-8">
             {!otpSent ? (
               <Button
                 onClick={handleSendOtp}
                 loading={loading}
-                disabled={loading || !!emailError || !email}
+                disabled={loading || !!emailError || !email || !agreedToTerms}
                 size="lg"
                 aria-label="发送验证码到邮箱"
                 className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
