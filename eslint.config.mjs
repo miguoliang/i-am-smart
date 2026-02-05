@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     "public/workbox-*.js",
     "storybook-static/**",
     "docker/**",
+    "deploy/**",
   ]),
   {
     rules: {
