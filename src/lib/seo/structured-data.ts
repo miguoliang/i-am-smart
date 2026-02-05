@@ -15,8 +15,8 @@ export function generateOrganizationStructuredData(): WithContext<Organization> 
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Be It Forever",
-    alternateName: "背它一辈子",
+    name: "聪明的背单词工具",
+    alternateName: "背单词",
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识",
@@ -41,8 +41,8 @@ export function generateWebsiteStructuredData(): WithContext<WebSite> {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Be It Forever",
-    alternateName: "背它一辈子",
+    name: "聪明的背单词工具",
+    alternateName: "背单词",
     url: siteUrl,
     description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识",
     potentialAction: searchAction as SearchAction,
@@ -74,11 +74,11 @@ export function generateArticleStructuredData(
         }
       : {
           "@type": "Organization",
-          name: "Be It Forever",
+          name: "聪明的背单词工具",
         },
     publisher: {
       "@type": "Organization",
-      name: "Be It Forever",
+      name: "聪明的背单词工具",
       logo: {
         "@type": "ImageObject",
         url: `${siteUrl}/logo.png`,

@@ -9,7 +9,7 @@ import { MarketingFooter } from "./components/MarketingFooter";
 import { Navigation } from "./components/Navigation";
 
 export const metadata: Metadata = generateSEOMetadata({
-  title: "Be It Forever - 背它一辈子",
+  title: "聪明的背单词工具",
   description:
     "一个基于间隔重复的英语学习应用，帮助您终身掌握知识。使用SM-2算法优化学习，支持文本转语音，提供可视化统计和进度跟踪。",
   keywords: [

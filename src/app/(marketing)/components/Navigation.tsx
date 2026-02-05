@@ -11,7 +11,7 @@ export function Navigation() {
             href="/"
             className="text-xl font-bold text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
           >
-            背它一辈子
+            聪明的背单词工具
           </Link>
 
           {/* Right side - Auth buttons (Client Component) */}

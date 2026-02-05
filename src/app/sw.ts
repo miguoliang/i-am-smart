@@ -22,7 +22,7 @@ const serwist = new Serwist({
 serwist.addEventListeners();
 
 self.addEventListener("push", (event) => {
-  const data = event.data?.json() ?? { title: "Be It Forever", body: "Time to learn!" };
+  const data = event.data?.json() ?? { title: "聪明的背单词工具", body: "该复习啦！" };
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,

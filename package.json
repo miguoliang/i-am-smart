@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "package:standalone": "./scripts/package-standalone.sh",
+    "package:standalone:archive": "./scripts/package-standalone.sh --archive",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",

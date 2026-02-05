@@ -9,12 +9,12 @@ import { PWAUpdater } from "./components/PWAUpdater";
 import { SkipLink } from "@/components/navigation/SkipLink";
 
 export const metadata: Metadata = {
-  title: "背它一辈子",
+  title: "聪明的背单词工具",
   description: "一个基于间隔重复的英语学习应用",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Be It Forever",
+    title: "聪明的背单词工具",
   },
 };
 

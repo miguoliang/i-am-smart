@@ -11,7 +11,7 @@ export function MarketingFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Bottom Left */}
           <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>© {currentYear} 背它一辈子</span>
+            <span>© {currentYear} 聪明的背单词工具</span>
             <Separator orientation="vertical" className="h-4" />
             <a
               href="https://beian.miit.gov.cn/"

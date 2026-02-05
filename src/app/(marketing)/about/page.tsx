@@ -3,7 +3,7 @@ import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "关于我们",
-  description: "了解Be It Forever的使命和愿景，我们致力于帮助用户通过科学的方法终身掌握知识。",
+  description: "了解聪明的背单词工具的使命和愿景，我们致力于帮助用户通过科学的方法终身掌握知识。",
   keywords: ["关于", "使命", "愿景", "团队"],
 });
 
@@ -13,7 +13,7 @@ export default function AboutPage() {
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-8 text-gray-900 dark:text-white">
-            关于 Be It Forever
+            关于 聪明的背单词工具
           </h1>
           
           <div className="prose prose-lg dark:prose-invert max-w-none">

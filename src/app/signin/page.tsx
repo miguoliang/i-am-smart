@@ -175,7 +175,7 @@ export default function SignIn() {
       <div className="flex flex-col items-center justify-center flex-1">
         <div className="max-w-md md:max-w-lg lg:max-w-xl w-full mx-auto p-5 md:p-8 lg:p-10 text-center box-border">
           <h1 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-            背它一辈子
+            聪明的背单词工具
           </h1>
           <h2 className="mb-6 md:mb-8 lg:mb-10 text-gray-600 dark:text-gray-400 text-lg sm:text-xl md:text-2xl lg:text-3xl">
             登录

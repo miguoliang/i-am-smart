@@ -37,7 +37,7 @@ export function generateMetadata(pageMetadata: PageMetadata): Metadata {
   } = pageMetadata;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://be-it-forever.com";
-  const fullTitle = title.includes("Be It Forever") ? title : `${title} | Be It Forever`;
+  const fullTitle = title.includes("聪明的背单词工具") ? title : `${title} | 聪明的背单词工具`;
 
   return {
     title: fullTitle,
@@ -58,7 +58,7 @@ export function generateMetadata(pageMetadata: PageMetadata): Metadata {
       title: openGraph?.title || fullTitle,
       description: openGraph?.description || description,
       url: canonical || siteUrl,
-      siteName: "Be It Forever",
+      siteName: "聪明的背单词工具",
       images: openGraph?.images || [
         {
           url: `${siteUrl}/og-image.png`,

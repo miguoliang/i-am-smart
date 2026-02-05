@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
  
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Be It Forever - English Learning',
-    short_name: 'Be It Forever',
-    description: 'Master English with Spaced Repetition',
+    name: '聪明的背单词工具',
+    short_name: '背单词',
+    description: '基于间隔重复的聪明背单词工具',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

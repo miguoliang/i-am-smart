@@ -829,7 +829,7 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText(/背它一辈子/i)).toBeInTheDocument();
+      expect(screen.getByText(/聪明的背单词工具/i)).toBeInTheDocument();
       expect(screen.getByText(/登录/i)).toBeInTheDocument();
     });
 
