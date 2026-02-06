@@ -45,13 +45,20 @@ fi
 BUILD_ENV="${ENV_FILES[0]}"
 ENV_LOCAL=".env.local"
 BACKUP_ENV=""
+# Only swap .env.local when the chosen env file is different (avoid cp file file)
 if [[ -f "$BUILD_ENV" ]]; then
-  if [[ -f "$ENV_LOCAL" ]]; then
-    BACKUP_ENV=$(mktemp)
-    cp "$ENV_LOCAL" "$BACKUP_ENV"
+  BUILD_ENV_ABS="$(cd "$(dirname "$BUILD_ENV")" && pwd)/$(basename "$BUILD_ENV")"
+  ENV_LOCAL_ABS="$(cd "$(dirname "$ENV_LOCAL")" && pwd)/$(basename "$ENV_LOCAL")"
+  if [[ "$BUILD_ENV_ABS" != "$ENV_LOCAL_ABS" ]]; then
+    if [[ -f "$ENV_LOCAL" ]]; then
+      BACKUP_ENV=$(mktemp)
+      cp "$ENV_LOCAL" "$BACKUP_ENV"
+    fi
+    echo "Using $BUILD_ENV for next build (temporarily replacing $ENV_LOCAL)..."
+    cp "$BUILD_ENV" "$ENV_LOCAL"
+  else
+    echo "Using $BUILD_ENV for next build (no swap needed)..."
   fi
-  echo "Using $BUILD_ENV for next build (temporarily replacing $ENV_LOCAL)..."
-  cp "$BUILD_ENV" "$ENV_LOCAL"
 fi
 
 cleanup_build_env() {

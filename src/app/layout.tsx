@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
 import { ConditionalFooter } from "./components/ConditionalFooter";
@@ -7,6 +8,8 @@ import { ConditionalNavigation } from "@/components/navigation/ConditionalNaviga
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
 import { SkipLink } from "@/components/navigation/SkipLink";
+
+const BAIDU_ANALYTICS_ID = process.env.NEXT_PUBLIC_BAIDU_ANALYTICS_ID;
 
 export const metadata: Metadata = {
   title: "聪明的背单词工具",
@@ -25,6 +28,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh" suppressHydrationWarning>
+      {BAIDU_ANALYTICS_ID && (
+        <Script id="baidu-tongji" strategy="beforeInteractive">
+          {`
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?" + "${BAIDU_ANALYTICS_ID}";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+          `}
+        </Script>
+      )}
       <body>
         <SkipLink />
         <Providers>

@@ -9,8 +9,8 @@ export default function HomePage() {
       description: "地铁、睡前、排队、蹲坑……打开就是学，不用等、不用找借口",
     },
     {
-      title: "AI 自动懂你、陪你提分",
-      description: "根据你的水平、弱项、做题习惯，智能出题 + 秒批 + 针对性讲解",
+      title: "科学规划、陪你提分",
+      description: "根据你的水平与复习记录，科学出题 + 即时反馈 + 针对性复习",
     },
     {
       title: "0 下载 · 打开浏览器就用",
@@ -32,7 +32,7 @@ export default function HomePage() {
             用碎片时间，提英语成绩
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
-            随时随地，AI辅助，无需下载，多端同步
+            随时随地，科学复习，无需下载，多端同步
           </p>
         </div>
       </section>
@@ -85,7 +85,7 @@ export default function HomePage() {
               选择适合你的提分计划
             </h2>
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
-              从免费开始，用AI把碎片时间变成高分
+              从免费开始，把碎片时间变成高分
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
-                  <span>基础 AI 辅助功能</span>
+                  <span>基础学习与统计功能</span>
                 </li>
               </ul>
 
@@ -175,7 +175,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start text-gray-700 dark:text-gray-300">
                   <span className="mr-2 text-amber-600 dark:text-amber-400 font-bold">✓</span>
-                  <span><strong>高级 AI 辅助功能</strong>（个性化提分计划、智能错题分析、口语纠音、高级批改）</span>
+                  <span><strong>高级学习功能</strong>（个性化复习计划、错题分析、口语练习、进阶批改）</span>
                 </li>
               </ul>
 

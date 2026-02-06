@@ -8,6 +8,7 @@
     "start": "next start",
     "package:standalone": "./scripts/package-standalone.sh",
     "package:standalone:archive": "./scripts/package-standalone.sh --archive",
+    "package:standalone:supabase": "./scripts/package-standalone.sh --env .env.supabase --archive",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",
