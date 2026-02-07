@@ -74,9 +74,10 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
-            cd "$DEPLOY_PATH"
-            tar -xzf /tmp/${{ env.PACKAGE_NAME }}.tar.gz -C . --strip-components=1
-            rm -f /tmp/${{ env.PACKAGE_NAME }}.tar.gz
+            # scp-action uploads a tar of source then untars on server; our tarball ends up under /tmp (often /tmp/deploy/name.tar.gz)
+            TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
+            tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
+            rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
             if command -v pm2 &>/dev/null; then
               pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
             fi
