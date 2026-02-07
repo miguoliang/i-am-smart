@@ -1,6 +1,6 @@
 # Be It Forever (背它一辈子)
 
-[![CI](https://github.com/miguoliang/be-it-forever/actions/workflows/ci.yml/badge.svg)](https://github.com/miguoliang/be-it-forever/actions/workflows/ci.yml)
+[![CI](https://github.com/miguoliang/be-it-forever/actions/workflows/deploy.yml/badge.svg)](https://github.com/miguoliang/be-it-forever/actions/workflows/deploy.yml)
 ![Netlify](https://img.shields.io/badge/Netlify-Deployed-00C7B7?style=flat&logo=netlify&logoColor=white)
 [![License](https://img.shields.io/github/license/miguoliang/be-it-forever)](LICENSE)
 
