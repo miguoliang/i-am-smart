@@ -57,16 +57,20 @@ export function useCards() {
     }
   }, [level]);
 
-  // Update cards when data loads for current level
+  // Initialize cards when data loads for current level
+  // Only set localCards from API data when localCards is null (initial load or after level change).
+  // Once localCards is initialized, local state (optimistic updates) takes precedence
+  // to prevent cache mutations (e.g., onSuccess removing reviewed cards) from
+  // overwriting local state and shifting card indices mid-session.
   useEffect(() => {
-    if (data && !loading && lastValidLevel === level) {
+    if (data && !loading && lastValidLevel === level && localCards === null) {
       const cardsWithReviewed = data.cards.map((card: Card) => ({
         ...card,
         reviewed: false,
       }));
       dispatch({ type: 'SET_CARDS', cards: cardsWithReviewed });
     }
-  }, [data, loading, level, lastValidLevel]);
+  }, [data, loading, level, lastValidLevel, localCards]);
 
   // Use local cards if available, otherwise API cards
   const cards = useMemo(() => {
