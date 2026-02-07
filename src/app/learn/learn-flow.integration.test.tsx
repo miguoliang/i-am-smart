@@ -20,6 +20,10 @@ jest.mock("@/lib/utils/logger", () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
+jest.mock("@/lib/utils/apiError", () => ({
+  parseApiErrorResponse: async (_res: Response, defaultMessage: string) => defaultMessage,
+}));
+
 const mockCard = {
   id: 1,
   knowledge_code: "k1",
