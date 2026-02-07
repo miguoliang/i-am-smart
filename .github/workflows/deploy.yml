@@ -55,14 +55,6 @@ jobs:
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_SITE_URL; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
           tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
-      - name: Ensure deploy path on server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          script: mkdir -p '${{ secrets.DEPLOY_PATH }}'
-
       - name: Deploy tarball to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -70,7 +62,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           source: ${{ env.DEPLOY_TARBALL }}
-          target: ${{ secrets.DEPLOY_PATH }}
+          target: "/tmp"
 
       - name: Extract and restart on server
         uses: appleboy/ssh-action@v1.0.3
@@ -83,8 +75,8 @@ jobs:
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
-            tar -xzf ${{ env.PACKAGE_NAME }}.tar.gz -C . --strip-components=1
-            rm -f ${{ env.PACKAGE_NAME }}.tar.gz
+            tar -xzf /tmp/${{ env.PACKAGE_NAME }}.tar.gz -C . --strip-components=1
+            rm -f /tmp/${{ env.PACKAGE_NAME }}.tar.gz
             if command -v pm2 &>/dev/null; then
               pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
             fi
