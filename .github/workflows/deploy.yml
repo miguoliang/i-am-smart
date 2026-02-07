@@ -1,20 +1,28 @@
-# 构建并部署到指定服务器（SSH + 解压 + 重启）
-# 所需 Secrets 见下方说明；服务器需预先安装 Node 并配置进程管理（如 pm2）
+# Build, package, and deploy to server via SSH.
+# Configure Secrets/Variables in repo or Environment (e.g. production).
 name: Deploy to Server
 
 on:
   push:
     branches: [main]
-  workflow_dispatch: # 支持手动触发
-
-env:
-  DEPLOY_TARBALL: deploy/standalone.tar.gz
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # 若使用 Environment 级 Secrets/Variables，取消下一行并到 Settings → Environments 建 production
-    # environment: production
+    # environment: production   # uncomment to use Environment-level secrets/vars
+    env:
+      PACKAGE_NAME: ${{ github.event.repository.name }}
+      DEPLOY_TARBALL: deploy/${{ github.event.repository.name }}.tar.gz
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY || vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT || vars.VAPID_SUBJECT }}
+      NEXT_PUBLIC_BAIDU_ANALYTICS_ID: ${{ secrets.NEXT_PUBLIC_BAIDU_ANALYTICS_ID || vars.NEXT_PUBLIC_BAIDU_ANALYTICS_ID }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || vars.NEXT_PUBLIC_SITE_URL }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,39 +33,27 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      # 敏感用 Secret，非敏感可用 Variable；同名时 Secret 优先
-      - name: Create .env.supabase for build and runtime
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY || vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT || vars.VAPID_SUBJECT }}
-          NEXT_PUBLIC_BAIDU_ANALYTICS_ID: ${{ secrets.NEXT_PUBLIC_BAIDU_ANALYTICS_ID || vars.NEXT_PUBLIC_BAIDU_ANALYTICS_ID }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || vars.NEXT_PUBLIC_SITE_URL }}
-        run: |
-          {
-            echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL"
-            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY"
-            echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY"
-            echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY"
-            echo "VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY"
-            echo "VAPID_SUBJECT=$VAPID_SUBJECT"
-            echo "NEXT_PUBLIC_BAIDU_ANALYTICS_ID=$NEXT_PUBLIC_BAIDU_ANALYTICS_ID"
-            [ -n "$NEXT_PUBLIC_SITE_URL" ] && echo "NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL"
-          } > .env.supabase
-
       - name: Install dependencies
         run: npm ci
 
-      - name: Package standalone (Supabase env)
-        run: npm run package:standalone:supabase
+      - name: Cache .next
+        uses: actions/cache@v4
+        with:
+          path: .next
+          key: next-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/next.config.*') }}
 
-      - name: Use fixed tarball name for deploy
+      - name: Build
+        run: npm run build
+
+      - name: Package
         run: |
-          TARBALL=$(ls deploy/standalone-*.tar.gz 2>/dev/null | head -1)
-          if [ -n "$TARBALL" ]; then cp "$TARBALL" ${{ env.DEPLOY_TARBALL }}; fi
+          pkg=deploy/${{ env.PACKAGE_NAME }}
+          mkdir -p "$pkg"
+          cp -r .next/standalone/* "$pkg/"
+          cp -r public "$pkg/public"
+          mkdir -p "$pkg/.next" && cp -r .next/static "$pkg/.next/static"
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_SITE_URL; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
+          tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
       - name: Deploy tarball to server
         uses: appleboy/scp-action@v0.1.7
@@ -65,7 +61,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: "deploy/standalone.tar.gz"
+          source: ${{ env.DEPLOY_TARBALL }}
           target: "/tmp"
 
       - name: Extract and restart on server
@@ -79,8 +75,8 @@ jobs:
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
-            tar -xzf /tmp/standalone.tar.gz -C . --strip-components=1
-            rm -f /tmp/standalone.tar.gz
+            tar -xzf /tmp/${{ env.PACKAGE_NAME }}.tar.gz -C . --strip-components=1
+            rm -f /tmp/${{ env.PACKAGE_NAME }}.tar.gz
             if command -v pm2 &>/dev/null; then
               pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
             fi

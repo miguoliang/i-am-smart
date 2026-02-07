@@ -32,7 +32,7 @@
 
 ### 应用环境变量（与本地 `.env.supabase` 对应）
 
-Workflow 用这些在构建时生成 `.env.supabase` 并打入部署包。**敏感必须用 Secret，非敏感可用 Variable。**
+Workflow 在 **Build** 步使用，并在 **Package** 步写入部署包内的 `.env`（与本地 `.env.supabase` 同组变量）。**敏感必须用 Secret，非敏感可用 Variable。**
 
 | 名称 | 必填 | 建议类型 | 说明 |
 |------|------|----------|------|
@@ -55,16 +55,19 @@ Workflow 用这些在构建时生成 `.env.supabase` 并打入部署包。**敏�
 - **SSH**：用上面配置的 `DEPLOY_USER` + `DEPLOY_SSH_PASSWORD` 能通过密码登录。
 - **部署目录**：`DEPLOY_PATH` 对应的目录需存在或可由对应用户创建（workflow 会 `mkdir -p`）。
 - **pm2**：若已安装 [pm2](https://pm2.keymetrics.io/)，workflow 解压后会自动执行 `pm2 restart be-it-forever`；若该进程尚未存在，会执行 `pm2 start server.js --name be-it-forever`。未安装 pm2 时需自行用 systemd 等方式启动/重启。
+- **运行时环境变量**：部署包内已包含 `.env`（由 workflow 从 Secrets/Variables 生成）。若需在服务器上覆盖，可在 `DEPLOY_PATH` 下放 `.env.local` 或在 pm2/systemd 中设置 `env`。
 - **gh**（可选）：若服务器已安装 [GitHub CLI](https://cli.github.com/)（`gh`），可用于在服务器上拉取 artifact、查看 run 等；当前部署流程为 Actions 主动 SCP 推送，不依赖 `gh`。
 
 ### 首次在服务器上手动启动（未用 pm2 时）
+
+部署包内已有 `.env`，直接启动即可：
 
 ```bash
 cd $DEPLOY_PATH   # 如 /var/www/be-it-forever
 PORT=3000 node server.js
 ```
 
-或使用 systemd / 其他方式，保证运行前已加载同目录下的 `.env.supabase`（部署包内会包含）。
+或使用 systemd / pm2。
 
 ## 3. 触发部署
 
@@ -73,7 +76,7 @@ PORT=3000 node server.js
 
 ## 4. 流程说明
 
-1. 用上述**应用环境变量**类 Secret 在 workflow 中生成 `.env.supabase`（与本地格式一致，逐项写入，不用 base64）。
-2. 执行 `npm run package:standalone:supabase` 构建并打包，生成的包内包含该 `.env.supabase`。
-3. 通过 SCP 将 `deploy/standalone.tar.gz` 传到服务器 `/tmp`。
+1. Workflow 从 Secrets/Variables 读取应用环境变量，在 **Build** 步执行 `npm run build`（standalone 输出）。
+2. **Package** 步：将 `public/`、`.next/static` 拷入 standalone 输出，从 Secrets/Variables 生成 `.env` 打入包内，打成 `deploy/<repo>.tar.gz`（`<repo>` 为仓库名）。
+3. 通过 SCP 将上述 tarball 传到服务器 `/tmp`。
 4. SSH 到服务器，在 `DEPLOY_PATH` 解压（`--strip-components=1`），删除临时包；若检测到 pm2 则重启或启动 `be-it-forever`。
