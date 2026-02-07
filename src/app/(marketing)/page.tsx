@@ -58,7 +58,7 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 gap-8">
           {features.map((feature) => (
             <Card key={feature.title} className="overflow-hidden">
-              <div className="relative w-full aspect-video bg-gradient-to-br from-blue-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+              <div className="relative w-full aspect-video bg-linear-to-br from-blue-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                 <div className="text-center px-4">
                   <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">图片占位符</p>
                   <p className="text-xs text-gray-300 dark:text-gray-600">{feature.title}</p>
