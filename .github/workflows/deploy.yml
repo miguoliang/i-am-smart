@@ -13,6 +13,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # 若使用 Environment 级 Secrets/Variables，取消下一行并到 Settings → Environments 建 production
+    # environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,7 +64,7 @@ jobs:
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           source: "deploy/standalone.tar.gz"
           target: "/tmp"
 
@@ -71,7 +73,7 @@ jobs:
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           script: |
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'

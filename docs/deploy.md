@@ -6,8 +6,20 @@
 
 仓库 → **Settings** → **Secrets and variables** → **Actions**：
 
-- **Secrets**：敏感信息（加密、不出现在日志），用 **New repository secret**。
-- **Variables**：非敏感配置（如 URL、统计 ID），用 **Variables** 页签添加；同一名字若既有 Secret 又有 Variable，workflow 优先用 Secret。
+- **Secrets**：敏感信息（加密、不出现在日志）。
+- **Variables**：非敏感配置（如 URL、统计 ID）；同名时 workflow 优先用 Secret。
+
+### Environment 级 vs Repository 级
+
+| 级别 | 配置位置 | 适用场景 |
+|------|----------|----------|
+| **Repository** | Actions → Secrets / Variables（仓库级） | 全仓库共用；例如 **CI 构建**（`ci.yml`）用的 Supabase URL/Anon Key、或**仅有一个部署目标**时全部放这里。 |
+| **Environment** | Settings → Environments → 某环境（如 production）→ Secrets / Variables | 按**部署目标**区分（production / staging 等）；部署 job 里写 `environment: production` 即用该环境的配置。适合多环境、或对生产部署做审批/等待。 |
+
+**建议**：
+
+- **只部署到一台生产服务器**：所有部署相关（下面两表）可全部放在 **Repository**，无需建 Environment。
+- **有多环境（如 production / staging）或要对生产加保护**：在 **Environments** 里新建 `production`（及可选的 `staging`），把**部署与服务器**和**应用环境变量**都配在该 Environment 下；deploy workflow 里为 deploy job 增加 `environment: production`（见 workflow 内注释）。
 
 ### 部署与服务器（必填，全部用 Secret）
 
@@ -15,7 +27,7 @@
 |------|------|------|
 | `DEPLOY_HOST` | Secret | 服务器 IP 或域名。 |
 | `DEPLOY_USER` | Secret | SSH 登录用户名。 |
-| `DEPLOY_SSH_KEY` | Secret | SSH 私钥全文。 |
+| `DEPLOY_SSH_PASSWORD` | Secret | SSH 登录**密码**（当前为密码认证；若改用密钥，在 workflow 中把 `password` 改为 `key`，Secret 改为 `DEPLOY_SSH_KEY`）。 |
 | `DEPLOY_PATH` | Secret | 应用在服务器上的目录，如 `/var/www/be-it-forever`。 |
 
 ### 应用环境变量（与本地 `.env.supabase` 对应）
@@ -35,10 +47,12 @@ Workflow 用这些在构建时生成 `.env.supabase` 并打入部署包。**敏�
 
 变量名与本地 `.env.supabase` / 根目录 `.env.supabase.example` 一致。
 
+**级别建议**：上述部署与服务器 + 应用环境变量，若用 Environment 则都放在同一 Environment（如 production）；若用 Repository 则都放在仓库级。
+
 ## 2. 服务器准备
 
 - **Node.js**：建议 20.x，与 CI 一致。
-- **SSH**：用上面配置的 `DEPLOY_USER` + `DEPLOY_SSH_KEY` 能无密码登录。
+- **SSH**：用上面配置的 `DEPLOY_USER` + `DEPLOY_SSH_PASSWORD` 能通过密码登录。
 - **部署目录**：`DEPLOY_PATH` 对应的目录需存在或可由对应用户创建（workflow 会 `mkdir -p`）。
 - **pm2**：若已安装 [pm2](https://pm2.keymetrics.io/)，workflow 解压后会自动执行 `pm2 restart be-it-forever`；若该进程尚未存在，会执行 `pm2 start server.js --name be-it-forever`。未安装 pm2 时需自行用 systemd 等方式启动/重启。
 - **gh**（可选）：若服务器已安装 [GitHub CLI](https://cli.github.com/)（`gh`），可用于在服务器上拉取 artifact、查看 run 等；当前部署流程为 Actions 主动 SCP 推送，不依赖 `gh`。
