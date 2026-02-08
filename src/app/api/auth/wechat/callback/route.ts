@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { logger } from "@/lib/utils/logger";
+import {
+  WECHAT_OAUTH_STATE_COOKIE_NAME,
+  verifyStateCookie,
+} from "../wechatState";
 
 const WECHAT_TOKEN_URL = "https://api.weixin.qq.com/sns/oauth2/access_token";
 
@@ -44,6 +49,18 @@ export async function GET(request: NextRequest) {
     if (!appId || !appSecret) {
       logger.error("WeChat callback: WECHAT_OPEN_APP_ID or WECHAT_OPEN_APP_SECRET not set");
       return NextResponse.redirect(errorRedirect);
+    }
+
+    const cookieStore = await cookies();
+    const stateCookie = cookieStore.get(WECHAT_OAUTH_STATE_COOKIE_NAME)?.value;
+    if (!verifyStateCookie(stateCookie, state, appSecret)) {
+      logger.warn("WeChat callback state mismatch or missing cookie");
+      const res = NextResponse.redirect(errorRedirect);
+      res.cookies.set(WECHAT_OAUTH_STATE_COOKIE_NAME, "", {
+        path: "/",
+        maxAge: 0,
+      });
+      return res;
     }
 
     const tokenRes = await fetch(
@@ -130,7 +147,9 @@ export async function GET(request: NextRequest) {
     const magicLinkUrl = actionLink.startsWith("http")
       ? actionLink
       : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/${actionLink.replace(/^\//, "")}`;
-    return NextResponse.redirect(magicLinkUrl);
+    const successRes = NextResponse.redirect(magicLinkUrl);
+    successRes.cookies.set(WECHAT_OAUTH_STATE_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+    return successRes;
   } catch (err) {
     logger.error("WeChat callback exception", { error: err });
     return NextResponse.redirect(errorRedirect);

@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 const COUNTDOWN_SECONDS = 60;
 const EMAIL_DEBOUNCE_MS = 500;
 const OTP_LENGTH = 6;
-const WECHAT_OAUTH_STATE_KEY = "wechat_oauth_state";
 const WECHAT_QRCONNECT_URL = "https://open.weixin.qq.com/connect/qrconnect";
 
 interface SignInState {
@@ -62,18 +61,24 @@ function SignInContent() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
 
-  const handleWechatLogin = useCallback(() => {
+  const handleWechatLogin = useCallback(async () => {
     if (!agreedToTerms || typeof window === "undefined") return;
     const appId = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID;
     if (!appId) return;
-    const state = crypto.randomUUID();
-    sessionStorage.setItem(WECHAT_OAUTH_STATE_KEY, state);
-    const redirectUri = encodeURIComponent(
-      `${window.location.origin}/api/auth/wechat/callback`
-    );
     setWechatLoading(true);
-    const url = `${WECHAT_QRCONNECT_URL}?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${encodeURIComponent(state)}#wechat_redirect`;
-    window.location.href = url;
+    try {
+      const res = await fetch("/api/auth/wechat/state");
+      if (!res.ok) return;
+      const { state } = (await res.json()) as { state?: string };
+      if (!state) return;
+      const redirectUri = encodeURIComponent(
+        `${window.location.origin}/api/auth/wechat/callback`
+      );
+      const url = `${WECHAT_QRCONNECT_URL}?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${encodeURIComponent(state)}#wechat_redirect`;
+      window.location.href = url;
+    } finally {
+      setWechatLoading(false);
+    }
   }, [agreedToTerms]);
 
   // Debounce email for validation
