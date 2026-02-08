@@ -53,9 +53,9 @@ jobs:
         run: |
           pkg=deploy/${{ env.PACKAGE_NAME }}
           mkdir -p "$pkg"
-          cp -r .next/standalone/* "$pkg/"
+          cp -r .next/standalone/. "$pkg/"
           cp -r public "$pkg/public"
-          mkdir -p "$pkg/.next" && cp -r .next/static "$pkg/.next/static"
+          cp -r .next/static "$pkg/.next/static"
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_SITE_URL; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
           tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
