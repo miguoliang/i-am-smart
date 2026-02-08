@@ -1,8 +1,9 @@
 // src/app/signin/page.tsx - Sign In Page
 "use client";
 
-import { useEffect, useLayoutEffect, useCallback, useMemo, useReducer, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useCallback, useMemo, useReducer, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
 import { Checkbox } from "@/components/form/Checkbox";
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 const COUNTDOWN_SECONDS = 60;
 const EMAIL_DEBOUNCE_MS = 500;
 const OTP_LENGTH = 6;
+const WECHAT_OAUTH_STATE_KEY = "wechat_oauth_state";
+const WECHAT_QRCONNECT_URL = "https://open.weixin.qq.com/connect/qrconnect";
 
 interface SignInState {
   autoSubmitted: boolean;
@@ -36,7 +39,7 @@ function signInReducer(state: SignInState, action: SignInAction): SignInState {
   }
 }
 
-export default function SignIn() {
+function SignInContent() {
   const {
     email,
     setEmail,
@@ -50,10 +53,28 @@ export default function SignIn() {
     handleResendOtp,
   } = useSignIn();
 
+  const searchParams = useSearchParams();
+  const wechatError = searchParams.get("error") === "wechat_failed";
+
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [wechatLoading, setWechatLoading] = useState(false);
+
+  const handleWechatLogin = useCallback(() => {
+    if (!agreedToTerms || typeof window === "undefined") return;
+    const appId = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID;
+    if (!appId) return;
+    const state = crypto.randomUUID();
+    sessionStorage.setItem(WECHAT_OAUTH_STATE_KEY, state);
+    const redirectUri = encodeURIComponent(
+      `${window.location.origin}/api/auth/wechat/callback`
+    );
+    setWechatLoading(true);
+    const url = `${WECHAT_QRCONNECT_URL}?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${encodeURIComponent(state)}#wechat_redirect`;
+    window.location.href = url;
+  }, [agreedToTerms]);
 
   // Debounce email for validation
   const debouncedEmail = useDebounce(email, EMAIL_DEBOUNCE_MS);
@@ -184,6 +205,15 @@ export default function SignIn() {
           <h2 className="mb-6 md:mb-8 lg:mb-10 text-gray-600 dark:text-gray-400 text-lg sm:text-xl md:text-2xl lg:text-3xl">
             登录
           </h2>
+
+          {wechatError && (
+            <p
+              className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-left"
+              role="alert"
+            >
+              微信登录失败，请重试或使用邮箱登录。
+            </p>
+          )}
 
           <div className="space-y-3">
             <div>
@@ -321,6 +351,27 @@ export default function SignIn() {
             )}
           </div>
 
+          {process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && (
+            <div className="mt-6">
+              <div className="relative my-4 flex items-center gap-3">
+                <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
+                <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
+                <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={!agreedToTerms || wechatLoading}
+                onClick={handleWechatLogin}
+                aria-label="使用微信扫码登录"
+                className="w-full py-3.5 md:py-4 px-6 md:px-8 min-h-[48px]"
+              >
+                {wechatLoading ? "跳转中…" : "微信登录"}
+              </Button>
+            </div>
+          )}
+
           <div
             className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base"
             role="note"
@@ -330,5 +381,13 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={<div className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center"><span className="text-gray-500">加载中…</span></div>}>
+      <SignInContent />
+    </Suspense>
   );
 }

@@ -9,9 +9,17 @@ export function Navigation() {
           {/* Logo on the left */}
           <Link
             href="/"
-            className="text-xl font-bold text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
+            className="text-xl font-bold text-gray-900 dark:text-white hover:opacity-80 transition-opacity inline-flex items-center gap-1.5"
           >
             聪明的背单词工具
+            {process.env.NEXT_PUBLIC_APP_ENV === "preview" && (
+              <span
+                className="rounded bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white"
+                aria-label="Preview environment"
+              >
+                Preview
+              </span>
+            )}
           </Link>
 
           {/* Right side - Auth buttons (Client Component) */}
