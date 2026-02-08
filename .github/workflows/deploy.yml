@@ -86,7 +86,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: deploy/${{ env.PACKAGE_NAME }}.tar.gz
+          source: ${{ env.PACKAGE_NAME }}.tar.gz
           target: "/tmp"
 
       - name: Extract and restart on server
@@ -128,7 +128,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: deploy/${{ env.PACKAGE_NAME }}.tar.gz
+          source: ${{ env.PACKAGE_NAME }}.tar.gz
           target: "/tmp"
 
       - name: Extract and restart on server
