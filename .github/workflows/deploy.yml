@@ -103,7 +103,8 @@ jobs:
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
             if command -v pm2 &>/dev/null; then
-              pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
+              cd "$DEPLOY_PATH"
+              pm2 restart be-it-forever-preview 2>/dev/null || PORT=3001 pm2 start server.js --name be-it-forever-preview || true
             fi
             echo "Deploy done."
 
@@ -145,6 +146,7 @@ jobs:
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
             if command -v pm2 &>/dev/null; then
-              pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
+              cd "$DEPLOY_PATH"
+              pm2 restart be-it-forever 2>/dev/null || PORT=3000 pm2 start server.js --name be-it-forever || true
             fi
             echo "Deploy done."
