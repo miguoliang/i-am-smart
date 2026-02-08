@@ -1,16 +1,20 @@
 # Build, package, and deploy to server via SSH.
-# Configure Secrets/Variables in repo or Environment (e.g. production).
+# - Push to main (or Run workflow) → build (preview env) → deploy-preview.
+# - Push tag (e.g. v1.0.0) → build (production env) → deploy-production.
+# Configure Secrets/Variables in repo or in Environment (production / preview).
 name: Deploy to Server
 
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
+    name: Build and Package
     runs-on: ubuntu-latest
-    # environment: production   # uncomment to use Environment-level secrets/vars
+    environment: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'preview' }}
     env:
       PACKAGE_NAME: ${{ github.event.repository.name }}
       DEPLOY_TARBALL: deploy/${{ github.event.repository.name }}.tar.gz
@@ -55,13 +59,34 @@ jobs:
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_SITE_URL; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
           tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-tarball
+          path: deploy/${{ env.PACKAGE_NAME }}.tar.gz
+
+  deploy-preview:
+    name: Deploy to Preview
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment: preview
+    env:
+      PACKAGE_NAME: ${{ github.event.repository.name }}
+
+    steps:
+      - name: Download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-tarball
+
       - name: Deploy tarball to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: ${{ env.DEPLOY_TARBALL }}
+          source: deploy/${{ env.PACKAGE_NAME }}.tar.gz
           target: "/tmp"
 
       - name: Extract and restart on server
@@ -74,7 +99,48 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
-            # scp-action uploads a tar of source then untars on server; our tarball ends up under /tmp (often /tmp/deploy/name.tar.gz)
+            TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
+            tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
+            rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
+            if command -v pm2 &>/dev/null; then
+              pm2 restart be-it-forever 2>/dev/null || pm2 start server.js --name be-it-forever || true
+            fi
+            echo "Deploy done."
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: production
+    env:
+      PACKAGE_NAME: ${{ github.event.repository.name }}
+
+    steps:
+      - name: Download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-tarball
+
+      - name: Deploy tarball to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          source: deploy/${{ env.PACKAGE_NAME }}.tar.gz
+          target: "/tmp"
+
+      - name: Extract and restart on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          script: |
+            set -e
+            DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
+            mkdir -p "$DEPLOY_PATH"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
