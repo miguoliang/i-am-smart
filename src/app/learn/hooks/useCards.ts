@@ -7,11 +7,13 @@ import { useLevel } from "./useLevel";
 interface CardsState {
   localCards: Card[] | null;
   lastValidLevel: string | null;
+  initialReviewedCount: number;
 }
 
 type CardsAction =
   | { type: 'SET_LEVEL'; level: string }
   | { type: 'SET_CARDS'; cards: Card[] | null }
+  | { type: 'INIT_CARDS'; cards: Card[]; reviewedCount: number }
   | { type: 'UPDATE_CARDS'; updater: (prev: Card[] | null) => Card[] | null };
 
 function cardsReducer(state: CardsState, action: CardsAction): CardsState {
@@ -21,11 +23,18 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
         ...state,
         lastValidLevel: action.level,
         localCards: null, // Reset local cards on level change
+        initialReviewedCount: 0,
       };
     case 'SET_CARDS':
       return {
         ...state,
         localCards: action.cards,
+      };
+    case 'INIT_CARDS':
+      return {
+        ...state,
+        localCards: action.cards,
+        initialReviewedCount: action.reviewedCount,
       };
     case 'UPDATE_CARDS':
       return {
@@ -42,12 +51,11 @@ export function useCards() {
   const { data, isLoading: loading } = useDueCardsQuery();
   const prevLevelRef = useRef(level);
 
-  const [{ localCards, lastValidLevel }, dispatch] = useReducer(cardsReducer, {
+  const [{ localCards, lastValidLevel, initialReviewedCount }, dispatch] = useReducer(cardsReducer, {
     localCards: null,
     lastValidLevel: level,
+    initialReviewedCount: 0,
   });
-
-  const apiReviewedCount = data?.reviewedCount || 0;
 
   // Handle level changes
   useEffect(() => {
@@ -68,7 +76,7 @@ export function useCards() {
         ...card,
         reviewed: false,
       }));
-      dispatch({ type: 'SET_CARDS', cards: cardsWithReviewed });
+      dispatch({ type: 'INIT_CARDS', cards: cardsWithReviewed, reviewedCount: data.reviewedCount });
     }
   }, [data, loading, level, lastValidLevel, localCards]);
 
@@ -100,7 +108,7 @@ export function useCards() {
   return {
     cards,
     setCards,
-    reviewedCount: apiReviewedCount,
+    reviewedCount: initialReviewedCount,
     loading
   };
 }
