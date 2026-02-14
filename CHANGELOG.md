@@ -14,6 +14,22 @@
 
 ---
 
+## [1.0.4] - 2026-02-14
+
+### #微信登录修复
+
+修复微信扫码登录后回调失败的问题，确保微信登录流程正常完成。
+
+### Bug 修复 (Bug Fixes) ↓↑
+
+- 修复微信登录 state cookie 未正确设置的问题：将 cookies().set() 改为直接在 NextResponse 对象上设置 cookie，避免 Set-Cookie header 丢失
+- 修复 WECHAT_OPEN_APP_ID 环境变量找不到的问题：添加对 NEXT_PUBLIC_WECHAT_OPEN_APP_ID 的 fallback 支持
+- 修复 Magic Link 与 PKCE 流程不兼容的问题：改用服务端 verifyOtp() 验证邮箱 OTP 并直接写入 session cookies，避免客户端缺少 PKCE code verifier
+- 改进错误日志，添加结构化上下文信息
+- 回调路由改用 request.cookies 读取 cookie，替代 cookies() API
+
+---
+
 ## [1.0.3] - 2026-02-14
 
 ### #微信登录与Bug修复
