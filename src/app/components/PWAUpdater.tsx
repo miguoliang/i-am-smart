@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Workbox } from "workbox-window";
+import { Workbox, WorkboxLifecycleWaitingEvent } from "workbox-window";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 
@@ -22,8 +22,23 @@ export function PWAUpdater() {
       const wb = new Workbox("/sw.js");
 
       // Add event listeners to handle PWA lifecycle events
-      const promptNewVersionAvailable = () => {
-        // Prevent multiple toast instances
+      const promptNewVersionAvailable = (event: WorkboxLifecycleWaitingEvent) => {
+        // If a service worker was already waiting before register() was called,
+        // it means the user had a pending update from a previous session.
+        // Auto-apply the update silently since the page is loading fresh,
+        // instead of showing the toast repeatedly on every page open.
+        if (event.wasWaitingBeforeRegister) {
+          const handleControlling = () => {
+            window.location.reload();
+          };
+
+          controllingHandlerRef.current = handleControlling;
+          wb.addEventListener("controlling", handleControlling);
+          wb.messageSkipWaiting();
+          return;
+        }
+
+        // Prevent multiple toast instances for new updates during this session
         if (toastShownRef.current) {
           return;
         }
