@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import { logger } from "@/lib/utils/logger";
 import {
@@ -24,8 +23,11 @@ export async function GET() {
   const signature = signState(state, secret);
   const value = `${state}.${signature}`;
 
-  const cookieStore = await cookies();
-  cookieStore.set(WECHAT_OAUTH_STATE_COOKIE_NAME, value, {
+  // Set cookie directly on the NextResponse object to ensure the Set-Cookie
+  // header is included in the response. Using cookies().set() from next/headers
+  // combined with NextResponse.json() can cause the header to be lost.
+  const response = NextResponse.json({ state });
+  response.cookies.set(WECHAT_OAUTH_STATE_COOKIE_NAME, value, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -33,5 +35,5 @@ export async function GET() {
     path: "/",
   });
 
-  return NextResponse.json({ state });
+  return response;
 }
