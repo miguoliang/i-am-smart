@@ -35,12 +35,14 @@ jest.mock('@/lib/utils/logger', () => ({
 // Mock fetch
 global.fetch = jest.fn();
 
-// Mock useRouter
+// Mock useRouter and useSearchParams
 const mockPush = jest.fn();
+const mockSearchParams = new URLSearchParams();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 expect.extend(toHaveNoViolations);
