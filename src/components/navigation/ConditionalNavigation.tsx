@@ -11,6 +11,10 @@ const NO_NAV_ROUTES = ["/operator"];
 const MARKETING_ROUTES = [
   "/",
   "/about",
+  "/terms",
+  "/privacy",
+  "/pricing",
+  "/features",
 ];
 
 // User routes - no top nav (they have bottom nav footer)
