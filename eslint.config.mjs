@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "storybook-static/**",
     "docker/**",
     "deploy/**",
+    "scripts/svg-to-png.mjs",
   ]),
   {
     rules: {
