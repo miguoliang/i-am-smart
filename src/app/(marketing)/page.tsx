@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/form/Button";
 import { Card } from "@/components/container/Card";
@@ -7,18 +8,22 @@ export default function HomePage() {
     {
       title: "随时随地开始学",
       description: "地铁、睡前、排队、蹲坑……打开就是学，不用等、不用找借口",
+      image: "/features/learn-anywhere.svg",
     },
     {
       title: "科学规划、陪你提分",
       description: "根据你的水平与复习记录，科学出题 + 即时反馈 + 针对性复习",
+      image: "/features/scientific-planning.svg",
     },
     {
       title: "0 下载 · 打开浏览器就用",
       description: "不占手机内存、不用安装任何东西，随时想用就用",
+      image: "/features/zero-download.svg",
     },
     {
       title: "手机 · 平板 · 电脑无缝同步",
       description: "今天手机背了50个单词，回家电脑直接接着背，进度永不掉线",
+      image: "/features/multi-device-sync.svg",
     },
   ];
 
@@ -58,11 +63,13 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 gap-8">
           {features.map((feature) => (
             <Card key={feature.title} className="overflow-hidden">
-              <div className="relative w-full aspect-video bg-linear-to-br from-blue-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                <div className="text-center px-4">
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">图片占位符</p>
-                  <p className="text-xs text-gray-300 dark:text-gray-600">{feature.title}</p>
-                </div>
+              <div className="relative w-full aspect-video">
+                <Image
+                  src={feature.image}
+                  alt={feature.title}
+                  fill
+                  className="object-cover"
+                />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
