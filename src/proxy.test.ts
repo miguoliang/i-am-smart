@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { NextRequest } from "next/server";
-import { middleware } from "./middleware";
+import { proxy } from "./proxy";
 
 // Mock the Supabase middleware client
 const mockGetUser = jest.fn();
@@ -27,7 +27,7 @@ function buildRequest(pathname: string): NextRequest {
   return new NextRequest(new URL(pathname, "http://localhost:3000"));
 }
 
-describe("middleware", () => {
+describe("proxy", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -36,7 +36,7 @@ describe("middleware", () => {
     it("should call getUser to refresh the session", async () => {
       mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
 
-      await middleware(buildRequest("/"));
+      await proxy(buildRequest("/"));
 
       expect(mockGetUser).toHaveBeenCalledTimes(1);
     });
@@ -48,7 +48,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from /learn to /signin", async () => {
-      const res = await middleware(buildRequest("/learn"));
+      const res = await proxy(buildRequest("/learn"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -57,7 +57,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from /stats to /signin", async () => {
-      const res = await middleware(buildRequest("/stats"));
+      const res = await proxy(buildRequest("/stats"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -66,7 +66,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from /feedback to /signin", async () => {
-      const res = await middleware(buildRequest("/feedback"));
+      const res = await proxy(buildRequest("/feedback"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -75,7 +75,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from /operator to /signin", async () => {
-      const res = await middleware(buildRequest("/operator"));
+      const res = await proxy(buildRequest("/operator"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -84,7 +84,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from nested protected routes to /signin", async () => {
-      const res = await middleware(buildRequest("/operator/accounts"));
+      const res = await proxy(buildRequest("/operator/accounts"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -93,31 +93,31 @@ describe("middleware", () => {
     });
 
     it("should allow access to /signin", async () => {
-      const res = await middleware(buildRequest("/signin"));
+      const res = await proxy(buildRequest("/signin"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to / (home page)", async () => {
-      const res = await middleware(buildRequest("/"));
+      const res = await proxy(buildRequest("/"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to /about", async () => {
-      const res = await middleware(buildRequest("/about"));
+      const res = await proxy(buildRequest("/about"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to /terms", async () => {
-      const res = await middleware(buildRequest("/terms"));
+      const res = await proxy(buildRequest("/terms"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to /privacy", async () => {
-      const res = await middleware(buildRequest("/privacy"));
+      const res = await proxy(buildRequest("/privacy"));
 
       expect(res.status).toBe(200);
     });
@@ -129,7 +129,7 @@ describe("middleware", () => {
     });
 
     it("should redirect from /signin to /learn", async () => {
-      const res = await middleware(buildRequest("/signin"));
+      const res = await proxy(buildRequest("/signin"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);
@@ -137,25 +137,25 @@ describe("middleware", () => {
     });
 
     it("should allow access to /learn", async () => {
-      const res = await middleware(buildRequest("/learn"));
+      const res = await proxy(buildRequest("/learn"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to /stats", async () => {
-      const res = await middleware(buildRequest("/stats"));
+      const res = await proxy(buildRequest("/stats"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to / (home page)", async () => {
-      const res = await middleware(buildRequest("/"));
+      const res = await proxy(buildRequest("/"));
 
       expect(res.status).toBe(200);
     });
 
     it("should allow access to /operator", async () => {
-      const res = await middleware(buildRequest("/operator"));
+      const res = await proxy(buildRequest("/operator"));
 
       expect(res.status).toBe(200);
     });

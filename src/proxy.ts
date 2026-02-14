@@ -1,77 +1,67 @@
-import { createMiddlewareClient } from '@/lib/supabaseServer'
-import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/lib/utils/logger'
+// src/proxy.ts - Session refresh & auth routing proxy (Next.js 16)
+import { NextRequest, NextResponse } from "next/server";
+import { createMiddlewareClient } from "@/lib/supabaseServer";
 
-export async function proxy(req: NextRequest) {
-  try {
-    const { supabase, res } = createMiddlewareClient(req)
+// Routes that require authentication
+const PROTECTED_ROUTES = ["/learn", "/stats", "/feedback", "/operator"];
 
-    // Refresh session if expired - required for Server Components
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+// Routes only accessible when NOT authenticated
+const AUTH_ROUTES = ["/signin"];
 
-    const pathname = req.nextUrl.pathname
-
-    // Public marketing routes that don't require authentication
-    const publicRoutes = [
-      '/',
-      '/signin',
-    ]
-
-    // Protected routes that require authentication
-    const protectedRoutes = ['/learn', '/stats', '/operator', '/feedback']
-
-    // Check if the route is protected
-    const isProtectedRoute = protectedRoutes.some(route => 
-      pathname === route || pathname.startsWith(`${route}/`)
-    )
-
-    // Check if the route is public
-    const isPublicRoute = publicRoutes.some(route => 
-      pathname === route || pathname.startsWith(`${route}/`)
-    )
-
-    // If user is not signed in and trying to access protected routes
-    // Allow access to public routes (marketing site, sign-in, etc.)
-    if (!user && !isPublicRoute && isProtectedRoute) {
-      const redirectUrl = req.nextUrl.clone()
-      redirectUrl.pathname = '/'
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Add CORS headers for Supabase API calls
-    res.headers.set('Access-Control-Allow-Origin', '*')
-    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-
-    return res
-  } catch (error) {
-    // If there's an error (e.g., during prerendering), just continue
-    // This prevents crashes during static generation
-    logger.error('Middleware error', { error, pathname: req.nextUrl.pathname })
-    const res = NextResponse.next({ request: req })
-    // Add CORS headers even on error
-    res.headers.set('Access-Control-Allow-Origin', '*')
-    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    return res
-  }
+function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 }
 
+function isAuthRoute(pathname: string): boolean {
+  return AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
+export async function proxy(req: NextRequest) {
+  const { supabase, res } = createMiddlewareClient(req);
+
+  // Refresh the session by calling getUser().
+  // This keeps the session alive and updates cookies if the access token
+  // was refreshed using the refresh token.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = req.nextUrl.pathname;
+
+  // Redirect unauthenticated users away from protected routes
+  if (!user && isProtectedRoute(pathname)) {
+    const signinUrl = req.nextUrl.clone();
+    signinUrl.pathname = "/signin";
+    // Preserve the intended destination so we can redirect back after login
+    signinUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(signinUrl);
+  }
+
+  // Redirect authenticated users away from auth routes (e.g. signin)
+  if (user && isAuthRoute(pathname)) {
+    const learnUrl = req.nextUrl.clone();
+    learnUrl.pathname = "/learn";
+    return NextResponse.redirect(learnUrl);
+  }
+
+  return res;
+}
+
+// Only run proxy on app routes, skip static files and API routes
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - _not-found (Next.js not-found page)
      * - favicon.ico (favicon file)
-     * - static assets (images, svg, etc.)
-     * - PWA assets (manifest, service worker)
+     * - public folder files (images, icons, etc.)
+     * - API routes (they handle their own auth via requireAuth)
      */
-    '/((?!api|_next/static|_next/image|_not-found|favicon.ico|manifest.webmanifest|sw.js|workbox-.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml|webmanifest)$|api/).*)",
   ],
-}
-
+};
