@@ -8,13 +8,15 @@ interface CardsState {
   localCards: Card[] | null;
   lastValidLevel: string | null;
   initialReviewedCount: number;
+  initialTotalCount: number;
 }
 
 type CardsAction =
   | { type: 'SET_LEVEL'; level: string }
   | { type: 'SET_CARDS'; cards: Card[] | null }
   | { type: 'INIT_CARDS'; cards: Card[]; reviewedCount: number }
-  | { type: 'UPDATE_CARDS'; updater: (prev: Card[] | null) => Card[] | null };
+  | { type: 'UPDATE_CARDS'; updater: (prev: Card[] | null) => Card[] | null }
+  | { type: 'RESET_FOR_DATA_CHANGE' };
 
 function cardsReducer(state: CardsState, action: CardsAction): CardsState {
   switch (action.type) {
@@ -24,6 +26,7 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
         lastValidLevel: action.level,
         localCards: null, // Reset local cards on level change
         initialReviewedCount: 0,
+        initialTotalCount: 0,
       };
     case 'SET_CARDS':
       return {
@@ -35,11 +38,19 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
         ...state,
         localCards: action.cards,
         initialReviewedCount: action.reviewedCount,
+        initialTotalCount: action.reviewedCount + action.cards.length,
       };
     case 'UPDATE_CARDS':
       return {
         ...state,
         localCards: action.updater(state.localCards),
+      };
+    case 'RESET_FOR_DATA_CHANGE':
+      return {
+        ...state,
+        localCards: null,
+        initialReviewedCount: 0,
+        initialTotalCount: 0,
       };
     default:
       return state;
@@ -51,10 +62,11 @@ export function useCards() {
   const { data, isLoading: loading } = useDueCardsQuery();
   const prevLevelRef = useRef(level);
 
-  const [{ localCards, lastValidLevel, initialReviewedCount }, dispatch] = useReducer(cardsReducer, {
+  const [{ localCards, lastValidLevel, initialReviewedCount, initialTotalCount }, dispatch] = useReducer(cardsReducer, {
     localCards: null,
     lastValidLevel: level,
     initialReviewedCount: 0,
+    initialTotalCount: 0,
   });
 
   // Handle level changes
@@ -70,15 +82,27 @@ export function useCards() {
   // Once localCards is initialized, local state (optimistic updates) takes precedence
   // to prevent cache mutations (e.g., onSuccess removing reviewed cards) from
   // overwriting local state and shifting card indices mid-session.
+  //
+  // Exception: when the API total count changes (e.g., daily_due_limit changed in settings),
+  // reset localCards so the new data is picked up. Card reviews preserve the total
+  // (reviewedCount +1, cards -1), so a total change reliably indicates an external change.
   useEffect(() => {
-    if (data && !loading && lastValidLevel === level && localCards === null) {
-      const cardsWithReviewed = data.cards.map((card: Card) => ({
-        ...card,
-        reviewed: false,
-      }));
-      dispatch({ type: 'INIT_CARDS', cards: cardsWithReviewed, reviewedCount: data.reviewedCount });
+    if (data && !loading && lastValidLevel === level) {
+      const apiTotalCount = data.reviewedCount + data.cards.length;
+
+      if (localCards === null) {
+        // Initial load or after reset: initialize from API data
+        const cardsWithReviewed = data.cards.map((card: Card) => ({
+          ...card,
+          reviewed: false,
+        }));
+        dispatch({ type: 'INIT_CARDS', cards: cardsWithReviewed, reviewedCount: data.reviewedCount });
+      } else if (initialTotalCount > 0 && apiTotalCount !== initialTotalCount) {
+        // Total count changed (e.g., daily_due_limit updated), reset to pick up new data
+        dispatch({ type: 'RESET_FOR_DATA_CHANGE' });
+      }
     }
-  }, [data, loading, level, lastValidLevel, localCards]);
+  }, [data, loading, level, lastValidLevel, localCards, initialTotalCount]);
 
   // Use local cards if available, otherwise API cards
   const cards = useMemo(() => {
