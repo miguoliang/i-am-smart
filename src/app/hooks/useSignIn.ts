@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   isRateLimitError,
@@ -30,6 +30,7 @@ export function useSignIn(): UseSignInReturn {
   const otpInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSendOtp = useCallback(async () => {
     if (!email) {
@@ -132,14 +133,15 @@ export function useSignIn(): UseSignInReturn {
       role,
     });
 
-    // Navigate based on role
+    // Navigate based on role, or return to the page the user was trying to access
+    const nextPath = searchParams.get("next");
     if (role === "operator") {
-      router.push("/operator");
+      router.push(nextPath ?? "/operator");
     } else {
-      router.push("/learn");
+      router.push(nextPath ?? "/learn");
     }
     // Keep loading true while redirecting
-  }, [otp, email, supabase, router]);
+  }, [otp, email, supabase, router, searchParams]);
 
   const handleResendOtp = useCallback(() => {
     setOtpSent(false);
