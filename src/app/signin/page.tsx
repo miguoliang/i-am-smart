@@ -369,7 +369,12 @@ function SignInContent() {
                 size="lg"
                 disabled={!agreedToTerms || wechatLoading}
                 onClick={handleWechatLogin}
-                aria-label="使用微信扫码登录"
+                aria-label={
+                  agreedToTerms
+                    ? "使用微信扫码登录"
+                    : "请先勾选同意服务条款与隐私政策后再使用微信登录"
+                }
+                title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》" : undefined}
                 className="w-full py-3.5 md:py-4 px-6 md:px-8 min-h-[48px]"
               >
                 {wechatLoading ? "跳转中…" : "微信登录"}
