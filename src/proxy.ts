@@ -20,6 +20,23 @@ function isAuthRoute(pathname: string): boolean {
   );
 }
 
+/**
+ * Copy session cookies from the middleware response to a redirect response.
+ * When getUser() refreshes an expired access token, the new token is written
+ * to `res` via setAll(). If we then redirect with a brand-new NextResponse,
+ * those refreshed cookies would be lost unless we forward them.
+ */
+function redirectWithCookies(
+  url: URL,
+  middlewareRes: NextResponse
+): NextResponse {
+  const redirectRes = NextResponse.redirect(url);
+  middlewareRes.cookies.getAll().forEach((cookie) => {
+    redirectRes.cookies.set(cookie.name, cookie.value);
+  });
+  return redirectRes;
+}
+
 export async function proxy(req: NextRequest) {
   const { supabase, res } = createMiddlewareClient(req);
 
@@ -38,14 +55,14 @@ export async function proxy(req: NextRequest) {
     signinUrl.pathname = "/signin";
     // Preserve the intended destination so we can redirect back after login
     signinUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(signinUrl);
+    return redirectWithCookies(signinUrl, res);
   }
 
   // Redirect authenticated users away from auth routes (e.g. signin)
   if (user && isAuthRoute(pathname)) {
     const learnUrl = req.nextUrl.clone();
     learnUrl.pathname = "/learn";
-    return NextResponse.redirect(learnUrl);
+    return redirectWithCookies(learnUrl, res);
   }
 
   return res;

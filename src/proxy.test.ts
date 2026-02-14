@@ -1,8 +1,11 @@
 /**
  * @jest-environment node
  */
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { proxy } from "./proxy";
+
+// Track the middleware response so tests can simulate token refresh cookies
+let latestMiddlewareRes: NextResponse;
 
 // Mock the Supabase middleware client
 const mockGetUser = jest.fn();
@@ -12,6 +15,7 @@ jest.mock("@/lib/supabaseServer", () => ({
     // Use the actual NextResponse to build a response that carries updated cookies
     const { NextResponse } = jest.requireActual("next/server") as typeof import("next/server");
     const res = NextResponse.next({ request: req });
+    latestMiddlewareRes = res;
     return {
       supabase: {
         auth: {
@@ -158,6 +162,50 @@ describe("proxy", () => {
       const res = await proxy(buildRequest("/operator"));
 
       expect(res.status).toBe(200);
+    });
+  });
+
+  describe("cookie forwarding on redirects", () => {
+    it("should forward refreshed session cookies when redirecting authenticated user from /signin", async () => {
+      // Simulate getUser() triggering a token refresh that sets cookies
+      mockGetUser.mockImplementation(async () => {
+        // Simulate Supabase writing refreshed cookies to the middleware response
+        latestMiddlewareRes.cookies.set("sb-access-token", "refreshed-token-value");
+        latestMiddlewareRes.cookies.set("sb-refresh-token", "new-refresh-token");
+        return { data: { user: { id: "user-1" } } };
+      });
+
+      const res = await proxy(buildRequest("/signin"));
+
+      expect(res.status).toBe(307);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/learn");
+
+      // Verify refreshed cookies are forwarded to the redirect response
+      const cookies = res.cookies.getAll();
+      const accessToken = cookies.find((c) => c.name === "sb-access-token");
+      const refreshToken = cookies.find((c) => c.name === "sb-refresh-token");
+      expect(accessToken?.value).toBe("refreshed-token-value");
+      expect(refreshToken?.value).toBe("new-refresh-token");
+    });
+
+    it("should forward cookies when redirecting unauthenticated user from protected route", async () => {
+      mockGetUser.mockImplementation(async () => {
+        // Even for unauthenticated users, Supabase may clear stale cookies
+        latestMiddlewareRes.cookies.set("sb-access-token", "");
+        return { data: { user: null } };
+      });
+
+      const res = await proxy(buildRequest("/learn"));
+
+      expect(res.status).toBe(307);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/signin");
+
+      // Verify cookies from middleware response are forwarded
+      const cookies = res.cookies.getAll();
+      const accessToken = cookies.find((c) => c.name === "sb-access-token");
+      expect(accessToken).toBeDefined();
     });
   });
 });
