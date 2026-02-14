@@ -152,7 +152,7 @@ Robots.txt is configured at `/robots.txt`. Update `src/app/robots.ts` to modify 
 Add to `.env.local`:
 
 ```env
-NEXT_PUBLIC_SITE_URL=https://be-it-forever.com
+NEXT_PUBLIC_SITE_URL=https://iamsmart.top
 ```
 
 ## Custom MDX Components

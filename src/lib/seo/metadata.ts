@@ -36,7 +36,7 @@ export function generateMetadata(pageMetadata: PageMetadata): Metadata {
     nofollow,
   } = pageMetadata;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://be-it-forever.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iamsmart.top";
   const fullTitle = title.includes("聪明的背单词工具") ? title : `${title} | 聪明的背单词工具`;
 
   return {

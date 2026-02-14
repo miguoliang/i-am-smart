@@ -65,6 +65,10 @@ function SignInContent() {
     if (!agreedToTerms || typeof window === "undefined") return;
     const appId = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID;
     if (!appId) return;
+    // Use canonical origin so redirect_uri domain matches 授权回调域 in WeChat Open Platform
+    const origin = process.env.NEXT_PUBLIC_APP_ORIGIN
+      ? process.env.NEXT_PUBLIC_APP_ORIGIN.replace(/\/$/, "")
+      : window.location.origin;
     setWechatLoading(true);
     try {
       const res = await fetch("/api/auth/wechat/state");
@@ -72,7 +76,7 @@ function SignInContent() {
       const { state } = (await res.json()) as { state?: string };
       if (!state) return;
       const redirectUri = encodeURIComponent(
-        `${window.location.origin}/api/auth/wechat/callback`
+        `${origin}/api/auth/wechat/callback`
       );
       const url = `${WECHAT_QRCONNECT_URL}?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${encodeURIComponent(state)}#wechat_redirect`;
       window.location.href = url;

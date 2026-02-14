@@ -6,7 +6,7 @@
 
 1. 登录 [微信开放平台](https://open.weixin.qq.com/)。
 2. 创建或使用已有 **网站应用**，申请「微信登录」能力（审核通过后获得 AppID、AppSecret）。
-3. 在应用后台配置 **授权回调域**：只填域名（无协议、无路径），例如 `yourdomain.com` 或 `preview.yourdomain.com`。回调实际地址为 `https://<域名>/api/auth/wechat/callback`，域名须与这里一致。
+3. 在应用后台配置 **授权回调域**：只填域名（无协议、无路径），例如 `www.iamsmart.top`；若有预览环境可再填 `preview.iamsmart.top`。回调实际地址为 `https://<域名>/api/auth/wechat/callback`。**授权回调域必须与 `NEXT_PUBLIC_APP_ORIGIN` 的域名一致**（代码用该变量拼 `redirect_uri`），否则微信会报「redirect_uri 参数错误」。
 
 ## 2. 环境变量
 
@@ -15,13 +15,13 @@
 | `WECHAT_OPEN_APP_ID` | 是（若启用微信登录） | 网站应用 AppID，服务端 callback 用 |
 | `WECHAT_OPEN_APP_SECRET` | 是 | 网站应用 AppSecret，**仅服务端**，勿提交到仓库 |
 | `NEXT_PUBLIC_WECHAT_OPEN_APP_ID` | 是 | 与上面同值，前端拼授权 URL 用 |
-| `NEXT_PUBLIC_APP_ORIGIN` | 推荐 | 站点根 URL，如 `https://yourdomain.com`，用于 callback 重定向与错误跳转；未设置时可用 Vercel 的 `VERCEL_URL` 等 |
+| `NEXT_PUBLIC_APP_ORIGIN` | 推荐 | 站点根 URL，如 `https://www.iamsmart.top`（须与微信「授权回调域」一致），用于拼 **redirect_uri**、callback 重定向与错误跳转；未设置时用当前访问的 origin |
 
 本地开发：在 `.env.local` 中配置；部署：在 GitHub Environments / Vercel 等中配置。
 
 ## 3. Supabase
 
-- **Authentication → URL Configuration → Redirect URLs**：加入你的站点域名，例如 `https://yourdomain.com/**`、`https://preview.yourdomain.com/**`，以便 Magic Link 验证后跳回站内。
+- **Authentication → URL Configuration → Redirect URLs**：加入你的站点域名，例如 `https://www.iamsmart.top/**`、`https://preview.iamsmart.top/**`，以便 Magic Link 验证后跳回站内。
 
 ## 4. 测试环境
 

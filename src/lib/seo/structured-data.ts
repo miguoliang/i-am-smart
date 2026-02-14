@@ -10,7 +10,7 @@ interface SearchActionWithQueryInput extends SearchAction {
 }
 
 export function generateOrganizationStructuredData(): WithContext<Organization> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://be-it-forever.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iamsmart.top";
   
   return {
     "@context": "https://schema.org",
@@ -27,7 +27,7 @@ export function generateOrganizationStructuredData(): WithContext<Organization> 
 }
 
 export function generateWebsiteStructuredData(): WithContext<WebSite> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://be-it-forever.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iamsmart.top";
   
   const searchAction: SearchActionWithQueryInput = {
     "@type": "SearchAction",
@@ -57,7 +57,7 @@ export function generateArticleStructuredData(
   image?: string,
   author?: string
 ): WithContext<Article> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://be-it-forever.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iamsmart.top";
   
   return {
     "@context": "https://schema.org",
