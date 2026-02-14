@@ -14,6 +14,29 @@
 
 ---
 
+## [1.0.3] - 2026-02-14
+
+### #微信登录与Bug修复
+
+集成微信登录功能，修复多个界面Bug，提升用户体验。
+
+### 改进 (Improvements) ↓↑
+
+- 集成微信登录功能，使用 iamsmart.top 域名配置回调
+- 为微信登录按钮添加 tooltip 和 aria-label，当未同意条款时禁用按钮并提示
+- 部署配置中添加微信登录相关环境变量
+
+### 变更 (Changes) ↓↑
+
+- ESLint 配置忽略 `scripts/svg-to-png.mjs` 文件
+
+### Bug 修复 (Bug Fixes) ↓↑
+
+- 修复服务条款和隐私政策页面的导航栏重复显示bug
+- 修复微信回调 redirect_uri 使用 NEXT_PUBLIC_APP_ORIGIN 的问题
+
+---
+
 ## [2025-01-16]
 
 ### #主页样式优化
