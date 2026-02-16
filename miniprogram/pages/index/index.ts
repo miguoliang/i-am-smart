@@ -23,7 +23,7 @@ Page({
     isLoadingCards: false, // Prevent concurrent loadCards calls
   },
 
-  onLoad(options: WechatMiniprogram.Page.ILoadOption) {
+  onLoad(options: Record<string, string | undefined>) {
     console.log('=== index page onLoad START ===');
     console.log('onLoad options:', options);
     try {
