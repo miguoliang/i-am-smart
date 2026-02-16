@@ -20,6 +20,7 @@ Page({
     reviewedCount: 0,
     currentIndex: 0,
     flipped: false,
+    isLoadingCards: false, // Prevent concurrent loadCards calls
   },
 
   onLoad(options: WechatMiniprogram.Page.ILoadOption) {
@@ -34,8 +35,8 @@ Page({
         level,
         levelIndex: levelIndex >= 0 ? levelIndex : 0,
       });
-      console.log('Calling loadCards...');
-      this.loadCards();
+      // Don't load cards here - let onShow handle it to avoid duplicate calls
+      console.log('onLoad completed, will load cards in onShow');
     } catch (error) {
       console.error('Error in onLoad:', error);
     }
@@ -44,12 +45,12 @@ Page({
 
   onShow() {
     console.log('=== index page onShow START ===');
-    // Reload cards when page is shown (if no cards or all reviewed)
-    if (this.data.cards.length === 0 || this.isAllReviewed()) {
+    // Only reload if not already loading and (no cards or all reviewed)
+    if (!this.data.isLoadingCards && (this.data.cards.length === 0 || this.isAllReviewed())) {
       console.log('Reloading cards in onShow, cards.length:', this.data.cards.length);
       this.loadCards();
     } else {
-      console.log('Skipping reload, cards exist:', this.data.cards.length);
+      console.log('Skipping reload - isLoadingCards:', this.data.isLoadingCards, 'cards.length:', this.data.cards.length);
     }
     console.log('=== index page onShow END ===');
   },
@@ -63,8 +64,17 @@ Page({
   },
 
   async loadCards() {
+    // Prevent concurrent calls
+    if (this.data.isLoadingCards) {
+      console.log('loadCards already in progress, skipping...');
+      return;
+    }
+
     console.log('loadCards called, level:', this.data.level);
-    this.setData({ loading: true });
+    this.setData({ 
+      loading: true,
+      isLoadingCards: true,
+    });
     
     try {
       const level = this.data.level;
@@ -88,6 +98,7 @@ Page({
         currentIndex: 0,
         flipped: false,
         loading: false,
+        isLoadingCards: false,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '加载失败';
@@ -108,6 +119,7 @@ Page({
         currentIndex: 0,
         flipped: false,
         loading: false,
+        isLoadingCards: false,
       });
     }
   },

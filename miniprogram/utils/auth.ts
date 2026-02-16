@@ -7,16 +7,26 @@ import type { LoginResponse } from '../shared/types/user';
 import { storage } from './storage';
 import { request } from './api';
 
+// Prevent concurrent login attempts
+let loginPromise: Promise<string> | null = null;
+
 /**
  * Login using WeChat miniprogram code
  * @returns Access token
  */
 export async function login(): Promise<string> {
-  return new Promise((resolve, reject) => {
+  // If a login is already in progress, return the existing promise
+  if (loginPromise) {
+    console.log('Login already in progress, waiting...');
+    return loginPromise;
+  }
+
+  loginPromise = new Promise((resolve, reject) => {
     wx.login({
       success: async (res) => {
         if (res.code) {
           try {
+            console.log('Starting login request...');
             const response = await request<LoginResponse>(
               API_ENDPOINTS.MINIPROGRAM_LOGIN,
               {
@@ -33,20 +43,28 @@ export async function login(): Promise<string> {
               storage.setRefreshToken(refresh_token);
             }
 
+            console.log('Login successful');
             resolve(access_token);
           } catch (error) {
             console.error('Login failed:', error);
             reject(error);
+          } finally {
+            // Clear the promise so next login can proceed
+            loginPromise = null;
           }
         } else {
+          loginPromise = null;
           reject(new Error('获取 code 失败'));
         }
       },
       fail: (error) => {
+        loginPromise = null;
         reject(new Error(`微信登录失败: ${error.errMsg || '未知错误'}`));
       },
     });
   });
+
+  return loginPromise;
 }
 
 /**

@@ -26,17 +26,20 @@ App({
 
   async checkAuth() {
     if (!isAuthenticated()) {
+      console.log('User not authenticated, attempting auto-login...');
       try {
         await login();
         console.log('Auto-login successful');
       } catch (error) {
         console.error('Auto-login failed:', error);
-        // Show error to user if needed
-        wx.showToast({
-          title: '登录失败，请重试',
-          icon: 'none',
-        });
+        // Don't show toast on auto-login failure - let user try manually if needed
+        // wx.showToast({
+        //   title: '登录失败，请重试',
+        //   icon: 'none',
+        // });
       }
+    } else {
+      console.log('User already authenticated');
     }
   },
 

@@ -75,17 +75,24 @@ export async function request<T>(
           }
         } else if (res.statusCode === 401) {
           // Token expired or invalid, try to re-login
+          console.log('API request returned 401, attempting re-login...');
           try {
+            // Clear old token first
+            const oldToken = storage.getAccessToken();
             storage.clearAuth();
+            
+            // Re-login (login() function handles concurrent calls)
             await login();
             
             // Retry the request with new token
             const newToken = storage.getAccessToken();
             if (!newToken) {
+              console.error('Re-login failed: no token received');
               reject(new Error('重新登录失败'));
               return;
             }
 
+            console.log('Re-login successful, retrying request...');
             wx.request({
               url: `${baseUrl}${endpoint}`,
               method: options.method || 'GET',
@@ -112,6 +119,7 @@ export async function request<T>(
               fail: reject,
             });
           } catch (error) {
+            console.error('Re-login failed:', error);
             reject(error);
           }
         } else {
