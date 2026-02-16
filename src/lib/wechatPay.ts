@@ -50,7 +50,8 @@ export interface DecryptedTransaction {
 function getPrivateKey(): string {
   const key = process.env.WECHAT_PAY_PRIVATE_KEY;
   if (!key) throw new Error("WECHAT_PAY_PRIVATE_KEY is not set");
-  return key;
+  // Env vars often store PEM with literal \n; Node crypto needs real newlines
+  return key.replace(/\\n/g, "\n");
 }
 
 export function getApiV3Key(): Buffer {
