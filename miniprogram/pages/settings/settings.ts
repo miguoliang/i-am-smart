@@ -5,7 +5,7 @@
 import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { Account } from '../../shared/types/user';
-import { logout, isAuthenticated } from '../../utils/auth';
+import { isAuthenticated } from '../../utils/auth';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 import { storage } from '../../utils/storage';
 
@@ -142,18 +142,4 @@ Page({
     }
   },
 
-  onLogout() {
-    wx.showModal({
-      title: '确认退出',
-      content: '确定要退出登录吗？',
-      success: (res) => {
-        if (res.confirm) {
-          logout();
-          wx.reLaunch({
-            url: '/pages/index/index',
-          });
-        }
-      },
-    });
-  },
 });

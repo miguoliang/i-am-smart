@@ -45,10 +45,5 @@
         </view>
       </view>
     </view>
-
-    <!-- Logout -->
-    <view class="settings-section">
-      <button class="logout-btn" bindtap="onLogout">退出登录</button>
-    </view>
   </view>
 </view>
