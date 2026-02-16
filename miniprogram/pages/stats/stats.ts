@@ -56,9 +56,17 @@ Page({
 
     try {
       const timezoneOffset = new Date().getTimezoneOffset();
-      const stats = await request<StatsData>(
+      const response = await request<StatsData>(
         `${API_ENDPOINTS.STATS}?offset=${timezoneOffset}`
       );
+      
+      console.log('Stats API response:', response);
+      
+      // Validate response structure
+      if (!response || !response.stats || !response.heatmap) {
+        console.error('Invalid stats response structure:', response);
+        throw new Error('统计数据格式错误');
+      }
       
       // Generate full 30-day heatmap
       const fullHeatMap = Array(30).fill(0).map((_, i) => {
@@ -67,15 +75,25 @@ Page({
         const dateStr = this.formatDate(date);
         
         // Find count in API response (sparse data)
-        const found = stats.heatmap.find((h) => h.date === dateStr);
+        const found = response.heatmap.find((h) => h.date === dateStr);
         return { date: dateStr, count: found ? found.count : 0 };
       });
 
-      this.setData({
+      // Ensure all stats fields have default values
+      const statsData: StatsData = {
         stats: {
-          ...stats,
-          heatmap: fullHeatMap,
+          total: response.stats?.total ?? 0,
+          mastered: response.stats?.mastered ?? 0,
+          learning: response.stats?.learning ?? 0,
+          dueToday: response.stats?.dueToday ?? 0,
         },
+        heatmap: fullHeatMap,
+      };
+
+      console.log('Setting stats data:', statsData);
+
+      this.setData({
+        stats: statsData,
         loading: false,
       });
     } catch (error: any) {

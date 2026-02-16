@@ -9,19 +9,19 @@
     <!-- Four Grid Stats -->
     <view class="stats-grid">
       <view class="stat-item stat-total">
-        <text class="stat-value">{{stats.stats.total}}</text>
+        <text class="stat-value">{{stats.stats.total || 0}}</text>
         <text class="stat-label">总词量</text>
       </view>
       <view class="stat-item stat-mastered">
-        <text class="stat-value">{{stats.stats.mastered}}</text>
+        <text class="stat-value">{{stats.stats.mastered || 0}}</text>
         <text class="stat-label">已掌握</text>
       </view>
       <view class="stat-item stat-learning">
-        <text class="stat-value">{{stats.stats.learning}}</text>
+        <text class="stat-value">{{stats.stats.learning || 0}}</text>
         <text class="stat-label">学习中</text>
       </view>
       <view class="stat-item stat-due">
-        <text class="stat-value">{{stats.stats.dueToday}}</text>
+        <text class="stat-value">{{stats.stats.dueToday || 0}}</text>
         <text class="stat-label">今日待复习</text>
       </view>
     </view>
@@ -33,7 +33,8 @@
         <view 
           wx:for="{{stats.heatmap}}" 
           wx:key="date"
-          class="heatmap-cell {{item.count === 0 ? 'heatmap-empty' : (item.count < 5 ? 'heatmap-low' : (item.count < 10 ? 'heatmap-medium' : 'heatmap-high'))}}"
+          wx:for-item="heatmapItem"
+          class="heatmap-cell {{heatmapItem.count === 0 ? 'heatmap-empty' : (heatmapItem.count < 5 ? 'heatmap-low' : (heatmapItem.count < 10 ? 'heatmap-medium' : 'heatmap-high'))}}"
         >
         </view>
       </view>
