@@ -24,6 +24,9 @@ Page({
   },
 
   onLoad(options: { id?: string }) {
+    // Disable share menu (右上角按钮)
+    wx.hideShareMenu();
+    
     const cardId = options.id;
     if (cardId) {
       this.loadCard(parseInt(cardId, 10));
