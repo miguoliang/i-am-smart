@@ -31,17 +31,18 @@
           wx:for="{{availableLevels}}" 
           wx:key="*this"
           wx:for-index="idx"
-          class="level-item {{level === item && !['B1', 'B2', 'C1', 'C2'].includes(item) ? 'level-selected' : ''}} {{['B1', 'B2'].includes(item) ? 'level-pro' : ''}} {{['C1', 'C2'].includes(item) ? 'level-coming-soon' : ''}}"
+          wx:for-item="levelItem"
+          class="level-item {{level === levelItem && levelItem !== 'B1' && levelItem !== 'B2' && levelItem !== 'C1' && levelItem !== 'C2' ? 'level-selected' : ''}} {{levelItem === 'B1' || levelItem === 'B2' ? 'level-pro' : ''}} {{levelItem === 'C1' || levelItem === 'C2' ? 'level-coming-soon' : ''}}"
           data-index="{{idx}}"
           bindtap="onLevelChange"
         >
           <view class="level-check">
-            <text wx:if="{{level === item && !['B1', 'B2', 'C1', 'C2'].includes(item)}}">✓</text>
-            <text wx:elif="{{['B1', 'B2'].includes(item)}}" class="pro-icon">🔒</text>
+            <text wx:if="{{level === levelItem && levelItem !== 'B1' && levelItem !== 'B2' && levelItem !== 'C1' && levelItem !== 'C2'}}">✓</text>
+            <text wx:elif="{{levelItem === 'B1' || levelItem === 'C1' || levelItem === 'B2' || levelItem === 'C2'}}" class="pro-icon">🔒</text>
           </view>
-          <text class="level-name">{{item}}</text>
-          <text wx:if="{{['B1', 'B2'].includes(item)}}" class="level-badge level-badge-pro">Pro</text>
-          <text wx:if="{{['C1', 'C2'].includes(item)}}" class="level-badge level-badge-coming">敬请期待</text>
+          <text class="level-name">{{levelItem}}</text>
+          <text wx:if="{{levelItem === 'B1' || levelItem === 'B2'}}" class="level-badge level-badge-pro">Pro</text>
+          <text wx:if="{{levelItem === 'C1' || levelItem === 'C2'}}" class="level-badge level-badge-coming">敬请期待</text>
         </view>
       </view>
     </view>

@@ -21,6 +21,9 @@ Page({
     dailyLimitPresets: DAILY_DUE_LIMIT_PRESETS,
     dailyLimitIndex: 0,
     dailyDueLimit: 10,
+    // Helper data for template conditionals
+    proLevels: ['B1', 'B2'],
+    comingSoonLevels: ['C1', 'C2'],
   },
 
   async onLoad() {
