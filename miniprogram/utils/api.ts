@@ -70,20 +70,33 @@ export async function request<T>(
         console.log('API response data:', res.data);
         
         if (res.statusCode === 200) {
-          const response = res.data as ApiResponse<T>;
+          const response = res.data as ApiResponse<T> | T;
           
-          if (response.error) {
-            console.error('API error:', response.error);
-            reject(new Error(response.error.message || '请求失败'));
+          // Check if response has error field (standard ApiResponse format)
+          if (response && typeof response === 'object' && 'error' in response) {
+            const apiResponse = response as ApiResponse<T>;
+            if (apiResponse.error) {
+              console.error('API error:', apiResponse.error);
+              reject(new Error(apiResponse.error.message || '请求失败'));
+              return;
+            }
+            
+            // Standard format: {data: {...}}
+            if (apiResponse.data !== undefined) {
+              resolve(apiResponse.data);
+              return;
+            }
+          }
+          
+          // Direct format: response is the data itself (for backward compatibility)
+          // This handles APIs that return data directly without {data: {...}} wrapper
+          if (response !== undefined && response !== null) {
+            resolve(response as T);
             return;
           }
-
-          if (response.data !== undefined) {
-            resolve(response.data);
-          } else {
-            console.error('Response data is undefined:', response);
-            reject(new Error('响应数据格式错误'));
-          }
+          
+          console.error('Response data is undefined:', response);
+          reject(new Error('响应数据格式错误'));
         } else if (res.statusCode === 401) {
           // Token expired or invalid, try to re-login
           console.log('API request returned 401, attempting re-login...');
