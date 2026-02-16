@@ -3,34 +3,39 @@
     <text>加载中...</text>
   </view>
 
-  <view wx:else-if="{{stats}}" class="stats-content">
-    <view class="stats-section">
-      <view class="stat-item">
-        <text class="stat-label">总卡片数</text>
-        <text class="stat-value">{{stats.stats.totalCards}}</text>
+  <view wx:elif="{{stats}}" class="stats-content">
+    <view class="title">我的学习统计</view>
+
+    <!-- Four Grid Stats -->
+    <view class="stats-grid">
+      <view class="stat-item stat-total">
+        <text class="stat-value">{{stats.stats.total}}</text>
+        <text class="stat-label">总词量</text>
       </view>
-      <view class="stat-item">
+      <view class="stat-item stat-mastered">
+        <text class="stat-value">{{stats.stats.mastered}}</text>
         <text class="stat-label">已掌握</text>
-        <text class="stat-value">{{stats.stats.masteredCards}}</text>
       </view>
-      <view class="stat-item">
+      <view class="stat-item stat-learning">
+        <text class="stat-value">{{stats.stats.learning}}</text>
         <text class="stat-label">学习中</text>
-        <text class="stat-value">{{stats.stats.learningCards}}</text>
       </view>
-      <view class="stat-item">
-        <text class="stat-label">新卡片</text>
-        <text class="stat-value">{{stats.stats.newCards}}</text>
+      <view class="stat-item stat-due">
+        <text class="stat-value">{{stats.stats.dueToday}}</text>
+        <text class="stat-label">今日待复习</text>
       </view>
     </view>
 
-    <view class="stats-section">
-      <view class="stat-item">
-        <text class="stat-label">连续复习</text>
-        <text class="stat-value">{{stats.stats.reviewStreak}} 天</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-label">最后复习</text>
-        <text class="stat-value">{{stats.stats.lastReviewDate || '暂无'}}</text>
+    <!-- Heatmap -->
+    <view class="heatmap-section">
+      <view class="heatmap-title">过去 30 天学习热力</view>
+      <view class="heatmap-grid">
+        <view 
+          wx:for="{{stats.heatmap}}" 
+          wx:key="date"
+          class="heatmap-cell {{item.count === 0 ? 'heatmap-empty' : (item.count < 5 ? 'heatmap-low' : (item.count < 10 ? 'heatmap-medium' : 'heatmap-high'))}}"
+        >
+        </view>
       </view>
     </view>
   </view>

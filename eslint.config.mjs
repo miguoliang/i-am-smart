@@ -17,6 +17,10 @@ const eslintConfig = defineConfig([
     "docker/**",
     "deploy/**",
     "scripts/svg-to-png.mjs",
+    // Compiled JavaScript files from TypeScript (miniprogram)
+    "miniprogram/**/*.js",
+    "miniprogram/shared/**/*.js",
+    "shared/**/*.js",
   ]),
   {
     rules: {

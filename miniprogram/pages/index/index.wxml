@@ -1,38 +1,63 @@
 <view class="container">
-  <view class="header">
+  <!-- Top Bar -->
+  <view class="top-bar">
+    <navigator url="/pages/settings/settings" class="settings-btn">
+      <text>设置</text>
+    </navigator>
     <picker mode="selector" value="{{levelIndex}}" range="{{availableLevels}}" bindchange="onLevelChange">
       <view class="level-selector">
-        当前等级: {{level}}
+        {{level}}
       </view>
     </picker>
-    <view class="reviewed-count">
-      今日已复习: {{reviewedCount}}
-    </view>
   </view>
 
+  <!-- Loading State -->
   <view wx:if="{{loading}}" class="loading">
     <text>加载中...</text>
   </view>
 
-  <view wx:else class="cards-list">
-    <view wx:if="{{cards.length === 0}}" class="empty">
-      <text>暂无待复习卡片</text>
+  <!-- Empty State -->
+  <view wx:elif="{{cards.length === 0 || (cards.length > 0 && currentIndex >= cards.length)}}" class="empty">
+    <text class="empty-title">今日复习完成！</text>
+    <text class="empty-subtitle">明天再来哦</text>
+  </view>
+
+  <!-- Card Flip View -->
+  <view wx:else class="card-container">
+    <!-- Progress Indicator -->
+    <view class="progress">
+      <text class="progress-text">{{reviewedCount + currentIndex + 1}} / {{reviewedCount + cards.length}}</text>
     </view>
-    
-    <view wx:else>
-      <view 
-        wx:for="{{cards}}" 
-        wx:key="id" 
-        class="card-item"
-        data-id="{{item.id}}"
-        bindtap="onCardTap"
-      >
-        <view class="card-name">{{item.knowledge.name}}</view>
-        <view class="card-description">{{item.knowledge.description}}</view>
-        <view class="card-meta">
-          <text>下次复习: {{item.next_review_date}}</text>
+
+    <!-- Card -->
+    <view wx:if="{{cards[currentIndex]}}" class="card-wrapper" bindtap="onCardTap">
+      <view class="card {{flipped ? 'flipped' : ''}}">
+        <!-- Front Side -->
+        <view class="card-side card-front">
+          <view class="card-content">
+            <text class="card-word">{{cards[currentIndex].knowledge.name}}</text>
+            <view class="speech-buttons">
+              <button class="speech-btn" bindtap="onSpeakUS" catchtap="true">US</button>
+              <button class="speech-btn" bindtap="onSpeakUK" catchtap="true">UK</button>
+            </view>
+            <text class="card-hint">点击卡片查看答案</text>
+          </view>
+        </view>
+
+        <!-- Back Side -->
+        <view class="card-side card-back">
+          <view class="card-content">
+            <text class="card-translation">{{cards[currentIndex].knowledge.description}}</text>
+          </view>
         </view>
       </view>
+    </view>
+
+    <!-- Rating Buttons (only show when flipped and card exists) -->
+    <view wx:if="{{flipped && cards[currentIndex]}}" class="rating-buttons">
+      <button class="rating-btn rating-btn-0" bindtap="onRate0">完全忘记</button>
+      <button class="rating-btn rating-btn-3" bindtap="onRate3">一般</button>
+      <button class="rating-btn rating-btn-5" bindtap="onRate5">完美</button>
     </view>
   </view>
 </view>

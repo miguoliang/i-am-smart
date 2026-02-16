@@ -1,5 +1,5 @@
 /**
- * Home page - Learning page
+ * Home page - Learning page (Card flip style, matching PC version)
  */
 
 import { request } from '../../utils/api';
@@ -16,6 +16,8 @@ Page({
     levelIndex: 0,
     availableLevels: AVAILABLE_LEVELS,
     reviewedCount: 0,
+    currentIndex: 0,
+    flipped: false,
   },
 
   onLoad() {
@@ -29,8 +31,14 @@ Page({
   },
 
   onShow() {
-    // Reload cards when page is shown
-    this.loadCards();
+    // Reload cards when page is shown (if no cards or all reviewed)
+    if (this.data.cards.length === 0 || this.isAllReviewed()) {
+      this.loadCards();
+    }
+  },
+
+  isAllReviewed(): boolean {
+    return this.data.cards.length > 0 && this.data.cards.every((c) => c.reviewed);
   },
 
   async loadCards() {
@@ -42,9 +50,16 @@ Page({
         `${API_ENDPOINTS.CARDS_DUE}?level=${level}`
       );
 
+      const cards = (result.cards || []).map((card: Card) => ({
+        ...card,
+        reviewed: false,
+      }));
+
       this.setData({
-        cards: result.cards || [],
+        cards,
         reviewedCount: result.reviewedCount || 0,
+        currentIndex: 0,
+        flipped: false,
         loading: false,
       });
     } catch (error) {
@@ -69,12 +84,110 @@ Page({
     this.loadCards();
   },
 
-  onCardTap(e: WechatMiniprogram.TouchEvent) {
-    const cardId = e.currentTarget.dataset.id;
-    if (cardId) {
-      wx.navigateTo({
-        url: `/pages/review/review?id=${cardId}`,
+  onCardTap() {
+    // Toggle flip
+    this.setData({
+      flipped: !this.data.flipped,
+    });
+  },
+
+  onSpeakUS() {
+    const card = this.getCurrentCard();
+    if (card) {
+      this.speak(card.knowledge.name, 'en-US');
+    }
+  },
+
+  onSpeakUK() {
+    const card = this.getCurrentCard();
+    if (card) {
+      this.speak(card.knowledge.name, 'en-GB');
+    }
+  },
+
+  speak(text: string, lang: 'en-US' | 'en-GB') {
+    // Use WeChat miniprogram text-to-speech API
+    // Note: WeChat miniprogram doesn't have built-in TTS, so we use a web API
+    // For production, you might want to use a TTS service
+    const audio = wx.createInnerAudioContext();
+    // Using Youdao dict API as fallback (requires network)
+    audio.src = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=${lang === 'en-US' ? '1' : '2'}`;
+    audio.autoplay = true;
+    audio.onError((err) => {
+      console.error('Speech error:', err);
+      wx.showToast({
+        title: '语音播放失败',
+        icon: 'none',
+      });
+    });
+    // Clean up after playback
+    audio.onEnded(() => {
+      audio.destroy();
+    });
+  },
+
+  getCurrentCard(): Card | null {
+    const { cards, currentIndex } = this.data;
+    return cards[currentIndex] || null;
+  },
+
+  async onRate(quality: number) {
+    const card = this.getCurrentCard();
+    if (!card) return;
+
+    try {
+      await request(
+        API_ENDPOINTS.CARD_REVIEW(card.id),
+        {
+          method: 'POST',
+          data: { quality },
+        }
+      );
+
+      // Mark card as reviewed
+      const cards = this.data.cards.map((c, i) =>
+        i === this.data.currentIndex ? { ...c, reviewed: true } : c
+      );
+
+      // Find next unreviewed card
+      const nextIndex = cards.findIndex((c, i) => i > this.data.currentIndex && !c.reviewed);
+      
+      if (nextIndex !== -1) {
+        // Move to next card
+        this.setData({
+          cards,
+          currentIndex: nextIndex,
+          flipped: false,
+          reviewedCount: this.data.reviewedCount + 1,
+        });
+      } else {
+        // All cards reviewed - move to end
+        this.setData({
+          cards,
+          currentIndex: cards.length, // Set to length to trigger empty state
+          flipped: false,
+          reviewedCount: this.data.reviewedCount + 1,
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '复习失败';
+      console.error('Review failed:', error);
+      wx.showToast({
+        title: errorMessage,
+        icon: 'none',
       });
     }
+  },
+
+  onRate0() {
+    this.onRate(0);
+  },
+
+  onRate3() {
+    this.onRate(3);
+  },
+
+  onRate5() {
+    this.onRate(5);
   },
 });

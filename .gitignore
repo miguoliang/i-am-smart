@@ -64,5 +64,6 @@ miniprogram/**/*.js
 !miniprogram/node_modules/**/*.js
 # Auto-generated config file
 miniprogram/config.ts
-# Shared directory compiled files
+# Shared directory compiled files (both root and miniprogram copies)
 shared/**/*.js
+miniprogram/shared/**/*.js

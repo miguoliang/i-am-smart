@@ -1,7 +1,6 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/review/review",
     "pages/stats/stats",
     "pages/settings/settings"
   ],

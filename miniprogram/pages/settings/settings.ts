@@ -1,5 +1,5 @@
 /**
- * Settings page - User settings
+ * Settings page - User settings (matching PC version)
  */
 
 import { request } from '../../utils/api';
@@ -9,6 +9,8 @@ import { logout } from '../../utils/auth';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 import { storage } from '../../utils/storage';
 
+const DAILY_DUE_LIMIT_PRESETS = [10, 50, 200] as const;
+
 Page({
   data: {
     account: null as Account | null,
@@ -16,7 +18,7 @@ Page({
     level: 'A1' as Level,
     levelIndex: 0,
     availableLevels: AVAILABLE_LEVELS,
-    dailyLimitPresets: [10, 50, 200],
+    dailyLimitPresets: DAILY_DUE_LIMIT_PRESETS,
     dailyLimitIndex: 0,
     dailyDueLimit: 10,
   },
@@ -44,11 +46,10 @@ Page({
         dailyLimitIndex: dailyLimitIndex >= 0 ? dailyLimitIndex : 0,
         loading: false,
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '加载失败';
+    } catch (error: any) {
       console.error('Failed to load account:', error);
       wx.showToast({
-        title: errorMessage,
+        title: error.message || '加载失败',
         icon: 'none',
       });
       this.setData({ loading: false });
@@ -58,6 +59,26 @@ Page({
   onLevelChange(e: WechatMiniprogram.CustomEvent) {
     const index = parseInt(e.detail.value, 10);
     const level = AVAILABLE_LEVELS[index] as Level;
+    
+    // Check if Pro level (B1, B2)
+    if (['B1', 'B2'].includes(level)) {
+      wx.showModal({
+        title: 'Pro 功能',
+        content: 'B1 和 B2 等级需要 Pro 会员，请访问网页版购买',
+        showCancel: false,
+      });
+      return;
+    }
+    
+    // Check if coming soon (C1, C2)
+    if (['C1', 'C2'].includes(level)) {
+      wx.showToast({
+        title: '敬请期待',
+        icon: 'none',
+      });
+      return;
+    }
+
     this.setData({ 
       level,
       levelIndex: index,
@@ -77,8 +98,6 @@ Page({
 
   async updateDailyLimit(limit: number) {
     try {
-      // 小程序不支持 PATCH，使用 PUT 方法
-      // 注意：后端需要支持 PUT 方法，或者添加一个 POST /api/accounts/me/update 端点
       await request(API_ENDPOINTS.ACCOUNTS_ME, {
         method: 'PUT',
         data: { daily_due_limit: limit },
@@ -87,11 +106,10 @@ Page({
         title: '更新成功',
         icon: 'success',
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '更新失败';
+    } catch (error: any) {
       console.error('Failed to update daily limit:', error);
       wx.showToast({
-        title: errorMessage,
+        title: error.message || '更新失败',
         icon: 'none',
       });
     }

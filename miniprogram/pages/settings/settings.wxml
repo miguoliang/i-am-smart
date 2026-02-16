@@ -4,32 +4,49 @@
   </view>
 
   <view wx:else class="settings-content">
-    <view class="settings-section">
-      <view class="setting-item">
-        <text class="setting-label">学习等级</text>
-        <picker 
-          mode="selector" 
-          value="{{levelIndex}}" 
-          range="{{availableLevels}}" 
-          bindchange="onLevelChange"
-        >
-          <view class="setting-value">{{level}}</view>
-        </picker>
-      </view>
+    <view class="title">设置</view>
 
-      <view class="setting-item">
-        <text class="setting-label">每日复习上限</text>
-        <picker 
-          mode="selector" 
-          value="{{dailyLimitIndex}}" 
-          range="{{dailyLimitPresets}}" 
-          bindchange="onDailyLimitChange"
+    <!-- Daily Due Limit -->
+    <view class="settings-section">
+      <view class="section-title">每日复习上限</view>
+      <view class="presets">
+        <view 
+          wx:for="{{dailyLimitPresets}}" 
+          wx:key="*this"
+          class="preset-item {{dailyDueLimit === item ? 'preset-selected' : ''}}"
+          data-index="{{index}}"
+          bindtap="onDailyLimitChange"
         >
-          <view class="setting-value">{{dailyDueLimit}}</view>
-        </picker>
+          {{item}}
+        </view>
+      </view>
+      <view class="section-desc">选择每日复习的卡片数量上限</view>
+    </view>
+
+    <!-- Level Selection -->
+    <view class="settings-section">
+      <view class="section-title">选择等级</view>
+      <view class="level-list">
+        <view 
+          wx:for="{{availableLevels}}" 
+          wx:key="*this"
+          wx:for-index="idx"
+          class="level-item {{level === item ? 'level-selected' : ''}} {{['B1', 'B2'].includes(item) ? 'level-pro' : ''}} {{['C1', 'C2'].includes(item) ? 'level-coming-soon' : ''}}"
+          data-index="{{idx}}"
+          bindtap="onLevelChange"
+        >
+          <view class="level-check">
+            <text wx:if="{{level === item && !['B1', 'B2', 'C1', 'C2'].includes(item)}}">✓</text>
+            <text wx:elif="{{['B1', 'B2'].includes(item)}}" class="pro-icon">🔒</text>
+          </view>
+          <text class="level-name">{{item}}</text>
+          <text wx:if="{{['B1', 'B2'].includes(item)}}" class="level-badge level-badge-pro">Pro</text>
+          <text wx:if="{{['C1', 'C2'].includes(item)}}" class="level-badge level-badge-coming">敬请期待</text>
+        </view>
       </view>
     </view>
 
+    <!-- Logout -->
     <view class="settings-section">
       <button class="logout-btn" bindtap="onLogout">退出登录</button>
     </view>
