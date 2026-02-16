@@ -36,6 +36,17 @@ export async function request<T>(
   const baseUrl = apiBaseUrl;
   const fullUrl = `${baseUrl}${endpoint}`;
 
+  // Skip auth check for login endpoint
+  const isLoginEndpoint = endpoint.includes('/auth/miniprogram/login');
+  
+  if (!isLoginEndpoint && !token) {
+    console.error('API request without token:', {
+      url: fullUrl,
+      endpoint,
+    });
+    throw new Error('未登录，请先登录');
+  }
+
   console.log('API request:', {
     url: fullUrl,
     method: options.method || 'GET',

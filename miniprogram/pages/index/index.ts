@@ -7,6 +7,7 @@ import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { DueCardsResult, Card } from '../../shared/types/card';
 import { storage } from '../../utils/storage';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
+import { isAuthenticated } from '../../utils/auth';
 
 console.log('Loading index page TypeScript file...');
 
@@ -43,8 +44,33 @@ Page({
     console.log('=== index page onLoad END ===');
   },
 
-  onShow() {
+  async onShow() {
     console.log('=== index page onShow START ===');
+    
+    // Wait for authentication to complete before loading data
+    const app = getApp();
+    if (app.globalData.authPromise) {
+      console.log('Waiting for authentication to complete...');
+      try {
+        const isAuth = await app.globalData.authPromise;
+        console.log('Authentication status:', isAuth);
+        
+        if (!isAuth) {
+          console.log('Not authenticated, skipping loadCards');
+          console.log('=== index page onShow END ===');
+          return;
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        console.log('=== index page onShow END ===');
+        return;
+      }
+    } else if (!isAuthenticated()) {
+      console.log('No auth promise and not authenticated, skipping loadCards');
+      console.log('=== index page onShow END ===');
+      return;
+    }
+    
     // Only reload if not already loading and (no cards or all reviewed)
     if (!this.data.isLoadingCards && (this.data.cards.length === 0 || this.isAllReviewed())) {
       console.log('Reloading cards in onShow, cards.length:', this.data.cards.length);
@@ -67,6 +93,16 @@ Page({
     // Prevent concurrent calls
     if (this.data.isLoadingCards) {
       console.log('loadCards already in progress, skipping...');
+      return;
+    }
+
+    // Ensure user is authenticated before making API calls
+    if (!isAuthenticated()) {
+      console.log('User not authenticated, cannot load cards');
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+      });
       return;
     }
 

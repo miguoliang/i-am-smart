@@ -20,7 +20,8 @@ App({
     console.log('API base URL set to:', CONFIG.API_BASE_URL);
     
     // Check authentication and auto-login if needed
-    this.checkAuth();
+    // Store the promise so pages can wait for it
+    this.globalData.authPromise = this.checkAuth();
     console.log('=== App onLaunch END ===');
   },
 
@@ -30,8 +31,10 @@ App({
       try {
         await login();
         console.log('Auto-login successful');
+        this.globalData.isAuthenticated = true;
       } catch (error) {
         console.error('Auto-login failed:', error);
+        this.globalData.isAuthenticated = false;
         // Don't show toast on auto-login failure - let user try manually if needed
         // wx.showToast({
         //   title: '登录失败，请重试',
@@ -40,10 +43,14 @@ App({
       }
     } else {
       console.log('User already authenticated');
+      this.globalData.isAuthenticated = true;
     }
+    return this.globalData.isAuthenticated;
   },
 
   globalData: {
     userInfo: null,
+    authPromise: null as Promise<boolean> | null,
+    isAuthenticated: false,
   },
 });

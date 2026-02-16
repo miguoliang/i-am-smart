@@ -5,6 +5,7 @@
 import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { StatsData } from '../../shared/types/stats';
+import { isAuthenticated } from '../../utils/auth';
 
 Page({
   data: {
@@ -12,16 +13,45 @@ Page({
     loading: false,
   },
 
-  onLoad() {
+  async onLoad() {
+    // Wait for authentication before loading stats
+    await this.waitForAuth();
     this.loadStats();
   },
 
-  onShow() {
+  async onShow() {
+    // Wait for authentication before loading stats
+    await this.waitForAuth();
     // Reload stats when page is shown
     this.loadStats();
   },
 
+  async waitForAuth() {
+    const app = getApp();
+    if (app.globalData.authPromise) {
+      try {
+        const isAuth = await app.globalData.authPromise;
+        if (!isAuth) {
+          console.log('Not authenticated, cannot load stats');
+          return false;
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        return false;
+      }
+    } else if (!isAuthenticated()) {
+      console.log('No auth promise and not authenticated');
+      return false;
+    }
+    return true;
+  },
+
   async loadStats() {
+    if (!isAuthenticated()) {
+      console.log('User not authenticated, cannot load stats');
+      return;
+    }
+
     this.setData({ loading: true });
 
     try {

@@ -5,7 +5,7 @@
 import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { Account } from '../../shared/types/user';
-import { logout } from '../../utils/auth';
+import { logout, isAuthenticated } from '../../utils/auth';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 import { storage } from '../../utils/storage';
 
@@ -23,17 +23,44 @@ Page({
     dailyDueLimit: 10,
   },
 
-  onLoad() {
+  async onLoad() {
     const level = storage.getLevel() as Level;
     const levelIndex = AVAILABLE_LEVELS.indexOf(level);
     this.setData({
       level,
       levelIndex: levelIndex >= 0 ? levelIndex : 0,
     });
+    // Wait for authentication before loading account
+    await this.waitForAuth();
     this.loadAccount();
   },
 
+  async waitForAuth() {
+    const app = getApp();
+    if (app.globalData.authPromise) {
+      try {
+        const isAuth = await app.globalData.authPromise;
+        if (!isAuth) {
+          console.log('Not authenticated, cannot load account');
+          return false;
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        return false;
+      }
+    } else if (!isAuthenticated()) {
+      console.log('No auth promise and not authenticated');
+      return false;
+    }
+    return true;
+  },
+
   async loadAccount() {
+    if (!isAuthenticated()) {
+      console.log('User not authenticated, cannot load account');
+      return;
+    }
+
     this.setData({ loading: true });
 
     try {
