@@ -78,7 +78,6 @@ export async function request<T>(
           console.log('API request returned 401, attempting re-login...');
           try {
             // Clear old token first
-            const oldToken = storage.getAccessToken();
             storage.clearAuth();
             
             // Re-login (login() function handles concurrent calls)
