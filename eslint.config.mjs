@@ -32,6 +32,13 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // CLI scripts may use console
+    files: ["scripts/**/*.mjs"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     // Disable no-explicit-any for Storybook files (needed for generic component types)
     files: ["**/*.stories.tsx", "**/*.stories.ts"],
     rules: {

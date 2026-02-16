@@ -9,6 +9,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",
+    "verify:wechat-pay-key": "node scripts/verify-wechat-pay-key.mjs",
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
