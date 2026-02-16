@@ -83,8 +83,8 @@ Page({
     }
   },
 
-  onLevelChange(e: WechatMiniprogram.CustomEvent) {
-    const index = parseInt(e.detail.value, 10);
+  onLevelChange(e: WechatMiniprogram.TouchEvent) {
+    const index = parseInt(e.currentTarget.dataset.index || '0', 10);
     const level = AVAILABLE_LEVELS[index] as Level;
     
     // Check if Pro level (B1, B2)
@@ -113,9 +113,13 @@ Page({
     storage.setLevel(level);
   },
 
-  onDailyLimitChange(e: WechatMiniprogram.CustomEvent) {
-    const index = parseInt(e.detail.value, 10);
+  onDailyLimitChange(e: WechatMiniprogram.TouchEvent) {
+    const index = parseInt(e.currentTarget.dataset.index || '0', 10);
     const limit = this.data.dailyLimitPresets[index];
+    if (limit === undefined) {
+      console.error('Invalid daily limit index:', index);
+      return;
+    }
     this.setData({ 
       dailyDueLimit: limit,
       dailyLimitIndex: index,
