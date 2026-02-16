@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/stats/stats",
-    "pages/feedback/feedback"
+    "pages/feedback/feedback",
+    "pages/settings/settings"
   ],
   "window": {
     "navigationBarTitleText": "背它一辈子",
