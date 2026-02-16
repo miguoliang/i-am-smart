@@ -208,7 +208,10 @@ export default function HomePage() {
 
           {/* 支付方式 */}
           <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-            微信支付 · 支付宝 · 银行卡
+            <Link href="/pay" className="hover:underline">
+              微信支付
+            </Link>
+            {" · 支付宝 · 银行卡"}
           </div>
         </div>
       </section>
