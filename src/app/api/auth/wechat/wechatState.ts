@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 
 export const WECHAT_OAUTH_STATE_COOKIE_NAME = "wechat_oauth_state";
+export const WECHAT_POST_LOGIN_NEXT_COOKIE_NAME = "wechat_post_login_next";
 
 export function signState(state: string, secret: string): string {
   return createHmac("sha256", secret).update(state).digest("hex");

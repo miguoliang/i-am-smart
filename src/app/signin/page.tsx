@@ -54,6 +54,9 @@ function SignInContent() {
 
   const searchParams = useSearchParams();
   const wechatError = searchParams.get("error") === "wechat_failed";
+  const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
+  const isPreview = process.env.NEXT_PUBLIC_APP_ENV === "preview";
+  const showWechatLogin = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview;
 
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
@@ -65,13 +68,16 @@ function SignInContent() {
     if (!agreedToTerms || typeof window === "undefined") return;
     const appId = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID;
     if (!appId) return;
-    // Use canonical origin so redirect_uri domain matches 授权回调域 in WeChat Open Platform
     const origin = process.env.NEXT_PUBLIC_APP_ORIGIN
       ? process.env.NEXT_PUBLIC_APP_ORIGIN.replace(/\/$/, "")
       : window.location.origin;
+    const nextPath = searchParams.get("next");
+    const stateUrl = nextPath
+      ? `/api/auth/wechat/state?next=${encodeURIComponent(nextPath)}`
+      : "/api/auth/wechat/state";
     setWechatLoading(true);
     try {
-      const res = await fetch("/api/auth/wechat/state");
+      const res = await fetch(stateUrl);
       if (!res.ok) return;
       const { state } = (await res.json()) as { state?: string };
       if (!state) return;
@@ -83,7 +89,7 @@ function SignInContent() {
     } finally {
       setWechatLoading(false);
     }
-  }, [agreedToTerms]);
+  }, [agreedToTerms, searchParams]);
 
   // Debounce email for validation
   const debouncedEmail = useDebounce(email, EMAIL_DEBOUNCE_MS);
@@ -220,10 +226,11 @@ function SignInContent() {
               className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-left"
               role="alert"
             >
-              微信登录失败，请重试或使用邮箱登录。
+              {isProduction ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用邮箱登录。"}
             </p>
           )}
 
+          {!isProduction && (
           <div className="space-y-3">
             <div>
               <label htmlFor="email-input" className="sr-only">
@@ -287,6 +294,7 @@ function SignInContent() {
               </div>
             )}
           </div>
+          )}
 
           <div className="flex items-start gap-2 text-left my-4">
             <Checkbox
@@ -317,6 +325,7 @@ function SignInContent() {
             </Label>
           </div>
 
+          {!isProduction && (
           <div className="my-6 md:my-8">
             {!otpSent ? (
               <Button
@@ -359,14 +368,17 @@ function SignInContent() {
               </>
             )}
           </div>
+          )}
 
-          {process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && (
+          {showWechatLogin && (
             <div className="mt-6">
+              {!isProduction && (
               <div className="relative my-4 flex items-center gap-3">
                 <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
                 <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
                 <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
               </div>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -390,7 +402,7 @@ function SignInContent() {
             className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base"
             role="note"
           >
-            首次使用？输入邮箱即可自动创建账号
+            {isProduction ? "请使用微信扫码登录" : "首次使用？输入邮箱即可自动创建账号"}
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { logger } from "@/lib/utils/logger";
 import {
   WECHAT_OAUTH_STATE_COOKIE_NAME,
+  WECHAT_POST_LOGIN_NEXT_COOKIE_NAME,
   verifyStateCookie,
 } from "../wechatState";
 
@@ -171,12 +172,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errorRedirect);
     }
 
-    // Build the redirect response first so we can attach session cookies.
-    const successUrl = `${getAppOrigin()}/learn`;
+    // Resolve post-login redirect: next path from cookie (e.g. /pay) or default /learn
+    const nextPath = request.cookies.get(WECHAT_POST_LOGIN_NEXT_COOKIE_NAME)?.value;
+    const safePath =
+      nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") && !nextPath.includes(":")
+        ? nextPath
+        : "/learn";
+    const successUrl = `${getAppOrigin()}${safePath}`;
     const response = NextResponse.redirect(successUrl);
 
-    // Clear the OAuth state cookie
+    // Clear the OAuth state cookie and post-login-next cookie
     response.cookies.set(WECHAT_OAUTH_STATE_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+    response.cookies.set(WECHAT_POST_LOGIN_NEXT_COOKIE_NAME, "", { path: "/", maxAge: 0 });
 
     // Create a Supabase client that reads cookies from the incoming request
     // and writes session cookies onto the outgoing redirect response.

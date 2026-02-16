@@ -9,6 +9,13 @@ import { isValidEmail } from "@/lib/utils/emailValidation";
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NEXT_PUBLIC_APP_ENV === "production") {
+      return NextResponse.json(
+        { error: "生产环境仅支持微信登录" },
+        { status: 403 }
+      );
+    }
+
     const { email } = await req.json();
 
     if (!email || typeof email !== "string") {

@@ -190,7 +190,7 @@ export default function HomePage() {
                 适合人群：追求极致效率，快节奏学习，准备高级别考试的学生
               </p>
 
-              <Link href="/signin" className="block">
+              <Link href="/signin?next=/pay" className="block">
                 <Button
                   className="w-full bg-amber-400 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-600 text-gray-900 dark:text-white font-bold shadow-lg"
                   size="lg"
