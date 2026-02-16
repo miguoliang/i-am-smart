@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       throw ApiError.validationError(t().validation.invalidTimezoneOffset);
     }
 
-    const statsService = await createStatsService();
+    const statsService = await createStatsService(request);
     const data = await statsService.getStats(user.id, timezoneOffset);
 
     return NextResponse.json(data);

@@ -59,3 +59,4 @@ storybook-static
 miniprogram/node_modules
 miniprogram/.tea
 miniprogram/miniprogram_npm
+miniprogram/config.ts

@@ -63,6 +63,16 @@ export class CardService {
   }
 
   /**
+   * Gets a card by ID for the user.
+   * @param cardId - Card ID
+   * @param userId - User ID
+   * @returns Card or null if not found
+   */
+  async getCardById(cardId: number, userId: string): Promise<Card | null> {
+    return this.cardRepository.getCardById(cardId, userId);
+  }
+
+  /**
    * Records a review for a card using the SM-2 spaced repetition algorithm.
    *
    * Steps: (1) load card and enforce daily limit, (2) compute new interval/ease/reps via SM-2,

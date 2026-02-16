@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const feedbackService = await createFeedbackService();
+    const feedbackService = await createFeedbackService(req);
     const result = await feedbackService.getFeedbacks(page, limit);
 
     return apiSuccess(result);

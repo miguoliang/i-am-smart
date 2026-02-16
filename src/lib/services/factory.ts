@@ -1,5 +1,6 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { SupabaseCardRepository } from '@/lib/repositories/implementations/supabase-card.repository';
 import { SupabaseAccountRepository } from '@/lib/repositories/implementations/supabase-account.repository';
 import { SupabaseKnowledgeRepository } from '@/lib/repositories/implementations/supabase-knowledge.repository';
@@ -14,9 +15,10 @@ import { StatsService } from './statsService';
 /**
  * Factory for CardService
  * Uses Route Handler Client (User Context)
+ * @param req - NextRequest object to extract Authorization header for miniprogram auth
  */
-export async function createCardService(): Promise<CardService> {
-  const supabase = await createRouteHandlerClient();
+export async function createCardService(req?: NextRequest): Promise<CardService> {
+  const supabase = await createRouteHandlerClient(req);
   const repo = new SupabaseCardRepository(supabase);
   return new CardService(repo);
 }
@@ -24,9 +26,10 @@ export async function createCardService(): Promise<CardService> {
 /**
  * Factory for KnowledgeService
  * Uses Route Handler Client (User Context)
+ * @param req - NextRequest object to extract Authorization header for miniprogram auth
  */
-export async function createKnowledgeService(): Promise<KnowledgeService> {
-  const supabase = await createRouteHandlerClient();
+export async function createKnowledgeService(req?: NextRequest): Promise<KnowledgeService> {
+  const supabase = await createRouteHandlerClient(req);
   const repo = new SupabaseKnowledgeRepository(supabase);
   return new KnowledgeService(repo);
 }
@@ -34,9 +37,10 @@ export async function createKnowledgeService(): Promise<KnowledgeService> {
 /**
  * Factory for FeedbackService
  * Uses Route Handler Client (User Context)
+ * @param req - NextRequest object to extract Authorization header for miniprogram auth
  */
-export async function createFeedbackService(): Promise<FeedbackService> {
-  const supabase = await createRouteHandlerClient();
+export async function createFeedbackService(req?: NextRequest): Promise<FeedbackService> {
+  const supabase = await createRouteHandlerClient(req);
   const repo = new SupabaseFeedbackRepository(supabase);
   return new FeedbackService(repo);
 }
@@ -44,9 +48,10 @@ export async function createFeedbackService(): Promise<FeedbackService> {
 /**
  * Factory for StatsService
  * Uses Route Handler Client (User Context)
+ * @param req - NextRequest object to extract Authorization header for miniprogram auth
  */
-export async function createStatsService(): Promise<StatsService> {
-  const supabase = await createRouteHandlerClient();
+export async function createStatsService(req?: NextRequest): Promise<StatsService> {
+  const supabase = await createRouteHandlerClient(req);
   const repo = new SupabaseStatsRepository(supabase);
   return new StatsService(repo);
 }

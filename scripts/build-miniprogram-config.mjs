@@ -20,15 +20,26 @@ const configPath = join(rootDir, 'miniprogram', 'config.ts');
 // Read environment variables (required, no defaults)
 const apiBaseUrl = process.env.NEXT_PUBLIC_APP_ORIGIN;
 const appId = process.env.WECHAT_MINIPROGRAM_APP_ID;
+const allowMissing = process.env.ALLOW_MISSING_CONFIG === 'true';
 
 // Validate required environment variables
 if (!apiBaseUrl) {
+  if (allowMissing) {
+    console.warn('⚠️  Warning: NEXT_PUBLIC_APP_ORIGIN not set, skipping miniprogram config generation');
+    process.exit(0);
+  }
   console.error('❌ Error: NEXT_PUBLIC_APP_ORIGIN environment variable is required');
+  console.error('   Set NEXT_PUBLIC_APP_ORIGIN and WECHAT_MINIPROGRAM_APP_ID, then run: npm run build:miniprogram-config');
   process.exit(1);
 }
 
 if (!appId) {
+  if (allowMissing) {
+    console.warn('⚠️  Warning: WECHAT_MINIPROGRAM_APP_ID not set, skipping miniprogram config generation');
+    process.exit(0);
+  }
   console.error('❌ Error: WECHAT_MINIPROGRAM_APP_ID environment variable is required');
+  console.error('   Set NEXT_PUBLIC_APP_ORIGIN and WECHAT_MINIPROGRAM_APP_ID, then run: npm run build:miniprogram-config');
   process.exit(1);
 }
 

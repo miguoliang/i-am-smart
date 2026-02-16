@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build miniprogram config
+        run: npm run build:miniprogram-config
+
       - name: Cache .next
         uses: actions/cache@v4
         with:

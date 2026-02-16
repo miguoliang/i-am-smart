@@ -68,10 +68,9 @@ Page({
   onDailyLimitChange(e: WechatMiniprogram.CustomEvent) {
     const index = parseInt(e.detail.value, 10);
     const limit = this.data.dailyLimitPresets[index];
-    const currentIndex = this.data.dailyLimitPresets.indexOf(this.data.dailyDueLimit);
     this.setData({ 
       dailyDueLimit: limit,
-      dailyLimitIndex: currentIndex >= 0 ? currentIndex : index,
+      dailyLimitIndex: index,
     });
     this.updateDailyLimit(limit);
   },

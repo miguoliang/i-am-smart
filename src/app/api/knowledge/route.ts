@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const knowledgeService = await createKnowledgeService()
+    const knowledgeService = await createKnowledgeService(req)
     const result = await knowledgeService.getPaginatedKnowledge({ page, pageSize })
     
     logger.debug('Knowledge GET: Success', {
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    const knowledgeService = await createKnowledgeService()
+    const knowledgeService = await createKnowledgeService(req)
     const result = await knowledgeService.importKnowledge(items);
     
     if (!result.success && result.message === "No valid items found") {

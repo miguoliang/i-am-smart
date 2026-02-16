@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   
   // Cards
   CARDS_DUE: '/api/cards/due',
+  CARD_GET: (id: number) => `/api/cards/${id}`,
   CARD_REVIEW: (id: number) => `/api/cards/${id}/review`,
   
   // Account

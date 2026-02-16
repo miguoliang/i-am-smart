@@ -24,9 +24,9 @@ Page({
   },
 
   onLoad(options: { id?: string }) {
-    if (options.id) {
-      // TODO: Implement card detail loading
-      this.loadCard();
+    const cardId = options.id;
+    if (cardId) {
+      this.loadCard(parseInt(cardId, 10));
     } else {
       wx.showToast({
         title: '卡片ID无效',
@@ -38,18 +38,27 @@ Page({
     }
   },
 
-  async loadCard() {
-    // For now, we'll need to get card from the due cards list
-    // In a real implementation, you might want a GET /api/cards/:id endpoint
+  async loadCard(cardId: number) {
     this.setData({ loading: true });
     
-    // TODO: Implement card detail loading
-    // For now, navigate back if card not found
-    wx.showToast({
-      title: '加载卡片详情功能待实现',
-      icon: 'none',
-    });
-    this.setData({ loading: false });
+    try {
+      const card = await request<Card>(API_ENDPOINTS.CARD_GET(cardId));
+      this.setData({ 
+        card,
+        loading: false,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '加载失败';
+      console.error('Failed to load card:', error);
+      wx.showToast({
+        title: errorMessage,
+        icon: 'none',
+      });
+      this.setData({ loading: false });
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1500);
+    }
   },
 
   onQualityChange(e: WechatMiniprogram.CustomEvent) {
