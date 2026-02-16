@@ -62,4 +62,7 @@ miniprogram/miniprogram_npm
 # Compiled JavaScript files (generated from TypeScript)
 miniprogram/**/*.js
 !miniprogram/node_modules/**/*.js
+# Auto-generated config file
 miniprogram/config.ts
+# Shared directory compiled files
+shared/**/*.js
