@@ -129,11 +129,13 @@
 .level-badge-pro {
   background-color: #fef3c7;
   color: #d97706;
+  white-space: nowrap;
 }
 
 .level-badge-coming {
   background-color: #f3f4f6;
   color: #6b7280;
+  white-space: nowrap;
 }
 
 .logout-btn {

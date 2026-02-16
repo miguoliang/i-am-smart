@@ -31,7 +31,7 @@
           wx:for="{{availableLevels}}" 
           wx:key="*this"
           wx:for-index="idx"
-          class="level-item {{level === item ? 'level-selected' : ''}} {{['B1', 'B2'].includes(item) ? 'level-pro' : ''}} {{['C1', 'C2'].includes(item) ? 'level-coming-soon' : ''}}"
+          class="level-item {{level === item && !['B1', 'B2', 'C1', 'C2'].includes(item) ? 'level-selected' : ''}} {{['B1', 'B2'].includes(item) ? 'level-pro' : ''}} {{['C1', 'C2'].includes(item) ? 'level-coming-soon' : ''}}"
           data-index="{{idx}}"
           bindtap="onLevelChange"
         >
