@@ -15,6 +15,7 @@ const MARKETING_ROUTES = [
   "/privacy",
   "/pricing",
   "/features",
+  "/pay",
 ];
 
 // User routes - no top nav (they have bottom nav footer)
