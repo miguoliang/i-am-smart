@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireOperator();
+    await requireOperator(req);
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const { content: rawContent } = await req.json();
 

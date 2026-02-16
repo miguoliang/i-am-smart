@@ -4,9 +4,9 @@ import { requireAuth } from "@/lib/middleware/auth";
 import { MIN_DAILY_DUE_LIMIT, MAX_DAILY_DUE_LIMIT, DAILY_REVIEW_LIMIT } from "@/lib/constants";
 import { t } from "@/lib/i18n";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const { data, error } = await supabase
       .from("accounts")
@@ -28,8 +28,17 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  return updateAccount(req);
+}
+
+export async function PUT(req: NextRequest) {
+  // Support PUT for miniprogram compatibility (miniprogram doesn't support PATCH)
+  return updateAccount(req);
+}
+
+async function updateAccount(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const body = await req.json();
     const dailyDueLimit =

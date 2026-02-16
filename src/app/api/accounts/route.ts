@@ -5,7 +5,7 @@ import { requireOperator } from "@/lib/middleware/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireOperator();
+    await requireOperator(req);
 
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1", 10);

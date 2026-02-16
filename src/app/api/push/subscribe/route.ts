@@ -5,7 +5,7 @@ import { t } from "@/lib/i18n";
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const subscription = await req.json();
 

@@ -1,0 +1,37 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:else-if="{{stats}}" class="stats-content">
+    <view class="stats-section">
+      <view class="stat-item">
+        <text class="stat-label">总卡片数</text>
+        <text class="stat-value">{{stats.stats.totalCards}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">已掌握</text>
+        <text class="stat-value">{{stats.stats.masteredCards}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">学习中</text>
+        <text class="stat-value">{{stats.stats.learningCards}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">新卡片</text>
+        <text class="stat-value">{{stats.stats.newCards}}</text>
+      </view>
+    </view>
+
+    <view class="stats-section">
+      <view class="stat-item">
+        <text class="stat-label">连续复习</text>
+        <text class="stat-value">{{stats.stats.reviewStreak}} 天</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">最后复习</text>
+        <text class="stat-value">{{stats.stats.lastReviewDate || '暂无'}}</text>
+      </view>
+    </view>
+  </view>
+</view>

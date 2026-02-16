@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
        throw new Error("VAPID keys not configured");
     }
 
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const { title, body } = await req.json();
 

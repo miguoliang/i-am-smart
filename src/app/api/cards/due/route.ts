@@ -8,7 +8,7 @@ import { NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(req);
 
     const { data: account } = await supabase
       .from('accounts')

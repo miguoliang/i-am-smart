@@ -1,0 +1,31 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:else class="review-content">
+    <view wx:if="{{card}}" class="card-display">
+      <view class="card-name">{{card.knowledge.name}}</view>
+      <view class="card-description">{{card.knowledge.description}}</view>
+    </view>
+
+    <view class="quality-selector">
+      <text class="label">评分:</text>
+      <picker 
+        mode="selector" 
+        value="{{selectedQuality}}" 
+        range="{{qualityOptions}}" 
+        range-key="label"
+        bindchange="onQualityChange"
+      >
+        <view class="picker">
+          {{qualityOptions[selectedQuality].label}}
+        </view>
+      </picker>
+    </view>
+
+    <button class="submit-btn" bindtap="submitReview" disabled="{{loading}}">
+      提交复习
+    </button>
+  </view>
+</view>

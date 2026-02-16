@@ -54,3 +54,8 @@ public/sw 2.js
 *storybook.log
 storybook-static
 .aider*
+
+# WeChat miniprogram
+miniprogram/node_modules
+miniprogram/.tea
+miniprogram/miniprogram_npm

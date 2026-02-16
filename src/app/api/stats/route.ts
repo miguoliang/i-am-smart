@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createStatsService } from '@/lib/services/factory';
 import { handleApiError, ApiError } from '@/lib/utils/apiError';
 import { requireAuth } from '@/lib/middleware/auth';
 import { t } from '@/lib/i18n';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { user } = await requireAuth();
+    const { user } = await requireAuth(request);
 
     const { searchParams } = new URL(request.url);
     const timezoneOffset = Number(searchParams.get('offset') || '0');

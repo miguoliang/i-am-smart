@@ -39,6 +39,14 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // WeChat miniprogram files may use console (different runtime environment)
+    files: ["miniprogram/**/*.ts"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-explicit-any": "warn", // Allow any but warn for miniprogram
+    },
+  },
+  {
     // Disable no-explicit-any for Storybook files (needed for generic component types)
     files: ["**/*.stories.tsx", "**/*.stories.ts"],
     rules: {

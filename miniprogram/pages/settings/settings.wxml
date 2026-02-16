@@ -1,0 +1,37 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:else class="settings-content">
+    <view class="settings-section">
+      <view class="setting-item">
+        <text class="setting-label">学习等级</text>
+        <picker 
+          mode="selector" 
+          value="{{levelIndex}}" 
+          range="{{availableLevels}}" 
+          bindchange="onLevelChange"
+        >
+          <view class="setting-value">{{level}}</view>
+        </picker>
+      </view>
+
+      <view class="setting-item">
+        <text class="setting-label">每日复习上限</text>
+        <picker 
+          mode="selector" 
+          value="{{dailyLimitIndex}}" 
+          range="{{dailyLimitPresets}}" 
+          bindchange="onDailyLimitChange"
+        >
+          <view class="setting-value">{{dailyDueLimit}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="settings-section">
+      <button class="logout-btn" bindtap="onLogout">退出登录</button>
+    </view>
+  </view>
+</view>

@@ -12,7 +12,9 @@
     "verify:wechat-pay-key": "node scripts/verify-wechat-pay-key.mjs",
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "type-check:miniprogram": "cd miniprogram && tsc --noEmit",
+    "build:miniprogram-config": "node scripts/build-miniprogram-config.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -83,6 +85,7 @@
     "jest-axe": "^10.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "jsdom": "^24.0.0",
+    "miniprogram-api-typings": "^3.12.3",
     "rehype-pretty-code": "^0.14.1",
     "remark-gfm": "^4.0.1",
     "schema-dts": "^1.1.5",

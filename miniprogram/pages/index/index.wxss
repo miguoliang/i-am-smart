@@ -1,0 +1,70 @@
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background-color: #fff;
+  border-radius: 10rpx;
+}
+
+.level-selector {
+  padding: 10rpx 20rpx;
+  background-color: #3cc51f;
+  color: #fff;
+  border-radius: 5rpx;
+}
+
+.reviewed-count {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.loading {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+}
+
+.empty {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+}
+
+.cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.card-item {
+  background-color: #fff;
+  padding: 30rpx;
+  border-radius: 10rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.card-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+  color: #333;
+}
+
+.card-description {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.card-meta {
+  font-size: 24rpx;
+  color: #999;
+}

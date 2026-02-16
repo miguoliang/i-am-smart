@@ -21,7 +21,7 @@ interface CefrKnowledgeItem {
 
 export async function GET(req: NextRequest) {
   try {
-    const { user } = await requireOperator();
+    const { user } = await requireOperator(req);
 
     logger.debug('Knowledge GET: Operator authenticated', {
       userId: user.id,
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       },
     }));
 
-    const { user } = await requireOperator();
+    const { user } = await requireOperator(req);
 
     logger.debug('Knowledge POST: Operator authenticated', {
       userId: user.id,

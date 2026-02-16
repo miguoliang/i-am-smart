@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireOperator();
+    await requireOperator(req);
     const { id } = await params;
 
     // Account ID is a UUID (from Supabase Auth)

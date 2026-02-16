@@ -1,0 +1,38 @@
+<view class="container">
+  <view class="header">
+    <picker mode="selector" value="{{levelIndex}}" range="{{availableLevels}}" bindchange="onLevelChange">
+      <view class="level-selector">
+        当前等级: {{level}}
+      </view>
+    </picker>
+    <view class="reviewed-count">
+      今日已复习: {{reviewedCount}}
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:else class="cards-list">
+    <view wx:if="{{cards.length === 0}}" class="empty">
+      <text>暂无待复习卡片</text>
+    </view>
+    
+    <view wx:else>
+      <view 
+        wx:for="{{cards}}" 
+        wx:key="id" 
+        class="card-item"
+        data-id="{{item.id}}"
+        bindtap="onCardTap"
+      >
+        <view class="card-name">{{item.knowledge.name}}</view>
+        <view class="card-description">{{item.knowledge.description}}</view>
+        <view class="card-meta">
+          <text>下次复习: {{item.next_review_date}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

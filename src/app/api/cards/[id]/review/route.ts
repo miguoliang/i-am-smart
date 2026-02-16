@@ -18,7 +18,7 @@ export async function POST(
       );
     }
 
-    const { user, supabase } = await requireAuth();
+    const { user, supabase } = await requireAuth(request);
     const { id } = await params;
 
     const { data: account } = await supabase
