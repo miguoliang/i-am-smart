@@ -25,23 +25,47 @@ export async function POST(req: NextRequest) {
     const { code } = await req.json();
 
     if (!code || typeof code !== "string") {
+      logger.warn("Miniprogram login: missing or invalid code", { code });
       throw ApiError.validationError("code is required");
     }
+
+    logger.info("Miniprogram login: received code", { codeLength: code.length });
 
     const appId = process.env.WECHAT_MINIPROGRAM_APP_ID;
     const appSecret = process.env.WECHAT_MINIPROGRAM_APP_SECRET;
 
     if (!appId || !appSecret) {
-      logger.error("Miniprogram login: WECHAT_MINIPROGRAM_APP_ID or APP_SECRET not set");
+      logger.error("Miniprogram login: WECHAT_MINIPROGRAM_APP_ID or APP_SECRET not set", {
+        hasAppId: !!appId,
+        hasAppSecret: !!appSecret,
+      });
       throw ApiError.internal("小程序登录未配置");
     }
 
+    logger.info("Miniprogram login: exchanging code for openid", { appId });
+
     // Exchange code for openid/session_key
-    const tokenRes = await fetch(
-      `${WECHAT_MINIPROGRAM_API_BASE}/sns/jscode2session?appid=${encodeURIComponent(appId)}&secret=${encodeURIComponent(appSecret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`
-    );
+    const code2sessionUrl = `${WECHAT_MINIPROGRAM_API_BASE}/sns/jscode2session?appid=${encodeURIComponent(appId)}&secret=${encodeURIComponent(appSecret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
+    
+    logger.debug("Miniprogram login: calling WeChat API", { url: code2sessionUrl.replace(appSecret, "***") });
+    
+    const tokenRes = await fetch(code2sessionUrl);
+
+    if (!tokenRes.ok) {
+      logger.error("Miniprogram login: WeChat API request failed", {
+        status: tokenRes.status,
+        statusText: tokenRes.statusText,
+      });
+      throw ApiError.internal("微信登录服务异常");
+    }
 
     const tokenData = (await tokenRes.json()) as WeChatMiniProgramLoginResponse;
+
+    logger.info("Miniprogram login: WeChat API response", {
+      hasOpenid: !!tokenData.openid,
+      hasUnionid: !!tokenData.unionid,
+      errcode: tokenData.errcode,
+    });
 
     if (tokenData.errcode || !tokenData.openid) {
       logger.warn("Miniprogram code2session failed", {
@@ -54,19 +78,28 @@ export async function POST(req: NextRequest) {
     }
 
     const wechatId = tokenData.unionid ?? tokenData.openid;
+    logger.info("Miniprogram login: using wechatId", { wechatId, isUnionid: !!tokenData.unionid });
+    
     const admin = createSupabaseAdmin();
 
     // Find or create user
-    const { data: accountRow } = await admin
+    logger.debug("Miniprogram login: searching for existing account", { wechatId });
+    const { data: accountRow, error: accountError } = await admin
       .from("accounts")
       .select("id")
       .eq("wechat_id", wechatId)
       .maybeSingle();
 
+    if (accountError) {
+      logger.error("Miniprogram login: account lookup failed", { error: accountError.message });
+      throw ApiError.internal("查询用户失败");
+    }
+
     let email: string;
     let userId: string;
 
     if (accountRow?.id) {
+      logger.info("Miniprogram login: found existing account", { userId: accountRow.id });
       userId = accountRow.id;
       const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
       if (userError || !userData?.user?.email) {
@@ -74,7 +107,9 @@ export async function POST(req: NextRequest) {
         throw ApiError.internal("获取用户信息失败");
       }
       email = userData.user.email;
+      logger.info("Miniprogram login: existing user email", { email });
     } else {
+      logger.info("Miniprogram login: creating new user", { wechatId });
       // Create new user
       const syntheticEmail = `miniprogram_${wechatId}@miniprogram.placeholder`;
       const { data: createData, error: createError } = await admin.auth.admin.createUser({
@@ -97,22 +132,53 @@ export async function POST(req: NextRequest) {
         throw ApiError.internal("创建用户失败");
       }
 
-      const { error: updateError } = await admin
+      logger.debug("Miniprogram login: updating accounts table", { userId, wechatId });
+      
+      // The trigger should have created the accounts record automatically
+      // Wait a bit to ensure trigger execution, then update wechat_id
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Update wechat_id (account should exist due to trigger)
+      const { error: updateError, data: updateData } = await admin
         .from("accounts")
         .update({ wechat_id: wechatId })
-        .eq("id", userId);
+        .eq("id", userId)
+        .select();
 
       if (updateError) {
         logger.error("Miniprogram login: UPDATE accounts wechat_id failed", {
           message: updateError.message,
+          code: updateError.code,
         });
-        throw ApiError.internal("更新用户信息失败");
+        // If account doesn't exist (trigger didn't fire), create it
+        const { error: insertError } = await admin
+          .from("accounts")
+          .insert({ 
+            id: userId, 
+            wechat_id: wechatId,
+            username: `miniprogram_${wechatId.substring(0, 20)}`,
+          });
+        
+        if (insertError) {
+          logger.error("Miniprogram login: INSERT accounts also failed", {
+            message: insertError.message,
+          });
+          throw ApiError.internal("更新用户信息失败");
+        }
+        logger.info("Miniprogram login: created accounts record manually", { userId });
+      } else {
+        logger.debug("Miniprogram login: updated accounts wechat_id", { 
+          userId, 
+          updatedRows: updateData?.length || 0 
+        });
       }
 
       email = syntheticEmail;
+      logger.info("Miniprogram login: new user created", { userId, email });
     }
 
     // Generate a magic link OTP and verify it to get session token
+    logger.debug("Miniprogram login: generating magic link", { email });
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
@@ -120,9 +186,15 @@ export async function POST(req: NextRequest) {
 
     const emailOtp = linkData?.properties?.email_otp;
     if (linkError || !emailOtp) {
-      logger.error("Miniprogram login: generateLink failed", { error: linkError?.message });
+      logger.error("Miniprogram login: generateLink failed", { 
+        error: linkError?.message,
+        hasLinkData: !!linkData,
+        hasOtp: !!emailOtp,
+      });
       throw ApiError.internal("生成登录凭证失败");
     }
+
+    logger.debug("Miniprogram login: magic link generated, verifying OTP");
 
     // Create a Supabase client without cookies (for miniprogram)
     // Verify OTP to get session token
@@ -144,9 +216,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (verifyError || !sessionData?.session?.access_token) {
-      logger.error("Miniprogram login: verifyOtp failed", { error: verifyError?.message });
+      logger.error("Miniprogram login: verifyOtp failed", { 
+        error: verifyError?.message,
+        hasSession: !!sessionData?.session,
+        hasAccessToken: !!sessionData?.session?.access_token,
+      });
       throw ApiError.internal("验证登录凭证失败");
     }
+
+    logger.info("Miniprogram login: success", { 
+      userId,
+      email,
+      hasAccessToken: !!sessionData.session.access_token,
+    });
 
     return apiSuccess({
       access_token: sessionData.session.access_token,

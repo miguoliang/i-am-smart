@@ -9,9 +9,13 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "outDir": ".",
+    "rootDir": ".",
     "types": ["miniprogram-api-typings"],
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "declaration": false,
+    "sourceMap": false
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/*.js"]
 }

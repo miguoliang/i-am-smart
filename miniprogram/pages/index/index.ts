@@ -8,33 +8,54 @@ import type { DueCardsResult, Card } from '../../shared/types/card';
 import { storage } from '../../utils/storage';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 
+console.log('Loading index page TypeScript file...');
+
 Page({
   data: {
     cards: [] as Card[],
     loading: false,
     level: 'A1' as Level,
     levelIndex: 0,
-    availableLevels: AVAILABLE_LEVELS,
+    availableLevels: [...AVAILABLE_LEVELS] as Level[],
     reviewedCount: 0,
     currentIndex: 0,
     flipped: false,
   },
 
-  onLoad() {
-    const level = storage.getLevel() as Level;
-    const levelIndex = AVAILABLE_LEVELS.indexOf(level);
-    this.setData({
-      level,
-      levelIndex: levelIndex >= 0 ? levelIndex : 0,
-    });
-    this.loadCards();
+  onLoad(options: WechatMiniprogram.Page.ILoadOption) {
+    console.log('=== index page onLoad START ===');
+    console.log('onLoad options:', options);
+    try {
+      const level = storage.getLevel() as Level;
+      console.log('Got level from storage:', level);
+      const levelIndex = AVAILABLE_LEVELS.indexOf(level);
+      console.log('Setting level:', level, 'levelIndex:', levelIndex);
+      this.setData({
+        level,
+        levelIndex: levelIndex >= 0 ? levelIndex : 0,
+      });
+      console.log('Calling loadCards...');
+      this.loadCards();
+    } catch (error) {
+      console.error('Error in onLoad:', error);
+    }
+    console.log('=== index page onLoad END ===');
   },
 
   onShow() {
+    console.log('=== index page onShow START ===');
     // Reload cards when page is shown (if no cards or all reviewed)
     if (this.data.cards.length === 0 || this.isAllReviewed()) {
+      console.log('Reloading cards in onShow, cards.length:', this.data.cards.length);
       this.loadCards();
+    } else {
+      console.log('Skipping reload, cards exist:', this.data.cards.length);
     }
+    console.log('=== index page onShow END ===');
+  },
+
+  onReady() {
+    console.log('=== index page onReady ===');
   },
 
   isAllReviewed(): boolean {
@@ -42,22 +63,28 @@ Page({
   },
 
   async loadCards() {
+    console.log('loadCards called, level:', this.data.level);
     this.setData({ loading: true });
     
     try {
       const level = this.data.level;
-      const result = await request<DueCardsResult>(
-        `${API_ENDPOINTS.CARDS_DUE}?level=${level}`
-      );
+      const endpoint = `${API_ENDPOINTS.CARDS_DUE}?level=${level}`;
+      console.log('Requesting endpoint:', endpoint);
+      
+      const result = await request<DueCardsResult>(endpoint);
 
-      const cards = (result.cards || []).map((card: Card) => ({
+      console.log('API response received:', result);
+
+      const cards = (result?.cards || []).map((card: Card) => ({
         ...card,
         reviewed: false,
       }));
 
+      const reviewedCount = typeof result?.reviewedCount === 'number' ? result.reviewedCount : 0;
+
       this.setData({
         cards,
-        reviewedCount: result.reviewedCount || 0,
+        reviewedCount,
         currentIndex: 0,
         flipped: false,
         loading: false,
@@ -65,11 +92,23 @@ Page({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '加载失败';
       console.error('Failed to load cards:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       wx.showToast({
         title: errorMessage,
         icon: 'none',
+        duration: 3000,
       });
-      this.setData({ loading: false });
+      // Reset to safe defaults on error
+      this.setData({ 
+        cards: [],
+        reviewedCount: 0,
+        currentIndex: 0,
+        flipped: false,
+        loading: false,
+      });
     }
   },
 

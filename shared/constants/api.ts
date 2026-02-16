@@ -6,7 +6,11 @@
 export const getApiBaseUrl = (): string => {
   // For Next.js, use environment variable
   // Note: process is available in Node.js/Next.js but not in miniprogram runtime
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - process is not available in miniprogram runtime, but typeof check makes it safe
   if (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_APP_ORIGIN) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - process.env is not available in miniprogram runtime, but typeof check makes it safe
     return process.env.NEXT_PUBLIC_APP_ORIGIN;
   }
   // For miniprogram runtime, this will be set via app config in app.ts

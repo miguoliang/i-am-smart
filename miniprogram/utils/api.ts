@@ -34,10 +34,19 @@ export async function request<T>(
 ): Promise<T> {
   const token = storage.getAccessToken();
   const baseUrl = apiBaseUrl;
+  const fullUrl = `${baseUrl}${endpoint}`;
+
+  console.log('API request:', {
+    url: fullUrl,
+    method: options.method || 'GET',
+    hasToken: !!token,
+    baseUrl,
+    endpoint,
+  });
 
   return new Promise((resolve, reject) => {
     wx.request({
-      url: `${baseUrl}${endpoint}`,
+      url: fullUrl,
       method: options.method || 'GET',
       data: options.data,
       header: {
@@ -46,10 +55,14 @@ export async function request<T>(
         ...options.header,
       },
       success: async (res) => {
+        console.log('API response status:', res.statusCode);
+        console.log('API response data:', res.data);
+        
         if (res.statusCode === 200) {
           const response = res.data as ApiResponse<T>;
           
           if (response.error) {
+            console.error('API error:', response.error);
             reject(new Error(response.error.message || '请求失败'));
             return;
           }
@@ -57,6 +70,7 @@ export async function request<T>(
           if (response.data !== undefined) {
             resolve(response.data);
           } else {
+            console.error('Response data is undefined:', response);
             reject(new Error('响应数据格式错误'));
           }
         } else if (res.statusCode === 401) {
@@ -105,6 +119,7 @@ export async function request<T>(
         }
       },
       fail: (error) => {
+        console.error('API request failed:', error);
         reject(new Error(`网络请求失败: ${error.errMsg || '未知错误'}`));
       },
     });

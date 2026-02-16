@@ -26,7 +26,7 @@
   <view wx:else class="card-container">
     <!-- Progress Indicator -->
     <view class="progress">
-      <text class="progress-text">{{reviewedCount + currentIndex + 1}} / {{reviewedCount + cards.length}}</text>
+      <text class="progress-text">{{(reviewedCount || 0) + (currentIndex || 0) + 1}} / {{(reviewedCount || 0) + (cards.length || 0)}}</text>
     </view>
 
     <!-- Card -->

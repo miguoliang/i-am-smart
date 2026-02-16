@@ -15,7 +15,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "type-check:miniprogram": "cd miniprogram && tsc --noEmit",
-    "build:miniprogram": "cd miniprogram && tsc",
+    "build:miniprogram": "cd miniprogram && tsc --outDir . --module commonjs --target ES2017 --esModuleInterop --skipLibCheck --types miniprogram-api-typings",
+    "watch:miniprogram": "cd miniprogram && tsc --watch --outDir . --module commonjs --target ES2017 --esModuleInterop --skipLibCheck --types miniprogram-api-typings",
     "build:miniprogram-config": "node scripts/build-miniprogram-config.mjs"
   },
   "dependencies": {
