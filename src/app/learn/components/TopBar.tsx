@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
 import { LogOut, Settings, Bell, BellOff, Loader2, Check, Lock } from "lucide-react";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
@@ -98,6 +99,7 @@ function DailyDueLimitPresets({ me, onSelect, isPending, pendingValue }: DailyDu
 
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { level, setLevel, availableLevels } = useLevel();
   const { data: me, isLoading: meLoading } = useQuery({
@@ -195,7 +197,8 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                     disabled={isComingSoon}
                     onClick={() => {
                       if (isPro) {
-                        toast.info("升级会员解锁该等级");
+                        setOpen(false);
+                        router.push("/pay");
                         return;
                       }
                       if (!isComingSoon) {
