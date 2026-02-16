@@ -2,7 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/stats/stats",
-    "pages/settings/settings"
+    "pages/feedback/feedback"
   ],
   "window": {
     "navigationBarTitleText": "背它一辈子",
@@ -25,8 +25,8 @@
         "text": "统计"
       },
       {
-        "pagePath": "pages/settings/settings",
-        "text": "设置"
+        "pagePath": "pages/feedback/feedback",
+        "text": "反馈"
       }
     ]
   },
