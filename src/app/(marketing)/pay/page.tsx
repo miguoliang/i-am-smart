@@ -7,6 +7,7 @@ import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
 import { Label } from "@/components/form/Label";
 import { Card } from "@/components/container/Card";
+import { logger } from "@/lib/utils/logger";
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -44,14 +45,37 @@ export default function PayPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.message ?? data?.error ?? "创建订单失败");
+        const errorCode =
+          typeof data?.error === "object" && typeof data?.error?.code === "string"
+            ? data.error.code
+            : undefined;
+        const errorMessage =
+          typeof data?.error === "object" && typeof data?.error?.message === "string"
+            ? data.error.message
+            : (typeof data?.message === "string" ? data.message : null) ?? "创建订单失败";
+        logger.error("Pay create order failed", {
+          status: res.status,
+          statusText: res.statusText,
+          errorCode,
+          errorMessage,
+          body: data,
+        });
+        const displayMsg =
+          errorCode ? `[${errorCode}] ${errorMessage}` : errorMessage;
+        setError(displayMsg);
         return;
       }
       setCodeUrl(data.data?.code_url ?? null);
       setOutTradeNo(data.data?.out_trade_no ?? null);
       setStatus("pending");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "网络错误");
+      const msg = e instanceof Error ? e.message : "网络错误";
+      logger.error("Pay create order exception", {
+        error: e,
+        message: msg,
+        stack: e instanceof Error ? e.stack : undefined,
+      });
+      setError(msg);
     } finally {
       setLoading(false);
     }

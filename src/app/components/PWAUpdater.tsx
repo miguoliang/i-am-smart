@@ -10,8 +10,11 @@ export function PWAUpdater() {
   const controllingHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Disable service worker if DISABLE_SW environment variable is set
     if (process.env.NEXT_PUBLIC_DISABLE_SW === "true") {
+      return;
+    }
+    // Skip registration in development; sw.js may not be built/served (e.g. with Turbopack)
+    if (process.env.NODE_ENV === "development") {
       return;
     }
 
