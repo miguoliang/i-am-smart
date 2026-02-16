@@ -32,4 +32,7 @@ export const API_ENDPOINTS = {
   
   // Stats
   STATS: '/api/stats',
+  
+  // Feedback
+  FEEDBACK: '/api/feedback',
 } as const;
