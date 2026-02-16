@@ -2,7 +2,7 @@
  * API request utilities for WeChat miniprogram
  */
 
-import type { ApiResponse } from '@shared/types/api';
+import type { ApiResponse } from '../shared/types/api';
 import { storage } from './storage';
 import { login } from './auth';
 

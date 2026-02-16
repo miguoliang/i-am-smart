@@ -59,4 +59,7 @@ storybook-static
 miniprogram/node_modules
 miniprogram/.tea
 miniprogram/miniprogram_npm
+# Compiled JavaScript files (generated from TypeScript)
+miniprogram/**/*.js
+!miniprogram/node_modules/**/*.js
 miniprogram/config.ts

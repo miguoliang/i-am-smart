@@ -3,10 +3,10 @@
  */
 
 import { request } from '../../utils/api';
-import { API_ENDPOINTS } from '@shared/constants/api';
-import type { DueCardsResult, Card } from '@shared/types/card';
+import { API_ENDPOINTS } from '../../shared/constants/api';
+import type { DueCardsResult, Card } from '../../shared/types/card';
 import { storage } from '../../utils/storage';
-import { AVAILABLE_LEVELS, type Level } from '@shared/constants/levels';
+import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 
 Page({
   data: {

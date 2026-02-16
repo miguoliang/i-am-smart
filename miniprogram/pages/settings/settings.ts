@@ -3,10 +3,10 @@
  */
 
 import { request } from '../../utils/api';
-import { API_ENDPOINTS } from '@shared/constants/api';
-import type { Account } from '@shared/types/user';
+import { API_ENDPOINTS } from '../../shared/constants/api';
+import type { Account } from '../../shared/types/user';
 import { logout } from '../../utils/auth';
-import { AVAILABLE_LEVELS, type Level } from '@shared/constants/levels';
+import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 import { storage } from '../../utils/storage';
 
 Page({

@@ -2,8 +2,8 @@
  * Authentication utilities for WeChat miniprogram
  */
 
-import { API_ENDPOINTS } from '@shared/constants/api';
-import type { LoginResponse } from '@shared/types/user';
+import { API_ENDPOINTS } from '../shared/constants/api';
+import type { LoginResponse } from '../shared/types/user';
 import { storage } from './storage';
 import { request } from './api';
 

@@ -3,8 +3,8 @@
  */
 
 import { request } from '../../utils/api';
-import { API_ENDPOINTS } from '@shared/constants/api';
-import type { StatsData } from '@shared/types/stats';
+import { API_ENDPOINTS } from '../../shared/constants/api';
+import type { StatsData } from '../../shared/types/stats';
 
 Page({
   data: {

@@ -1,12 +1,8 @@
 {
   "description": "背它一辈子小程序",
   "packOptions": {
-    "ignore": [
-      "node_modules",
-      ".git",
-      "tsconfig.json",
-      "*.md"
-    ]
+    "ignore": [],
+    "include": []
   },
   "setting": {
     "urlCheck": false,
@@ -23,11 +19,25 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "libVersion": "3.5.0",
   "appid": "wxe3af85edd5fae27f",
   "projectname": "be-it-forever-miniprogram",
-  "condition": {}
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
 }

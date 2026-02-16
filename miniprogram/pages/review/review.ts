@@ -3,8 +3,8 @@
  */
 
 import { request } from '../../utils/api';
-import { API_ENDPOINTS } from '@shared/constants/api';
-import type { Card, ReviewCardResult } from '@shared/types/card';
+import { API_ENDPOINTS } from '../../shared/constants/api';
+import type { Card, ReviewCardResult } from '../../shared/types/card';
 
 const QUALITY_OPTIONS = [
   { value: 0, label: '完全忘记' },
