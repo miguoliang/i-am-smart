@@ -21,6 +21,15 @@ export function MarketingFooter() {
             >
               湘ICP备2026003808号
             </a>
+            <Separator orientation="vertical" className="h-4" />
+            <a
+              href="https://beian.mps.gov.cn/#/query/webSearch?code=43010502001984"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              湘公网安备43010502001984号
+            </a>
           </div>
 
           {/* Bottom Right - All links in one line */}
