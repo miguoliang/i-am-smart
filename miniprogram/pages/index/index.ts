@@ -160,16 +160,6 @@ Page({
     }
   },
 
-  onLevelChange(e: WechatMiniprogram.CustomEvent) {
-    const index = parseInt(e.detail.value, 10);
-    const level = AVAILABLE_LEVELS[index] as Level;
-    this.setData({ 
-      level,
-      levelIndex: index,
-    });
-    storage.setLevel(level);
-    this.loadCards();
-  },
 
   onCardTap() {
     // Toggle flip

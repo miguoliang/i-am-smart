@@ -4,11 +4,6 @@
     <navigator url="/pages/settings/settings" class="settings-btn">
       <text>设置</text>
     </navigator>
-    <picker mode="selector" value="{{levelIndex}}" range="{{availableLevels}}" bindchange="onLevelChange">
-      <view class="level-selector">
-        {{level}}
-      </view>
-    </picker>
   </view>
 
   <!-- Loading State -->
