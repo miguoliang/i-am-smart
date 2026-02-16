@@ -185,22 +185,55 @@ export async function POST(req: NextRequest) {
     });
 
     const emailOtp = linkData?.properties?.email_otp;
+    const hashedToken = linkData?.properties?.hashed_token;
+    
+    logger.debug("Miniprogram login: generateLink response", {
+      hasLinkData: !!linkData,
+      hasOtp: !!emailOtp,
+      hasHashedToken: !!hashedToken,
+      linkDataKeys: linkData ? Object.keys(linkData) : [],
+      propertiesKeys: linkData?.properties ? Object.keys(linkData.properties) : [],
+      linkDataString: JSON.stringify(linkData),
+    });
+
     if (linkError || !emailOtp) {
       logger.error("Miniprogram login: generateLink failed", { 
         error: linkError?.message,
         hasLinkData: !!linkData,
         hasOtp: !!emailOtp,
+        linkDataString: JSON.stringify(linkData),
       });
       throw ApiError.internal("生成登录凭证失败");
     }
 
-    logger.debug("Miniprogram login: magic link generated, verifying OTP");
+    logger.debug("Miniprogram login: magic link generated, verifying OTP", {
+      email,
+      hasOtp: !!emailOtp,
+      otpLength: emailOtp?.length,
+      otpPrefix: emailOtp?.substring(0, 10),
+    });
 
     // Create a Supabase client without cookies (for miniprogram)
     // Verify OTP to get session token
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      logger.error("Miniprogram login: Supabase config missing", {
+        hasUrl: !!supabaseUrl,
+        hasAnonKey: !!supabaseAnonKey,
+      });
+      throw ApiError.internal("服务器配置错误");
+    }
+
+    logger.debug("Miniprogram login: creating Supabase client", {
+      url: supabaseUrl,
+      hasAnonKey: !!supabaseAnonKey,
+    });
+
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll: () => [],
@@ -209,32 +242,69 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
+    logger.debug("Miniprogram login: calling verifyOtp", {
+      email,
+      tokenLength: emailOtp?.length,
+      type: "magiclink",
+    });
+
+    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
       email,
       token: emailOtp,
       type: "magiclink",
     });
 
-    if (verifyError || !sessionData?.session?.access_token) {
+    logger.debug("Miniprogram login: verifyOtp response", {
+      hasError: !!verifyError,
+      errorMessage: verifyError?.message,
+      errorStatus: verifyError?.status,
+      hasSession: !!verifyData?.session,
+      hasAccessToken: !!verifyData?.session?.access_token,
+      hasUser: !!verifyData?.user,
+    });
+
+    if (verifyError) {
       logger.error("Miniprogram login: verifyOtp failed", { 
-        error: verifyError?.message,
-        hasSession: !!sessionData?.session,
-        hasAccessToken: !!sessionData?.session?.access_token,
+        error: verifyError.message,
+        errorStatus: verifyError.status,
+        errorName: verifyError.name,
+        email,
+        otpLength: emailOtp?.length,
       });
-      throw ApiError.internal("验证登录凭证失败");
+      throw ApiError.internal(`验证登录凭证失败: ${verifyError.message}`);
+    }
+
+    if (!verifyData?.session?.access_token) {
+      logger.error("Miniprogram login: verifyOtp succeeded but no access token", {
+        hasSession: !!verifyData?.session,
+        hasAccessToken: !!verifyData?.session?.access_token,
+        sessionKeys: verifyData?.session ? Object.keys(verifyData.session) : [],
+      });
+      throw ApiError.internal("验证登录凭证失败: 未获取到访问令牌");
+    }
+
+    const sessionData = verifyData;
+    const session = sessionData.session;
+
+    if (!session) {
+      logger.error("Miniprogram login: session is null after verifyOtp", {
+        hasSessionData: !!sessionData,
+        sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
+      });
+      throw ApiError.internal("验证登录凭证失败: 会话数据为空");
     }
 
     logger.info("Miniprogram login: success", { 
       userId,
       email,
-      hasAccessToken: !!sessionData.session.access_token,
+      hasAccessToken: !!session.access_token,
     });
 
     return apiSuccess({
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
-      expires_in: sessionData.session.expires_in,
-      expires_at: sessionData.session.expires_at,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_in: session.expires_in,
+      expires_at: session.expires_at,
       user: {
         id: userId,
         email,
