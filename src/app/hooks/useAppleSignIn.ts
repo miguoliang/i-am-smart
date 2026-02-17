@@ -35,8 +35,13 @@ interface UseAppleSignInReturn {
  * - **Supabase Dashboard**:
  *   1. Auth → Providers → Apple → Enabled.
  *   2. Set the client_id (Services ID) and secret (Apple client secret JWT).
- *   3. Auth → URL Configuration → add the app origin to Redirect URLs
- *      (e.g. `https://www.example.com/**`).
+ *   3. Auth → URL Configuration → add **ALL** app origins to Redirect URLs.
+ *      **Every domain that can initiate sign-in must be listed**, including
+ *      both production and preview environments. For example:
+ *        - `https://www.example.com/**`
+ *        - `https://preview.example.com/**`
+ *      If a domain is missing, Supabase silently falls back to `site_url`,
+ *      causing the user to land on the wrong domain after authentication.
  * - **App Environment**:
  *   Set `NEXT_PUBLIC_APPLE_CLIENT_ID` so the Apple button is rendered.
  */
@@ -58,7 +63,13 @@ export function useAppleSignIn(): UseAppleSignInReturn {
 
     try {
       const nextPath = searchParams.get("next") ?? "/learn";
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+
+      logger.info("Apple Sign-In: initiating OAuth redirect", {
+        origin,
+        redirectTo,
+      });
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "apple",
