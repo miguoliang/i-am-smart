@@ -153,10 +153,26 @@ export function useAppleSignIn(): UseAppleSignInReturn {
       //    `usePopup: true` → iOS native sheet / desktop popup
       //    `redirectURI` is required by Apple for validation but no
       //    redirect actually happens in popup mode.
+      //    The URI must exactly match the Return URL registered in the
+      //    Apple Developer Console.  When Apple Sign-In is configured via
+      //    Supabase, the registered Return URL is the Supabase callback:
+      //      https://<project>.supabase.co/auth/v1/callback
+      //    Using NEXT_PUBLIC_SUPABASE_URL ensures it always matches,
+      //    regardless of which domain the app is served from.
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(
+        /\/$/,
+        "",
+      );
+      if (!supabaseUrl) {
+        toast.error("Supabase 未配置");
+        setLoading(false);
+        return;
+      }
+
       window.AppleID!.auth.init({
         clientId,
         scope: "name email",
-        redirectURI: `${window.location.origin}/auth/callback`,
+        redirectURI: `${supabaseUrl}/auth/v1/callback`,
         usePopup: true,
         nonce: hashedNonce,
       });
