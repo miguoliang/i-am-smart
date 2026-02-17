@@ -298,12 +298,16 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
-# Apple Sign-In — uses Apple JS SDK + Supabase signInWithIdToken.
-# On iOS (PWA), triggers the native system Apple ID sheet (Face ID / Touch ID).
+# Apple Sign-In — uses Supabase signInWithOAuth redirect flow.
+# The browser redirects to Apple via Supabase; no Apple JS SDK or domain
+# verification is needed on the hosting side.
 # 1. Create a Services ID at https://developer.apple.com/account/resources/identifiers
-# 2. Generate a key and obtain client_id + secret (JWT).
-# 3. Set SUPABASE_AUTH_EXTERNAL_APPLE_SECRET in your environment.
-# 4. Set NEXT_PUBLIC_APPLE_CLIENT_ID to the Services ID in the app environment.
+#    and enable "Sign In with Apple".  Add Return URL:
+#    https://<project>.supabase.co/auth/v1/callback
+# 2. Generate a private key, then build the Apple client secret (JWT).
+# 3. In Supabase Dashboard → Auth → Providers → Apple, set client_id + secret.
+# 4. Set SUPABASE_AUTH_EXTERNAL_APPLE_SECRET in your environment (local dev).
+# 5. Set NEXT_PUBLIC_APPLE_CLIENT_ID to the Services ID in the app environment.
 [auth.external.apple]
 enabled = false
 client_id = ""
