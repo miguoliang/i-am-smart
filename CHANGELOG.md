@@ -4,6 +4,57 @@
 
 ---
 
+## [1.0.8] - 2026-02-17
+
+### #Apple 登录与微信小程序
+
+集成 Apple Sign-In 登录功能，新增微信小程序支持，并修复多个 Bug，提升稳定性。
+
+### 新功能 (Features) ↓↑
+
+- 集成 Apple Sign-In 登录（popup 模式），后改为 Supabase OAuth 重定向流程
+- 在移动端/平板隐藏微信登录，仅显示 Apple 登录
+- 新增微信小程序支持（登录、学习卡片、统计等完整功能）
+- 小程序新增反馈页面，替代设置页面加入 tabBar
+- 改进小程序登录集成，添加 TypeScript watcher
+- 启用小程序懒加载代码（lazy code loading）
+
+### 改进 (Improvements) ↓↑
+
+- 改进 Pro 和 Coming Soon 徽章在小程序设置页面的样式
+- 添加微信小程序 ICP 备案准备指南文档
+- 添加微信小程序功能介绍文档
+- 添加微信小程序发布指南文档
+- 为部署配置添加 NEXT_PUBLIC_APPLE_CLIENT_ID 环境变量
+- 记录 Apple Sign-In 多域名重定向 URL 要求
+
+### 变更 (Changes) ↓↑
+
+- 使用 Apple JS SDK 实现原生 Sign in with Apple
+- 从小程序设置中移除登出功能
+- 从首页顶栏移除等级选择器
+- 更新 .gitignore 忽略 shared 目录的编译文件
+
+### Bug 修复 (Bug Fixes) ↓↑
+
+- 修复 Apple Sign-In 重定向 URI 配置问题（改用 Supabase 回调 URL）
+- 修复小程序 API 客户端兼容两种响应格式
+- 修复统计 API 响应使用 apiSuccess 包装
+- 修复统计页面添加防御性检查和错误处理
+- 修复小程序缺少页面 json 配置和移除 lazyCodeLoading 的问题
+- 修复小程序设置中每日限额和等级变更的事件处理
+- 修复小程序设置页面未加入 app.json 的问题
+- 修复小程序 FEEDBACK 端点缺失的问题
+- 修复复习页面隐藏分享菜单按钮
+- 修复 API 调用仅在成功登录后才发起
+- 修复 TypeScript onLoad options 参数类型
+- 修复小程序中重复 API 请求的问题
+- 添加小程序登录 verifyOtp 失败的详细日志
+- 修复 shared 目录复制到小程序的模块解析问题
+- 修复小程序 Bug：工厂函数、配置生成、loadCard 和每日限额选择器
+
+---
+
 ## [未发布]
 
 ### 改进 (Improvements) ↓↑
