@@ -975,4 +975,91 @@ describe('SignIn', () => {
       expect(screen.queryByText('通过 Apple 登录')).not.toBeInTheDocument();
     });
   });
+
+  describe('Mobile/Tablet device detection', () => {
+    const originalEnv = process.env;
+    const originalNavigator = navigator.userAgent;
+
+    function setUserAgent(ua: string) {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: ua,
+        writable: true,
+        configurable: true,
+      });
+    }
+
+    beforeEach(() => {
+      process.env = {
+        ...originalEnv,
+        NEXT_PUBLIC_WECHAT_OPEN_APP_ID: 'wx_test_id',
+        NEXT_PUBLIC_APPLE_CLIENT_ID: 'com.example.auth',
+      };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalNavigator,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('should hide WeChat login on iPhone', () => {
+      setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should hide WeChat login on Android', () => {
+      setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should hide WeChat login on iPad', () => {
+      setUserAgent('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should show WeChat login on desktop', () => {
+      setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36');
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('微信登录')).toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+  });
 });

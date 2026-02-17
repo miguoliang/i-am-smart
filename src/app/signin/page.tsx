@@ -20,6 +20,21 @@ const EMAIL_DEBOUNCE_MS = 500;
 const OTP_LENGTH = 6;
 const WECHAT_QRCONNECT_URL = "https://open.weixin.qq.com/connect/qrconnect";
 
+/**
+ * Detect mobile phones and tablets via User-Agent.
+ * iPadOS sends a desktop-like "Macintosh" UA, so we also check
+ * `maxTouchPoints` to catch it.
+ */
+function detectMobileOrTablet(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  if (/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+  if (/iPad/i.test(ua)) return true;
+  // iPadOS in desktop mode: reports "Macintosh" but has touch
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+  return false;
+}
+
 interface SignInState {
   autoSubmitted: boolean;
 }
@@ -60,8 +75,16 @@ function SignInContent() {
   const oauthError = searchParams.get("error") === "oauth_failed";
   const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
   const isPreview = process.env.NEXT_PUBLIC_APP_ENV === "preview";
-  const showWechatLogin = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview;
   const showAppleLogin = !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+
+  // Detect mobile/tablet — WeChat QR login is desktop-only
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  useEffect(() => {
+    setIsMobileOrTablet(detectMobileOrTablet());
+  }, []);
+
+  const showWechatLogin =
+    !!process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview && !isMobileOrTablet;
 
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
@@ -439,7 +462,9 @@ function SignInContent() {
             className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base"
             role="note"
           >
-            {isProduction ? "请使用微信扫码登录" : "首次使用？输入邮箱即可自动创建账号"}
+            {isProduction
+              ? (showWechatLogin ? "请使用微信扫码登录" : "请使用以上方式登录")
+              : "首次使用？输入邮箱即可自动创建账号"}
           </div>
         </div>
       </div>
