@@ -6,11 +6,13 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider } from 'next-themes';
 import SignIn from './page';
 import { useSignIn } from '../hooks/useSignIn';
+import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useDebounce } from '../hooks/useDebounce';
 import { useCountdown } from '../hooks/useCountdown';
 
 // Mock hooks
 jest.mock('../hooks/useSignIn');
+jest.mock('../hooks/useAppleSignIn');
 jest.mock('../hooks/useDebounce');
 jest.mock('../hooks/useCountdown');
 
@@ -62,6 +64,7 @@ describe('SignIn', () => {
   const mockHandleSendOtp = jest.fn();
   const mockHandleVerifyOtp = jest.fn();
   const mockHandleResendOtp = jest.fn();
+  const mockHandleAppleSignIn = jest.fn();
   const mockResetCountdown = jest.fn();
   const mockOtpInputRef = { current: null };
 
@@ -81,6 +84,11 @@ describe('SignIn', () => {
       handleSendOtp: mockHandleSendOtp,
       handleVerifyOtp: mockHandleVerifyOtp,
       handleResendOtp: mockHandleResendOtp,
+    });
+
+    (useAppleSignIn as jest.Mock).mockReturnValue({
+      loading: false,
+      handleAppleSignIn: mockHandleAppleSignIn,
     });
 
     (useDebounce as jest.Mock).mockImplementation((value) => value);
@@ -876,6 +884,182 @@ describe('SignIn', () => {
       const note = screen.getByText(/首次使用/i);
       expect(note).toBeInTheDocument();
       expect(note).toHaveAttribute('role', 'note');
+    });
+  });
+
+  describe('Apple Sign-In', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NEXT_PUBLIC_APPLE_CLIENT_ID: 'com.example.auth' };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should render Apple login button when NEXT_PUBLIC_APPLE_CLIENT_ID is set', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const appleButton = screen.getByRole('button', { name: /Apple/i });
+      expect(appleButton).toBeInTheDocument();
+      expect(appleButton).toHaveTextContent('通过 Apple 登录');
+    });
+
+    it('should disable Apple button when terms not agreed', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const appleButton = screen.getByRole('button', { name: /Apple/i });
+      expect(appleButton).toBeDisabled();
+    });
+
+    it('should enable Apple button after agreeing to terms', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      agreeToTerms();
+      const appleButton = screen.getByRole('button', { name: /Apple 账号登录/i });
+      expect(appleButton).not.toBeDisabled();
+    });
+
+    it('should call handleAppleSignIn when Apple button is clicked', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      agreeToTerms();
+      const appleButton = screen.getByRole('button', { name: /Apple 账号登录/i });
+      fireEvent.click(appleButton);
+
+      expect(mockHandleAppleSignIn).toHaveBeenCalled();
+    });
+
+    it('should show loading text when Apple sign-in is in progress', () => {
+      (useAppleSignIn as jest.Mock).mockReturnValue({
+        loading: true,
+        handleAppleSignIn: mockHandleAppleSignIn,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('登录中…')).toBeInTheDocument();
+    });
+
+    it('should not render Apple button when NEXT_PUBLIC_APPLE_CLIENT_ID is not set', () => {
+      process.env = { ...originalEnv };
+      delete process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('通过 Apple 登录')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Mobile/Tablet device detection', () => {
+    const originalEnv = process.env;
+    const originalNavigator = navigator.userAgent;
+
+    function setUserAgent(ua: string) {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: ua,
+        writable: true,
+        configurable: true,
+      });
+    }
+
+    beforeEach(() => {
+      process.env = {
+        ...originalEnv,
+        NEXT_PUBLIC_WECHAT_OPEN_APP_ID: 'wx_test_id',
+        NEXT_PUBLIC_APPLE_CLIENT_ID: 'com.example.auth',
+      };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalNavigator,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('should hide WeChat login on iPhone', () => {
+      setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should hide WeChat login on Android', () => {
+      setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should hide WeChat login on iPad', () => {
+      setUserAgent('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)');
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('微信登录')).not.toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
+    });
+
+    it('should show WeChat login on desktop', () => {
+      setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36');
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('微信登录')).toBeInTheDocument();
+      expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
     });
   });
 });
