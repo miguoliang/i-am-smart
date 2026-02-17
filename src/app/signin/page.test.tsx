@@ -6,11 +6,13 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider } from 'next-themes';
 import SignIn from './page';
 import { useSignIn } from '../hooks/useSignIn';
+import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useDebounce } from '../hooks/useDebounce';
 import { useCountdown } from '../hooks/useCountdown';
 
 // Mock hooks
 jest.mock('../hooks/useSignIn');
+jest.mock('../hooks/useAppleSignIn');
 jest.mock('../hooks/useDebounce');
 jest.mock('../hooks/useCountdown');
 
@@ -62,6 +64,7 @@ describe('SignIn', () => {
   const mockHandleSendOtp = jest.fn();
   const mockHandleVerifyOtp = jest.fn();
   const mockHandleResendOtp = jest.fn();
+  const mockHandleAppleSignIn = jest.fn();
   const mockResetCountdown = jest.fn();
   const mockOtpInputRef = { current: null };
 
@@ -81,6 +84,11 @@ describe('SignIn', () => {
       handleSendOtp: mockHandleSendOtp,
       handleVerifyOtp: mockHandleVerifyOtp,
       handleResendOtp: mockHandleResendOtp,
+    });
+
+    (useAppleSignIn as jest.Mock).mockReturnValue({
+      loading: false,
+      handleAppleSignIn: mockHandleAppleSignIn,
     });
 
     (useDebounce as jest.Mock).mockImplementation((value) => value);
@@ -876,6 +884,95 @@ describe('SignIn', () => {
       const note = screen.getByText(/首次使用/i);
       expect(note).toBeInTheDocument();
       expect(note).toHaveAttribute('role', 'note');
+    });
+  });
+
+  describe('Apple Sign-In', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NEXT_PUBLIC_APPLE_LOGIN_ENABLED: 'true' };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should render Apple login button when enabled', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const appleButton = screen.getByRole('button', { name: /Apple/i });
+      expect(appleButton).toBeInTheDocument();
+      expect(appleButton).toHaveTextContent('通过 Apple 登录');
+    });
+
+    it('should disable Apple button when terms not agreed', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const appleButton = screen.getByRole('button', { name: /Apple/i });
+      expect(appleButton).toBeDisabled();
+    });
+
+    it('should enable Apple button after agreeing to terms', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      agreeToTerms();
+      const appleButton = screen.getByRole('button', { name: /Apple 账号登录/i });
+      expect(appleButton).not.toBeDisabled();
+    });
+
+    it('should call handleAppleSignIn when Apple button is clicked', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      agreeToTerms();
+      const appleButton = screen.getByRole('button', { name: /Apple 账号登录/i });
+      fireEvent.click(appleButton);
+
+      expect(mockHandleAppleSignIn).toHaveBeenCalled();
+    });
+
+    it('should show loading text when Apple sign-in is in progress', () => {
+      (useAppleSignIn as jest.Mock).mockReturnValue({
+        loading: true,
+        handleAppleSignIn: mockHandleAppleSignIn,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('登录中…')).toBeInTheDocument();
+    });
+
+    it('should not render Apple button when not enabled', () => {
+      process.env = { ...originalEnv };
+      delete process.env.NEXT_PUBLIC_APPLE_LOGIN_ENABLED;
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText('通过 Apple 登录')).not.toBeInTheDocument();
     });
   });
 });

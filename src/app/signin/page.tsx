@@ -9,6 +9,7 @@ import { Input } from "@/components/form/Input";
 import { Checkbox } from "@/components/form/Checkbox";
 import { Label } from "@/components/form/Label";
 import { useSignIn } from "../hooks/useSignIn";
+import { useAppleSignIn } from "../hooks/useAppleSignIn";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCountdown } from "../hooks/useCountdown";
 import { isValidEmail, sanitizeEmail } from "@/lib/utils/emailValidation";
@@ -52,17 +53,26 @@ function SignInContent() {
     handleResendOtp,
   } = useSignIn();
 
+  const { loading: appleLoading, handleAppleSignIn } = useAppleSignIn();
+
   const searchParams = useSearchParams();
   const wechatError = searchParams.get("error") === "wechat_failed";
+  const oauthError = searchParams.get("error") === "oauth_failed";
   const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
   const isPreview = process.env.NEXT_PUBLIC_APP_ENV === "preview";
   const showWechatLogin = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview;
+  const showAppleLogin = process.env.NEXT_PUBLIC_APPLE_LOGIN_ENABLED === "true";
 
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
+
+  const handleAppleLogin = useCallback(async () => {
+    if (!agreedToTerms) return;
+    await handleAppleSignIn();
+  }, [agreedToTerms, handleAppleSignIn]);
 
   const handleWechatLogin = useCallback(async () => {
     if (!agreedToTerms || typeof window === "undefined") return;
@@ -221,12 +231,14 @@ function SignInContent() {
             登录
           </h2>
 
-          {wechatError && (
+          {(wechatError || oauthError) && (
             <p
               className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-left"
               role="alert"
             >
-              {isProduction ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用邮箱登录。"}
+              {wechatError
+                ? (isProduction ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用邮箱登录。")
+                : "登录失败，请重试。"}
             </p>
           )}
 
@@ -370,7 +382,7 @@ function SignInContent() {
           </div>
           )}
 
-          {showWechatLogin && (
+          {(showWechatLogin || showAppleLogin) && (
             <div className="mt-6">
               {!isProduction && (
               <div className="relative my-4 flex items-center gap-3">
@@ -379,22 +391,47 @@ function SignInContent() {
                 <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
               </div>
               )}
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                disabled={!agreedToTerms || wechatLoading}
-                onClick={handleWechatLogin}
-                aria-label={
-                  agreedToTerms
-                    ? "使用微信扫码登录"
-                    : "请先勾选同意服务条款与隐私政策后再使用微信登录"
-                }
-                title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》" : undefined}
-                className="w-full py-3.5 md:py-4 px-6 md:px-8 min-h-[48px]"
-              >
-                {wechatLoading ? "跳转中…" : "微信登录"}
-              </Button>
+
+              <div className="space-y-3">
+                {showAppleLogin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    disabled={!agreedToTerms || appleLoading}
+                    onClick={handleAppleLogin}
+                    aria-label={
+                      agreedToTerms
+                        ? "使用 Apple 账号登录"
+                        : "请先勾选同意服务条款与隐私政策后再使用 Apple 登录"
+                    }
+                    title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
+                    className="w-full py-3.5 md:py-4 px-6 md:px-8 min-h-[48px]"
+                  >
+                    <AppleIcon className="mr-2 h-5 w-5" />
+                    {appleLoading ? "登录中…" : "通过 Apple 登录"}
+                  </Button>
+                )}
+
+                {showWechatLogin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    disabled={!agreedToTerms || wechatLoading}
+                    onClick={handleWechatLogin}
+                    aria-label={
+                      agreedToTerms
+                        ? "使用微信扫码登录"
+                        : "请先勾选同意服务条款与隐私政策后再使用微信登录"
+                    }
+                    title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
+                    className="w-full py-3.5 md:py-4 px-6 md:px-8 min-h-[48px]"
+                  >
+                    {wechatLoading ? "跳转中…" : "微信登录"}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -407,6 +444,20 @@ function SignInContent() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Apple logo icon following Apple's branding guidelines. */
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z" />
+    </svg>
   );
 }
 
