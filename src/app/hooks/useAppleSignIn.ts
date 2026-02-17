@@ -153,10 +153,17 @@ export function useAppleSignIn(): UseAppleSignInReturn {
       //    `usePopup: true` → iOS native sheet / desktop popup
       //    `redirectURI` is required by Apple for validation but no
       //    redirect actually happens in popup mode.
+      //    Use NEXT_PUBLIC_APP_ORIGIN when set so the URI always matches
+      //    what is registered in the Apple Developer Console (avoids
+      //    "Invalid web redirect url" on preview / non-production hosts).
+      const origin = process.env.NEXT_PUBLIC_APP_ORIGIN
+        ? process.env.NEXT_PUBLIC_APP_ORIGIN.replace(/\/$/, "")
+        : window.location.origin;
+
       window.AppleID!.auth.init({
         clientId,
         scope: "name email",
-        redirectURI: `${window.location.origin}/auth/callback`,
+        redirectURI: `${origin}/auth/callback`,
         usePopup: true,
         nonce: hashedNonce,
       });
