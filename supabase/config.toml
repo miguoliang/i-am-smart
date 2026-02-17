@@ -146,7 +146,12 @@ enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 site_url = "http://127.0.0.1:3000"
-# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+# A list of URLs (supports glob patterns) that auth providers are permitted to redirect to
+# post authentication. IMPORTANT: For multi-domain deployments, ALL domains must be listed.
+# If a redirectTo URL does not match any entry, Supabase silently falls back to site_url.
+# Remote Supabase: configure in Dashboard → Auth → URL Configuration → Redirect URLs:
+#   https://www.iamsmart.top/**
+#   https://preview.iamsmart.top/**
 additional_redirect_urls = ["https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -306,8 +311,10 @@ max_frequency = "5s"
 #    https://<project>.supabase.co/auth/v1/callback
 # 2. Generate a private key, then build the Apple client secret (JWT).
 # 3. In Supabase Dashboard → Auth → Providers → Apple, set client_id + secret.
-# 4. Set SUPABASE_AUTH_EXTERNAL_APPLE_SECRET in your environment (local dev).
-# 5. Set NEXT_PUBLIC_APPLE_CLIENT_ID to the Services ID in the app environment.
+# 4. In Supabase Dashboard → Auth → URL Configuration → Redirect URLs,
+#    add ALL domains that can initiate sign-in (see additional_redirect_urls above).
+# 5. Set SUPABASE_AUTH_EXTERNAL_APPLE_SECRET in your environment (local dev).
+# 6. Set NEXT_PUBLIC_APPLE_CLIENT_ID to the Services ID in the app environment.
 [auth.external.apple]
 enabled = false
 client_id = ""
