@@ -6,7 +6,7 @@
     "pages/settings/settings"
   ],
   "window": {
-    "navigationBarTitleText": "背它一辈子",
+    "navigationBarTitleText": "聪明的背单词工具",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#ffffff"
