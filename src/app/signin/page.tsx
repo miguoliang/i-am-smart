@@ -61,7 +61,7 @@ function SignInContent() {
   const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
   const isPreview = process.env.NEXT_PUBLIC_APP_ENV === "preview";
   const showWechatLogin = process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview;
-  const showAppleLogin = process.env.NEXT_PUBLIC_APPLE_LOGIN_ENABLED === "true";
+  const showAppleLogin = !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
 
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,

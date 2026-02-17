@@ -891,14 +891,14 @@ describe('SignIn', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
-      process.env = { ...originalEnv, NEXT_PUBLIC_APPLE_LOGIN_ENABLED: 'true' };
+      process.env = { ...originalEnv, NEXT_PUBLIC_APPLE_CLIENT_ID: 'com.example.auth' };
     });
 
     afterEach(() => {
       process.env = originalEnv;
     });
 
-    it('should render Apple login button when enabled', () => {
+    it('should render Apple login button when NEXT_PUBLIC_APPLE_CLIENT_ID is set', () => {
       render(
         <TestWrapper>
           <SignIn />
@@ -962,9 +962,9 @@ describe('SignIn', () => {
       expect(screen.getByText('登录中…')).toBeInTheDocument();
     });
 
-    it('should not render Apple button when not enabled', () => {
+    it('should not render Apple button when NEXT_PUBLIC_APPLE_CLIENT_ID is not set', () => {
       process.env = { ...originalEnv };
-      delete process.env.NEXT_PUBLIC_APPLE_LOGIN_ENABLED;
+      delete process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
 
       render(
         <TestWrapper>
