@@ -88,7 +88,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .next
-          key: next-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/next.config.*') }}
+          key: next-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/next.config.*') }}-${{ env.NEXT_PUBLIC_APP_ENV }}
 
       - name: Build
         run: npm run build
