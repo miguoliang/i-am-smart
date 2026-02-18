@@ -10,6 +10,7 @@ import { PWAUpdater } from "./components/PWAUpdater";
 import { SkipLink } from "@/components/navigation/SkipLink";
 
 const BAIDU_ANALYTICS_ID = process.env.NEXT_PUBLIC_BAIDU_ANALYTICS_ID;
+const BAIDU_SITE_VERIFICATION = process.env.NEXT_PUBLIC_BAIDU_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   title: "聪明的背单词工具",
@@ -28,6 +29,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "聪明的背单词工具",
   },
+  ...(BAIDU_SITE_VERIFICATION && {
+    other: {
+      "baidu-site-verification": BAIDU_SITE_VERIFICATION,
+    },
+  }),
 };
 
 export default function RootLayout({
