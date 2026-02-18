@@ -6,12 +6,14 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider } from 'next-themes';
 import SignIn from './page';
 import { useSignIn } from '../hooks/useSignIn';
+import { usePhoneSignIn } from '../hooks/usePhoneSignIn';
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useDebounce } from '../hooks/useDebounce';
 import { useCountdown } from '../hooks/useCountdown';
 
 // Mock hooks
 jest.mock('../hooks/useSignIn');
+jest.mock('../hooks/usePhoneSignIn');
 jest.mock('../hooks/useAppleSignIn');
 jest.mock('../hooks/useDebounce');
 jest.mock('../hooks/useCountdown');
@@ -68,11 +70,19 @@ describe('SignIn', () => {
   const mockResetCountdown = jest.fn();
   const mockOtpInputRef = { current: null };
 
+  // Phone mocks
+  const mockSetPhone = jest.fn();
+  const mockSetPhoneOtp = jest.fn();
+  const mockHandleSendPhoneOtp = jest.fn();
+  const mockHandleVerifyPhoneOtp = jest.fn();
+  const mockHandleResendPhoneOtp = jest.fn();
+  const mockPhoneOtpInputRef = { current: null };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockPush.mockClear();
 
-    // Default mock implementations
+    // Default mock implementations for email sign in
     (useSignIn as jest.Mock).mockReturnValue({
       email: '',
       setEmail: mockSetEmail,
@@ -84,6 +94,20 @@ describe('SignIn', () => {
       handleSendOtp: mockHandleSendOtp,
       handleVerifyOtp: mockHandleVerifyOtp,
       handleResendOtp: mockHandleResendOtp,
+    });
+
+    // Default mock implementations for phone sign in
+    (usePhoneSignIn as jest.Mock).mockReturnValue({
+      phone: '',
+      setPhone: mockSetPhone,
+      otp: '',
+      setOtp: mockSetPhoneOtp,
+      otpSent: false,
+      loading: false,
+      otpInputRef: mockPhoneOtpInputRef,
+      handleSendOtp: mockHandleSendPhoneOtp,
+      handleVerifyOtp: mockHandleVerifyPhoneOtp,
+      handleResendOtp: mockHandleResendPhoneOtp,
     });
 
     (useAppleSignIn as jest.Mock).mockReturnValue({
@@ -106,6 +130,16 @@ describe('SignIn', () => {
     fireEvent.click(checkbox);
   }
 
+  function switchToEmailTab() {
+    const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
+    fireEvent.click(emailTab);
+  }
+
+  function switchToPhoneTab() {
+    const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
+    fireEvent.click(phoneTab);
+  }
+
   describe('Accessibility', () => {
     it('should have no accessibility violations', async () => {
       const { container } = render(
@@ -118,22 +152,47 @@ describe('SignIn', () => {
       expect(results).toHaveNoViolations();
     });
 
-    it('should have accessible form controls', () => {
+    it('should have accessible form controls with phone input by default', () => {
       render(
         <TestWrapper>
           <SignIn />
         </TestWrapper>
       );
 
-      // Check for email input with label
+      const phoneInput = screen.getByPlaceholderText(/手机号/i);
+      expect(phoneInput).toBeInTheDocument();
+      expect(phoneInput).toHaveAttribute('type', 'tel');
+      expect(phoneInput).toHaveAttribute('id', 'phone-input');
+
+      const sendButton = screen.getByRole('button', { name: /发送验证码/i });
+      expect(sendButton).toBeInTheDocument();
+    });
+
+    it('should have accessible form controls in email mode', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      switchToEmailTab();
+
       const emailInput = screen.getByLabelText(/邮箱地址/i);
       expect(emailInput).toBeInTheDocument();
       expect(emailInput).toHaveAttribute('type', 'email');
       expect(emailInput).toHaveAttribute('id', 'email-input');
+    });
 
-      // Check for send button
-      const sendButton = screen.getByRole('button', { name: /发送验证码/i });
-      expect(sendButton).toBeInTheDocument();
+    it('should have proper ARIA attributes for phone input', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const phoneInput = screen.getByPlaceholderText(/手机号/i);
+      expect(phoneInput).toHaveAttribute('aria-describedby', 'phone-description');
+      expect(phoneInput).toHaveAttribute('aria-invalid', 'false');
     });
 
     it('should have proper ARIA attributes for email input', () => {
@@ -143,23 +202,25 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      switchToEmailTab();
+
       const emailInput = screen.getByLabelText(/邮箱地址/i);
       expect(emailInput).toHaveAttribute('aria-describedby', 'email-description');
       expect(emailInput).toHaveAttribute('aria-invalid', 'false');
     });
 
     it('should have proper ARIA attributes for OTP input when visible', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -178,13 +239,178 @@ describe('SignIn', () => {
     });
   });
 
-  describe('Email Input', () => {
-    it('should render email input field', () => {
+  describe('Login Mode Tabs', () => {
+    it('should render phone and email tabs', () => {
       render(
         <TestWrapper>
           <SignIn />
         </TestWrapper>
       );
+
+      expect(screen.getByRole('tab', { name: /手机号登录/ })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /邮箱登录/ })).toBeInTheDocument();
+    });
+
+    it('should default to phone login mode', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
+      expect(phoneTab).toHaveAttribute('aria-selected', 'true');
+
+      const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
+      expect(emailTab).toHaveAttribute('aria-selected', 'false');
+
+      expect(screen.getByPlaceholderText(/手机号/i)).toBeInTheDocument();
+    });
+
+    it('should switch to email mode when email tab is clicked', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      switchToEmailTab();
+
+      const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
+      expect(emailTab).toHaveAttribute('aria-selected', 'true');
+
+      expect(screen.getByPlaceholderText(/邮箱/i)).toBeInTheDocument();
+    });
+
+    it('should switch back to phone mode when phone tab is clicked', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      switchToEmailTab();
+      switchToPhoneTab();
+
+      const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
+      expect(phoneTab).toHaveAttribute('aria-selected', 'true');
+
+      expect(screen.getByPlaceholderText(/手机号/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Phone Input', () => {
+    it('should render phone input field by default', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const phoneInput = screen.getByPlaceholderText(/手机号/i);
+      expect(phoneInput).toBeInTheDocument();
+    });
+
+    it('should call setPhone when phone input changes', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const phoneInput = screen.getByPlaceholderText(/手机号/i);
+      fireEvent.change(phoneInput, { target: { value: '13800138000' } });
+
+      expect(mockSetPhone).toHaveBeenCalledWith('13800138000');
+    });
+
+    it('should show error message for invalid phone', () => {
+      (useDebounce as jest.Mock).mockReturnValue('123');
+
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '123',
+        setPhone: mockSetPhone,
+        otp: '',
+        setOtp: mockSetPhoneOtp,
+        otpSent: false,
+        loading: false,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/手机号格式不正确/i)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('should call handleSendPhoneOtp when send button is clicked', () => {
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
+        otp: '',
+        setOtp: mockSetPhoneOtp,
+        otpSent: false,
+        loading: false,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      agreeToTerms();
+      const sendButton = screen.getByRole('button', { name: /发送验证码/i });
+      fireEvent.click(sendButton);
+
+      expect(mockHandleSendPhoneOtp).toHaveBeenCalled();
+    });
+
+    it('should disable phone input when OTP is sent', () => {
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
+        otp: '',
+        setOtp: mockSetPhoneOtp,
+        otpSent: true,
+        loading: false,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
+      });
+
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      const phoneInput = screen.getByPlaceholderText(/手机号/i);
+      expect(phoneInput).toBeDisabled();
+    });
+  });
+
+  describe('Email Input', () => {
+    it('should render email input field after switching to email tab', () => {
+      render(
+        <TestWrapper>
+          <SignIn />
+        </TestWrapper>
+      );
+
+      switchToEmailTab();
 
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       expect(emailInput).toBeInTheDocument();
@@ -196,6 +422,8 @@ describe('SignIn', () => {
           <SignIn />
         </TestWrapper>
       );
+
+      switchToEmailTab();
 
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -212,6 +440,8 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      switchToEmailTab();
+
       expect(screen.getByText(/邮箱格式不正确/i)).toBeInTheDocument();
       expect(screen.getByRole('alert')).toBeInTheDocument();
     });
@@ -224,6 +454,8 @@ describe('SignIn', () => {
           <SignIn />
         </TestWrapper>
       );
+
+      switchToEmailTab();
 
       const emailInput = screen.getByLabelText(/邮箱地址/i);
       expect(emailInput).toHaveAttribute('aria-invalid', 'true');
@@ -249,6 +481,7 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      switchToEmailTab();
       agreeToTerms();
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       fireEvent.keyDown(emailInput, { key: 'Enter' });
@@ -277,6 +510,8 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      switchToEmailTab();
+
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       fireEvent.keyDown(emailInput, { key: 'Enter' });
 
@@ -303,6 +538,8 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
+      switchToEmailTab();
+
       const emailInput = screen.getByPlaceholderText(/邮箱/i);
       expect(emailInput).toBeDisabled();
     });
@@ -310,17 +547,17 @@ describe('SignIn', () => {
 
   describe('OTP Input', () => {
     beforeEach(() => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
     });
 
@@ -345,8 +582,7 @@ describe('SignIn', () => {
       const otpInput = screen.getByPlaceholderText(/请输入验证码/i);
       fireEvent.change(otpInput, { target: { value: 'abc123def456' } });
 
-      // Should only contain digits, max 6 characters
-      expect(mockSetOtp).toHaveBeenCalledWith('123456');
+      expect(mockSetPhoneOtp).toHaveBeenCalledWith('123456');
     });
 
     it('should limit OTP input to 6 digits', () => {
@@ -359,7 +595,7 @@ describe('SignIn', () => {
       const otpInput = screen.getByPlaceholderText(/请输入验证码/i);
       fireEvent.change(otpInput, { target: { value: '1234567890' } });
 
-      expect(mockSetOtp).toHaveBeenCalledWith('123456');
+      expect(mockSetPhoneOtp).toHaveBeenCalledWith('123456');
     });
 
     it('should handle OTP paste and sanitize', () => {
@@ -371,7 +607,6 @@ describe('SignIn', () => {
 
       const otpInput = screen.getByPlaceholderText(/请输入验证码/i);
       
-      // Mock clipboardData
       const mockClipboardData = {
         getData: jest.fn().mockReturnValue('abc123def'),
       };
@@ -383,7 +618,7 @@ describe('SignIn', () => {
 
       fireEvent.paste(otpInput, pasteEvent);
 
-      expect(mockSetOtp).toHaveBeenCalledWith('123');
+      expect(mockSetPhoneOtp).toHaveBeenCalledWith('123');
     });
 
     it('should call handleVerifyOtp when Enter key is pressed on OTP input', () => {
@@ -396,34 +631,7 @@ describe('SignIn', () => {
       const otpInput = screen.getByPlaceholderText(/请输入验证码/i);
       fireEvent.keyDown(otpInput, { key: 'Enter' });
 
-      expect(mockHandleVerifyOtp).toHaveBeenCalled();
-    });
-
-    it('should reset auto-submitted state when OTP length changes away from 6', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
-        otp: '12345',
-        setOtp: mockSetOtp,
-        otpSent: true,
-        loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
-      });
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      const otpInput = screen.getByPlaceholderText(/请输入验证码/i);
-      fireEvent.change(otpInput, { target: { value: '123' } });
-
-      // The auto-submitted state should be reset in handleOtpChange
-      expect(mockSetOtp).toHaveBeenCalled();
+      expect(mockHandleVerifyPhoneOtp).toHaveBeenCalled();
     });
   });
 
@@ -439,32 +647,7 @@ describe('SignIn', () => {
       expect(sendButton).toBeInTheDocument();
     });
 
-    it('should disable send button when email is empty', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      const sendButton = screen.getByRole('button', { name: /发送验证码/i });
-      expect(sendButton).toBeDisabled();
-    });
-
-    it('should disable send button when email has error', () => {
-      (useDebounce as jest.Mock).mockReturnValue('invalid-email');
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'invalid-email',
-        setEmail: mockSetEmail,
-        otp: '',
-        setOtp: mockSetOtp,
-        otpSent: false,
-        loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
-      });
-
+    it('should disable send button when phone is empty', () => {
       render(
         <TestWrapper>
           <SignIn />
@@ -476,17 +659,17 @@ describe('SignIn', () => {
     });
 
     it('should disable send button when terms not agreed', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: false,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -499,18 +682,18 @@ describe('SignIn', () => {
       expect(sendButton).toBeDisabled();
     });
 
-    it('should call handleSendOtp when send button is clicked', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+    it('should call handleSendOtp when send button is clicked in phone mode', () => {
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: false,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -523,21 +706,21 @@ describe('SignIn', () => {
       const sendButton = screen.getByRole('button', { name: /发送验证码/i });
       fireEvent.click(sendButton);
 
-      expect(mockHandleSendOtp).toHaveBeenCalled();
+      expect(mockHandleSendPhoneOtp).toHaveBeenCalled();
     });
 
     it('should render verify and resend buttons when OTP is sent', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -551,17 +734,17 @@ describe('SignIn', () => {
     });
 
     it('should disable verify button when OTP is not 6 digits', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '12345',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -575,17 +758,17 @@ describe('SignIn', () => {
     });
 
     it('should enable verify button when OTP is 6 digits', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '123456',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -599,17 +782,17 @@ describe('SignIn', () => {
     });
 
     it('should call handleVerifyOtp when verify button is clicked', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '123456',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -621,7 +804,7 @@ describe('SignIn', () => {
       const verifyButton = screen.getByRole('button', { name: /验证并登录/i });
       fireEvent.click(verifyButton);
 
-      expect(mockHandleVerifyOtp).toHaveBeenCalled();
+      expect(mockHandleVerifyPhoneOtp).toHaveBeenCalled();
     });
 
     it('should disable resend button during countdown', () => {
@@ -632,17 +815,17 @@ describe('SignIn', () => {
         start: jest.fn(),
       });
 
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -657,17 +840,17 @@ describe('SignIn', () => {
     });
 
     it('should call handleResendOtp and resetCountdown when resend button is clicked', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -679,7 +862,7 @@ describe('SignIn', () => {
       const resendButton = screen.getByRole('button', { name: /重新发送验证码/i });
       fireEvent.click(resendButton);
 
-      expect(mockHandleResendOtp).toHaveBeenCalled();
+      expect(mockHandleResendPhoneOtp).toHaveBeenCalled();
       expect(mockResetCountdown).toHaveBeenCalled();
     });
 
@@ -691,17 +874,17 @@ describe('SignIn', () => {
         start: jest.fn(),
       });
 
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -713,23 +896,23 @@ describe('SignIn', () => {
       const resendButton = screen.getByRole('button', { name: /请等待30秒后重新发送/i });
       fireEvent.click(resendButton);
 
-      expect(mockHandleResendOtp).not.toHaveBeenCalled();
+      expect(mockHandleResendPhoneOtp).not.toHaveBeenCalled();
     });
   });
 
   describe('Countdown Timer', () => {
     it('should reset countdown when OTP is sent', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -738,24 +921,23 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
-      // Countdown should be reset via useEffect when otpSent becomes true
       expect(mockResetCountdown).toHaveBeenCalled();
     });
   });
 
   describe('Auto-submit', () => {
     it('should auto-submit when OTP reaches 6 digits', async () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '123456',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -764,24 +946,23 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
-      // Wait for useEffect to trigger auto-submit
       await waitFor(() => {
-        expect(mockHandleVerifyOtp).toHaveBeenCalled();
+        expect(mockHandleVerifyPhoneOtp).toHaveBeenCalled();
       });
     });
 
     it('should not auto-submit multiple times for the same OTP', async () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '123456',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       const { rerender } = render(
@@ -790,41 +971,37 @@ describe('SignIn', () => {
         </TestWrapper>
       );
 
-      // Wait for first auto-submit
       await waitFor(() => {
-        expect(mockHandleVerifyOtp).toHaveBeenCalledTimes(1);
+        expect(mockHandleVerifyPhoneOtp).toHaveBeenCalledTimes(1);
       });
 
-      // Clear the mock to track subsequent calls
-      mockHandleVerifyOtp.mockClear();
+      mockHandleVerifyPhoneOtp.mockClear();
 
-      // Rerender with same OTP - should not trigger again
       rerender(
         <TestWrapper>
           <SignIn />
         </TestWrapper>
       );
 
-      // Should not call verify again for the same OTP
       await waitFor(() => {
-        expect(mockHandleVerifyOtp).not.toHaveBeenCalled();
+        expect(mockHandleVerifyPhoneOtp).not.toHaveBeenCalled();
       }, { timeout: 100 });
     });
   });
 
   describe('Loading States', () => {
     it('should show loading state on send button', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: false,
         loading: true,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(
@@ -838,17 +1015,17 @@ describe('SignIn', () => {
     });
 
     it('should show loading state on verify button', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
+      (usePhoneSignIn as jest.Mock).mockReturnValue({
+        phone: '13800138000',
+        setPhone: mockSetPhone,
         otp: '123456',
-        setOtp: mockSetOtp,
+        setOtp: mockSetPhoneOtp,
         otpSent: true,
         loading: true,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
+        otpInputRef: mockPhoneOtpInputRef,
+        handleSendOtp: mockHandleSendPhoneOtp,
+        handleVerifyOtp: mockHandleVerifyPhoneOtp,
+        handleResendOtp: mockHandleResendPhoneOtp,
       });
 
       render(

@@ -42,9 +42,14 @@ export function isRateLimitError(errorMessage: string): boolean {
  */
 export function getRateLimitErrorMessage(
   errorMessage: string,
-  context: string = "操作"
+  context: string = "操作",
+  channel: "email" | "phone" = "email"
 ): string {
   const waitTime = formatRateLimitWaitTime(errorMessage);
-  return `为了您的账户安全，请等待 ${waitTime} 后再${context}。\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。`;
+  const tip =
+    channel === "phone"
+      ? ""
+      : "\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。";
+  return `为了您的账户安全，请等待 ${waitTime} 后再${context}。${tip}`;
 }
 

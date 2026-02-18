@@ -1,0 +1,227 @@
+/**
+ * Supabase Edge Function: send-sms (Auth Hook)
+ *
+ * This function is called by Supabase GoTrue (Auth) via the `send_sms` hook
+ * whenever an SMS OTP needs to be sent (sign-in, MFA, etc.).
+ *
+ * It forwards the OTP to the user's phone via Alibaba Cloud SMS (China).
+ *
+ * Required environment variables (set in Supabase Dashboard > Edge Functions > Secrets):
+ *   ALIYUN_SMS_ACCESS_KEY_ID     - Alibaba Cloud AccessKey ID
+ *   ALIYUN_SMS_ACCESS_KEY_SECRET - Alibaba Cloud AccessKey Secret
+ *   ALIYUN_SMS_SIGN_NAME         - SMS signature name (签名名称), e.g. "我的应用"
+ *   ALIYUN_SMS_TEMPLATE_CODE     - SMS template code (模板CODE), e.g. "SMS_123456"
+ *   SUPABASE_AUTH_HOOK_SECRET    - Shared secret for webhook verification (optional)
+ *
+ * The SMS template should contain a variable for the OTP code, e.g.:
+ *   "您的验证码是${code}，5分钟内有效。"
+ *
+ * Reference:
+ *   - Supabase SMS Hook: https://supabase.com/docs/guides/auth/phone-login/phone-hook
+ *   - Alibaba Cloud SMS API: https://help.aliyun.com/document_detail/419298.html
+ */
+
+import { createHmac } from "node:crypto";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface SendSmsHookPayload {
+  user: {
+    phone: string;
+  };
+  sms: {
+    otp: string;
+  };
+}
+
+interface AliyunSmsResponse {
+  Code: string;
+  Message: string;
+  RequestId: string;
+  BizId?: string;
+}
+
+// ─── Alibaba Cloud SMS Signing (v1 Signature) ───────────────────────────────
+
+function percentEncode(value: string): string {
+  return encodeURIComponent(value)
+    .replace(/\+/g, "%2B")
+    .replace(/\*/g, "%2A")
+    .replace(/%7E/g, "~");
+}
+
+function generateSignature(
+  params: Record<string, string>,
+  accessKeySecret: string
+): string {
+  const sortedKeys = Object.keys(params).sort();
+  const canonicalized = sortedKeys
+    .map((key) => `${percentEncode(key)}=${percentEncode(params[key])}`)
+    .join("&");
+
+  const stringToSign = `POST&${percentEncode("/")}&${percentEncode(canonicalized)}`;
+
+  const hmac = createHmac("sha1", `${accessKeySecret}&`);
+  hmac.update(stringToSign);
+  return hmac.digest("base64");
+}
+
+function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ─── Send SMS via Alibaba Cloud ──────────────────────────────────────────────
+
+async function sendAliyunSms(
+  phone: string,
+  otp: string
+): Promise<AliyunSmsResponse> {
+  const accessKeyId = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_ID");
+  const accessKeySecret = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_SECRET");
+  const signName = Deno.env.get("ALIYUN_SMS_SIGN_NAME");
+  const templateCode = Deno.env.get("ALIYUN_SMS_TEMPLATE_CODE");
+
+  if (!accessKeyId || !accessKeySecret || !signName || !templateCode) {
+    throw new Error(
+      "Missing Alibaba Cloud SMS configuration. Required: ALIYUN_SMS_ACCESS_KEY_ID, ALIYUN_SMS_ACCESS_KEY_SECRET, ALIYUN_SMS_SIGN_NAME, ALIYUN_SMS_TEMPLATE_CODE"
+    );
+  }
+
+  // Strip leading + for Alibaba Cloud (expects pure number like 8613800138000)
+  const cleanPhone = phone.startsWith("+") ? phone.slice(1) : phone;
+
+  const params: Record<string, string> = {
+    AccessKeyId: accessKeyId,
+    Action: "SendSms",
+    Format: "JSON",
+    PhoneNumbers: cleanPhone,
+    RegionId: "cn-hangzhou",
+    SignName: signName,
+    SignatureMethod: "HMAC-SHA1",
+    SignatureNonce: generateNonce(),
+    SignatureVersion: "1.0",
+    TemplateCode: templateCode,
+    TemplateParam: JSON.stringify({ code: otp }),
+    Timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+    Version: "2017-05-25",
+  };
+
+  const signature = generateSignature(params, accessKeySecret);
+  params.Signature = signature;
+
+  const body = new URLSearchParams(params).toString();
+
+  const response = await fetch("https://dysmsapi.aliyuncs.com/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  const result: AliyunSmsResponse = await response.json();
+
+  if (result.Code !== "OK") {
+    console.error("Alibaba Cloud SMS error:", JSON.stringify(result));
+    throw new Error(`SMS send failed: ${result.Code} - ${result.Message}`);
+  }
+
+  console.log("SMS sent successfully:", {
+    requestId: result.RequestId,
+    bizId: result.BizId,
+  });
+
+  return result;
+}
+
+// ─── Webhook signature verification ─────────────────────────────────────────
+
+function verifyWebhookSignature(
+  payload: string,
+  signature: string | null,
+  secret: string
+): boolean {
+  if (!signature) return false;
+
+  const hmac = createHmac("sha256", secret);
+  hmac.update(payload);
+  const expected = hmac.digest("hex");
+
+  // Constant-time comparison
+  if (expected.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+// ─── Main Handler ────────────────────────────────────────────────────────────
+
+Deno.serve(async (req: Request) => {
+  // Only accept POST
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const rawBody = await req.text();
+
+    // Optional: verify webhook signature if secret is configured
+    const hookSecret = Deno.env.get("SUPABASE_AUTH_HOOK_SECRET");
+    if (hookSecret) {
+      const signature = req.headers.get("x-supabase-signature");
+      if (!verifyWebhookSignature(rawBody, signature, hookSecret)) {
+        console.error("Invalid webhook signature");
+        return new Response(
+          JSON.stringify({ error: "Invalid signature" }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    const payload: SendSmsHookPayload = JSON.parse(rawBody);
+
+    const phone = payload.user?.phone;
+    const otp = payload.sms?.otp;
+
+    if (!phone || !otp) {
+      console.error("Invalid payload: missing phone or otp", payload);
+      return new Response(
+        JSON.stringify({ error: "Missing phone or otp in payload" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log(`Sending OTP to ${phone.slice(0, -4)}****`);
+
+    await sendAliyunSms(phone, otp);
+
+    // Return success to GoTrue
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("send-sms error:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+});

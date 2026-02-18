@@ -9,16 +9,20 @@ import { Input } from "@/components/form/Input";
 import { Checkbox } from "@/components/form/Checkbox";
 import { Label } from "@/components/form/Label";
 import { useSignIn } from "../hooks/useSignIn";
+import { usePhoneSignIn } from "../hooks/usePhoneSignIn";
 import { useAppleSignIn } from "../hooks/useAppleSignIn";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCountdown } from "../hooks/useCountdown";
 import { isValidEmail, sanitizeEmail } from "@/lib/utils/emailValidation";
+import { isValidPhone, sanitizePhone } from "@/lib/utils/phoneValidation";
 import { cn } from "@/lib/utils";
 
 const COUNTDOWN_SECONDS = 60;
-const EMAIL_DEBOUNCE_MS = 500;
+const DEBOUNCE_MS = 500;
 const OTP_LENGTH = 6;
 const WECHAT_QRCONNECT_URL = "https://open.weixin.qq.com/connect/qrconnect";
+
+type LoginMode = "phone" | "email";
 
 /**
  * Detect mobile phones and tablets via User-Agent.
@@ -58,15 +62,28 @@ function SignInContent() {
   const {
     email,
     setEmail,
-    otp,
-    setOtp,
-    otpSent,
-    loading,
-    otpInputRef,
-    handleSendOtp,
-    handleVerifyOtp,
-    handleResendOtp,
+    otp: emailOtp,
+    setOtp: setEmailOtp,
+    otpSent: emailOtpSent,
+    loading: emailLoading,
+    otpInputRef: emailOtpInputRef,
+    handleSendOtp: handleSendEmailOtp,
+    handleVerifyOtp: handleVerifyEmailOtp,
+    handleResendOtp: handleResendEmailOtp,
   } = useSignIn();
+
+  const {
+    phone,
+    setPhone,
+    otp: phoneOtp,
+    setOtp: setPhoneOtp,
+    otpSent: phoneOtpSent,
+    loading: phoneLoading,
+    otpInputRef: phoneOtpInputRef,
+    handleSendOtp: handleSendPhoneOtp,
+    handleVerifyOtp: handleVerifyPhoneOtp,
+    handleResendOtp: handleResendPhoneOtp,
+  } = usePhoneSignIn();
 
   const { loading: appleLoading, handleAppleSignIn } = useAppleSignIn();
 
@@ -86,11 +103,24 @@ function SignInContent() {
   const showWechatLogin =
     !!process.env.NEXT_PUBLIC_WECHAT_OPEN_APP_ID && !isPreview && !isMobileOrTablet;
 
+  // Login mode: phone or email
+  const [loginMode, setLoginMode] = useState<LoginMode>("phone");
+
   const [state, dispatch] = useReducer(signInReducer, {
     autoSubmitted: false,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
+
+  // Derived values based on login mode
+  const otp = loginMode === "phone" ? phoneOtp : emailOtp;
+  const setOtp = loginMode === "phone" ? setPhoneOtp : setEmailOtp;
+  const otpSent = loginMode === "phone" ? phoneOtpSent : emailOtpSent;
+  const loading = loginMode === "phone" ? phoneLoading : emailLoading;
+  const otpInputRef = loginMode === "phone" ? phoneOtpInputRef : emailOtpInputRef;
+  const handleSendOtp = loginMode === "phone" ? handleSendPhoneOtp : handleSendEmailOtp;
+  const handleVerifyOtp = loginMode === "phone" ? handleVerifyPhoneOtp : handleVerifyEmailOtp;
+  const handleResendOtp = loginMode === "phone" ? handleResendPhoneOtp : handleResendEmailOtp;
 
   const handleAppleLogin = useCallback(async () => {
     if (!agreedToTerms) return;
@@ -125,7 +155,9 @@ function SignInContent() {
   }, [agreedToTerms, searchParams]);
 
   // Debounce email for validation
-  const debouncedEmail = useDebounce(email, EMAIL_DEBOUNCE_MS);
+  const debouncedEmail = useDebounce(email, DEBOUNCE_MS);
+  // Debounce phone for validation
+  const debouncedPhone = useDebounce(phone, DEBOUNCE_MS);
 
   // Countdown timer for resend
   const {
@@ -134,9 +166,7 @@ function SignInContent() {
     reset: resetCountdown,
   } = useCountdown(COUNTDOWN_SECONDS);
 
-  // Validate email on debounced change
-  // Using derived state pattern to avoid setState in effect warning
-  // Sanitize email before validation (trim whitespace, normalize)
+  // Email validation error
   const emailError = useMemo(() => {
     if (!debouncedEmail || debouncedEmail.length === 0) {
       return null;
@@ -145,12 +175,31 @@ function SignInContent() {
     return !isValidEmail(sanitized) ? "邮箱格式不正确" : null;
   }, [debouncedEmail]);
 
+  // Phone validation error
+  const phoneError = useMemo(() => {
+    if (!debouncedPhone || debouncedPhone.length === 0) {
+      return null;
+    }
+    const sanitized = sanitizePhone(debouncedPhone);
+    return !isValidPhone(sanitized) ? "手机号格式不正确" : null;
+  }, [debouncedPhone]);
+
   // Handle email change
   const handleEmailChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setEmail(e.target.value);
     },
     [setEmail]
+  );
+
+  // Handle phone change
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Only allow digits, +, spaces
+      const value = e.target.value.replace(/[^\d+\s\-]/g, "");
+      setPhone(value);
+    },
+    [setPhone]
   );
 
   // Start countdown when OTP is sent
@@ -167,15 +216,20 @@ function SignInContent() {
     }
   }, [otpSent, otpInputRef]);
 
-  // Handle Enter key for email input
-  const handleEmailKeyDown = useCallback(
+  // Determine if the send button should be enabled
+  const canSendOtp = loginMode === "phone"
+    ? !loading && !otpSent && !phoneError && !!phone && agreedToTerms
+    : !loading && !otpSent && !emailError && !!email && agreedToTerms;
+
+  // Handle Enter key for input
+  const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !loading && !otpSent && !emailError && agreedToTerms) {
+      if (e.key === "Enter" && canSendOtp) {
         e.preventDefault();
         handleSendOtp();
       }
     },
-    [loading, otpSent, emailError, agreedToTerms, handleSendOtp]
+    [canSendOtp, handleSendOtp]
   );
 
   // Handle Enter key for OTP input
@@ -235,12 +289,21 @@ function SignInContent() {
   // Handle resend with countdown
   const handleResendClick = useCallback(() => {
     if (countdownActive) {
-      return; // Prevent resend during countdown
+      return;
     }
     dispatch({ type: "RESET_AUTO_SUBMITTED" });
     handleResendOtp();
     resetCountdown();
   }, [countdownActive, handleResendOtp, resetCountdown]);
+
+  // Handle login mode switch
+  const handleModeSwitch = useCallback((mode: LoginMode) => {
+    setLoginMode(mode);
+    dispatch({ type: "RESET_AUTO_SUBMITTED" });
+  }, []);
+
+  // Whether to show the OTP login form (email or phone)
+  const showOtpLogin = !isProduction;
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen flex flex-col">
@@ -260,48 +323,133 @@ function SignInContent() {
               role="alert"
             >
               {wechatError
-                ? (isProduction ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用邮箱登录。")
+                ? (isProduction ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用其他方式登录。")
                 : "登录失败，请重试。"}
             </p>
           )}
 
-          {!isProduction && (
-          <div className="space-y-3">
-            <div>
-              <label htmlFor="email-input" className="sr-only">
-                邮箱地址
-              </label>
-              <Input
-                id="email-input"
-                type="email"
-                placeholder="邮箱"
-                value={email}
-                onChange={handleEmailChange}
-                onKeyDown={handleEmailKeyDown}
-                disabled={otpSent}
-                aria-invalid={emailError ? "true" : "false"}
-                aria-describedby={
-                  emailError ? "email-error" : "email-description"
-                }
-                className={cn(
-                  "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
-                  emailError && "border-red-500 focus-visible:ring-red-500"
-                )}
-              />
-              {emailError && (
-                <p
-                  id="email-error"
-                  className="text-red-500 text-sm mt-1 text-left"
-                  role="alert"
-                >
-                  {emailError}
-                </p>
+          {showOtpLogin && (
+          <>
+          {/* Login Mode Tabs */}
+          <div className="flex mb-4 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="登录方式">
+            <button
+              role="tab"
+              aria-selected={loginMode === "phone"}
+              aria-controls="phone-login-panel"
+              id="phone-login-tab"
+              onClick={() => handleModeSwitch("phone")}
+              className={cn(
+                "flex-1 py-2.5 text-base font-medium transition-colors border-b-2 -mb-px",
+                loginMode === "phone"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               )}
-              <p id="email-description" className="sr-only">
-                请输入您的邮箱地址以接收验证码
-              </p>
-            </div>
+            >
+              手机号登录
+            </button>
+            <button
+              role="tab"
+              aria-selected={loginMode === "email"}
+              aria-controls="email-login-panel"
+              id="email-login-tab"
+              onClick={() => handleModeSwitch("email")}
+              className={cn(
+                "flex-1 py-2.5 text-base font-medium transition-colors border-b-2 -mb-px",
+                loginMode === "email"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              )}
+            >
+              邮箱登录
+            </button>
+          </div>
 
+          <div className="space-y-3">
+            {/* Phone Input */}
+            {loginMode === "phone" && (
+              <div
+                id="phone-login-panel"
+                role="tabpanel"
+                aria-labelledby="phone-login-tab"
+              >
+                <label htmlFor="phone-input" className="sr-only">
+                  手机号
+                </label>
+                <Input
+                  id="phone-input"
+                  type="tel"
+                  placeholder="手机号"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  onKeyDown={handleInputKeyDown}
+                  disabled={otpSent}
+                  aria-invalid={phoneError ? "true" : "false"}
+                  aria-describedby={
+                    phoneError ? "phone-error" : "phone-description"
+                  }
+                  className={cn(
+                    "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
+                    phoneError && "border-red-500 focus-visible:ring-red-500"
+                  )}
+                />
+                {phoneError && (
+                  <p
+                    id="phone-error"
+                    className="text-red-500 text-sm mt-1 text-left"
+                    role="alert"
+                  >
+                    {phoneError}
+                  </p>
+                )}
+                <p id="phone-description" className="sr-only">
+                  请输入您的手机号以接收验证码
+                </p>
+              </div>
+            )}
+
+            {/* Email Input */}
+            {loginMode === "email" && (
+              <div
+                id="email-login-panel"
+                role="tabpanel"
+                aria-labelledby="email-login-tab"
+              >
+                <label htmlFor="email-input" className="sr-only">
+                  邮箱地址
+                </label>
+                <Input
+                  id="email-input"
+                  type="email"
+                  placeholder="邮箱"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onKeyDown={handleInputKeyDown}
+                  disabled={otpSent}
+                  aria-invalid={emailError ? "true" : "false"}
+                  aria-describedby={
+                    emailError ? "email-error" : "email-description"
+                  }
+                  className={cn(
+                    "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
+                    emailError && "border-red-500 focus-visible:ring-red-500"
+                  )}
+                />
+                {emailError && (
+                  <p
+                    id="email-error"
+                    className="text-red-500 text-sm mt-1 text-left"
+                    role="alert"
+                  >
+                    {emailError}
+                  </p>
+                )}
+                <p id="email-description" className="sr-only">
+                  请输入您的邮箱地址以接收验证码
+                </p>
+              </div>
+            )}
+
+            {/* OTP Input (shared for both modes) */}
             {otpSent && (
               <div>
                 <label htmlFor="otp-input" className="sr-only">
@@ -324,11 +472,12 @@ function SignInContent() {
                   className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg"
                 />
                 <p id="otp-description" className="sr-only">
-                  请输入发送到您邮箱的6位数字验证码
+                  请输入发送到您{loginMode === "phone" ? "手机" : "邮箱"}的6位数字验证码
                 </p>
               </div>
             )}
           </div>
+          </>
           )}
 
           <div className="flex items-start gap-2 text-left my-4">
@@ -360,15 +509,15 @@ function SignInContent() {
             </Label>
           </div>
 
-          {!isProduction && (
+          {showOtpLogin && (
           <div className="my-6 md:my-8">
             {!otpSent ? (
               <Button
                 onClick={handleSendOtp}
                 loading={loading}
-                disabled={loading || !!emailError || !email || !agreedToTerms}
+                disabled={!canSendOtp}
                 size="lg"
-                aria-label="发送验证码到邮箱"
+                aria-label={loginMode === "phone" ? "发送验证码到手机" : "发送验证码到邮箱"}
                 className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
               >
                 发送验证码
@@ -407,7 +556,7 @@ function SignInContent() {
 
           {(showWechatLogin || showAppleLogin) && (
             <div className="mt-6">
-              {!isProduction && (
+              {showOtpLogin && (
               <div className="relative my-4 flex items-center gap-3">
                 <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
                 <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
@@ -464,7 +613,7 @@ function SignInContent() {
           >
             {isProduction
               ? (showWechatLogin ? "请使用微信扫码登录" : "请使用以上方式登录")
-              : "首次使用？输入邮箱即可自动创建账号"}
+              : "首次使用？输入手机号或邮箱即可自动创建账号"}
           </div>
         </div>
       </div>
