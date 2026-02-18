@@ -22,6 +22,13 @@ interface UseSignInReturn {
   handleResendOtp: () => void;
 }
 
+function resolveSafeNextPath(rawPath: string | null, fallbackPath: string): string {
+  if (!rawPath || typeof rawPath !== "string") return fallbackPath;
+  if (!rawPath.startsWith("/") || rawPath.startsWith("//")) return fallbackPath;
+  if (rawPath.includes(":") || rawPath.length > 500) return fallbackPath;
+  return rawPath;
+}
+
 export function useSignIn(): UseSignInReturn {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -134,12 +141,9 @@ export function useSignIn(): UseSignInReturn {
     });
 
     // Navigate based on role, or return to the page the user was trying to access
-    const nextPath = searchParams.get("next");
-    if (role === "operator") {
-      router.push(nextPath ?? "/operator");
-    } else {
-      router.push(nextPath ?? "/learn");
-    }
+    const defaultPath = role === "operator" ? "/operator" : "/learn";
+    const nextPath = resolveSafeNextPath(searchParams.get("next"), defaultPath);
+    router.push(nextPath);
     // Keep loading true while redirecting
   }, [otp, email, supabase, router, searchParams]);
 
