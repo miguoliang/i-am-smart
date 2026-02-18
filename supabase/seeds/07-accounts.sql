@@ -1,0 +1,6 @@
+-- Accounts
+INSERT INTO public.accounts (id, username)
+VALUES (
+    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    'boymgl'
+) ON CONFLICT (id) DO NOTHING;
