@@ -59,10 +59,6 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe('SignIn', () => {
-  const mockSetOtp = jest.fn();
-  const mockHandleSendOtp = jest.fn();
-  const mockHandleVerifyOtp = jest.fn();
-  const mockHandleResendOtp = jest.fn();
   const mockHandleAppleSignIn = jest.fn();
   const mockResetCountdown = jest.fn();
 
