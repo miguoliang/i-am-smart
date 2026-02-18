@@ -67,7 +67,11 @@ export async function request<T>(
       },
       success: async (res) => {
         console.log('API response status:', res.statusCode);
-        console.log('API response data:', res.data);
+        console.log('API response summary:', {
+          endpoint,
+          hasBody: res.data !== undefined && res.data !== null,
+          bodyType: typeof res.data,
+        });
         
         if (res.statusCode === 200) {
           const response = res.data as ApiResponse<T> | T;
