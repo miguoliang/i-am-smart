@@ -489,15 +489,6 @@ function SignInContent() {
               </div>
             </div>
           )}
-
-          <div
-            className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base"
-            role="note"
-          >
-            {isMiniprogram
-              ? "请使用微信登录"
-              : "首次使用？输入手机号即可自动创建账号"}
-          </div>
         </div>
       </div>
     </div>

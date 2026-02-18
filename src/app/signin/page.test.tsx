@@ -799,17 +799,6 @@ describe('SignIn', () => {
       expect(screen.getByRole('heading', { level: 2, name: '登录' })).toBeInTheDocument();
     });
 
-    it('should render informational note', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      const note = screen.getByText(/首次使用/i);
-      expect(note).toBeInTheDocument();
-      expect(note).toHaveAttribute('role', 'note');
-    });
   });
 
   describe('Apple Sign-In', () => {
