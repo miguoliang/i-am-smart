@@ -293,74 +293,6 @@ function SignInContent() {
             </p>
           )}
 
-          {showOtpLogin && (
-          <div className="space-y-3">
-            {/* Phone Input */}
-            <div>
-              <label htmlFor="phone-input" className="sr-only">
-                手机号
-              </label>
-              <Input
-                id="phone-input"
-                type="tel"
-                placeholder="手机号"
-                value={phone}
-                onChange={handlePhoneChange}
-                onKeyDown={handleInputKeyDown}
-                disabled={phoneOtpSent}
-                aria-invalid={phoneError ? "true" : "false"}
-                aria-describedby={
-                  phoneError ? "phone-error" : "phone-description"
-                }
-                className={cn(
-                  "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
-                  phoneError && "border-red-500 focus-visible:ring-red-500"
-                )}
-              />
-              {phoneError && (
-                <p
-                  id="phone-error"
-                  className="text-red-500 text-sm mt-1 text-left"
-                  role="alert"
-                >
-                  {phoneError}
-                </p>
-              )}
-              <p id="phone-description" className="sr-only">
-                请输入您的手机号以接收验证码
-              </p>
-            </div>
-
-            {/* OTP Input */}
-            {phoneOtpSent && (
-              <div>
-                <label htmlFor="otp-input" className="sr-only">
-                  验证码
-                </label>
-                <Input
-                  id="otp-input"
-                  ref={phoneOtpInputRef}
-                  type="text"
-                  placeholder="请输入验证码"
-                  value={phoneOtp}
-                  onChange={handleOtpChange}
-                  onKeyDown={handleOtpKeyDown}
-                  onPaste={handleOtpPaste}
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                  maxLength={6}
-                  aria-label="请输入6位数字验证码"
-                  aria-describedby="otp-description"
-                  className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg"
-                />
-                <p id="otp-description" className="sr-only">
-                  请输入发送到您手机的6位数字验证码
-                </p>
-              </div>
-            )}
-          </div>
-          )}
-
           <div className="flex items-start gap-2 text-left my-4">
             <Checkbox
               id="agree-terms"
@@ -390,62 +322,32 @@ function SignInContent() {
             </Label>
           </div>
 
-          {showOtpLogin && (
-          <div className="my-6 md:my-8">
-            {!phoneOtpSent ? (
-              <Button
-                onClick={handleSendPhoneOtp}
-                loading={phoneLoading}
-                disabled={!canSendOtp}
-                size="lg"
-                aria-label="发送验证码到手机"
-                className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
-              >
-                发送验证码
-              </Button>
-            ) : (
-              <>
-                <Button
-                  onClick={handleVerifyPhoneOtp}
-                  loading={phoneLoading}
-                  disabled={phoneLoading || phoneOtp.length !== 6}
-                  size="lg"
-                  aria-label="验证并登录"
-                  className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
-                >
-                  验证登录
-                </Button>
-                <Button
-                  onClick={handleResendClick}
-                  variant="ghost"
-                  disabled={countdownActive}
-                  aria-label={
-                    countdownActive
-                      ? `请等待${countdownSeconds}秒后重新发送`
-                      : "重新发送验证码"
-                  }
-                  className="w-full mt-3"
-                >
-                  {countdownActive
-                    ? `重新发送验证码 (${countdownSeconds}秒)`
-                    : "重新发送验证码"}
-                </Button>
-              </>
-            )}
-          </div>
-          )}
-
+          {/* Third-party login buttons - Priority: WeChat > Apple > Phone */}
           {(showWechatLogin || showAppleLogin) && (
             <div className="mt-6">
-              {showOtpLogin && (
-              <div className="relative my-4 flex items-center gap-3">
-                <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
-                <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
-                <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
-              </div>
-              )}
-
               <div className="space-y-3">
+                {/* WeChat Login - Highest Priority */}
+                {showWechatLogin && (
+                  <button
+                    type="button"
+                    disabled={!agreedToTerms || wechatLoading}
+                    onClick={handleWechatLogin}
+                    aria-label={
+                      agreedToTerms
+                        ? "使用微信扫码登录"
+                        : "请先勾选同意服务条款与隐私政策后再使用微信登录"
+                    }
+                    title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
+                    className="w-full min-h-[48px] md:min-h-[52px] px-6 md:px-8 py-3.5 md:py-4 rounded-md font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500
+                      bg-[#07C160] text-white hover:bg-[#06AD56] active:bg-[#059C4D]
+                      flex items-center justify-center gap-2 touch-manipulation"
+                  >
+                    <WeChatIcon className="h-5 w-5 flex-shrink-0" />
+                    <span>{wechatLoading ? "跳转中…" : "微信登录"}</span>
+                  </button>
+                )}
+
+                {/* Apple Login - Second Priority (iOS devices) */}
                 {showAppleLogin && (
                   <button
                     type="button"
@@ -466,28 +368,130 @@ function SignInContent() {
                     <span>{appleLoading ? "登录中…" : "通过 Apple 登录"}</span>
                   </button>
                 )}
-
-                {showWechatLogin && (
-                  <button
-                    type="button"
-                    disabled={!agreedToTerms || wechatLoading}
-                    onClick={handleWechatLogin}
-                    aria-label={
-                      agreedToTerms
-                        ? "使用微信扫码登录"
-                        : "请先勾选同意服务条款与隐私政策后再使用微信登录"
-                    }
-                    title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
-                    className="w-full min-h-[48px] md:min-h-[52px] px-6 md:px-8 py-3.5 md:py-4 rounded-md font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500
-                      bg-[#07C160] text-white hover:bg-[#06AD56] active:bg-[#059C4D]
-                      flex items-center justify-center gap-2 touch-manipulation"
-                  >
-                    <WeChatIcon className="h-5 w-5 flex-shrink-0" />
-                    <span>{wechatLoading ? "跳转中…" : "微信登录"}</span>
-                  </button>
-                )}
               </div>
             </div>
+          )}
+
+          {/* Phone Login - Lowest Priority */}
+          {showOtpLogin && (
+            <>
+              {(showWechatLogin || showAppleLogin) && (
+                <div className="relative my-4 flex items-center gap-3">
+                  <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
+                  <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {/* Phone Input */}
+                <div>
+                  <label htmlFor="phone-input" className="sr-only">
+                    手机号
+                  </label>
+                  <Input
+                    id="phone-input"
+                    type="tel"
+                    placeholder="手机号"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    onKeyDown={handleInputKeyDown}
+                    disabled={phoneOtpSent}
+                    aria-invalid={phoneError ? "true" : "false"}
+                    aria-describedby={
+                      phoneError ? "phone-error" : "phone-description"
+                    }
+                    className={cn(
+                      "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
+                      phoneError && "border-red-500 focus-visible:ring-red-500"
+                    )}
+                  />
+                  {phoneError && (
+                    <p
+                      id="phone-error"
+                      className="text-red-500 text-sm mt-1 text-left"
+                      role="alert"
+                    >
+                      {phoneError}
+                    </p>
+                  )}
+                  <p id="phone-description" className="sr-only">
+                    请输入您的手机号以接收验证码
+                  </p>
+                </div>
+
+                {/* OTP Input */}
+                {phoneOtpSent && (
+                  <div>
+                    <label htmlFor="otp-input" className="sr-only">
+                      验证码
+                    </label>
+                    <Input
+                      id="otp-input"
+                      ref={phoneOtpInputRef}
+                      type="text"
+                      placeholder="请输入验证码"
+                      value={phoneOtp}
+                      onChange={handleOtpChange}
+                      onKeyDown={handleOtpKeyDown}
+                      onPaste={handleOtpPaste}
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      maxLength={6}
+                      aria-label="请输入6位数字验证码"
+                      aria-describedby="otp-description"
+                      className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg"
+                    />
+                    <p id="otp-description" className="sr-only">
+                      请输入发送到您手机的6位数字验证码
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="my-6 md:my-8">
+                {!phoneOtpSent ? (
+                  <Button
+                    onClick={handleSendPhoneOtp}
+                    loading={phoneLoading}
+                    disabled={!canSendOtp}
+                    size="lg"
+                    aria-label="发送验证码到手机"
+                    className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
+                  >
+                    发送验证码
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleVerifyPhoneOtp}
+                      loading={phoneLoading}
+                      disabled={phoneLoading || phoneOtp.length !== 6}
+                      size="lg"
+                      aria-label="验证并登录"
+                      className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
+                    >
+                      验证登录
+                    </Button>
+                    <Button
+                      onClick={handleResendClick}
+                      variant="ghost"
+                      disabled={countdownActive}
+                      aria-label={
+                        countdownActive
+                          ? `请等待${countdownSeconds}秒后重新发送`
+                          : "重新发送验证码"
+                      }
+                      className="w-full mt-3"
+                    >
+                      {countdownActive
+                        ? `重新发送验证码 (${countdownSeconds}秒)`
+                        : "重新发送验证码"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
