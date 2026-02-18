@@ -7,6 +7,13 @@ import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { StatsData } from '../../shared/types/stats';
 import { isAuthenticated } from '../../utils/auth';
 
+function getErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallbackMessage;
+}
+
 Page({
   data: {
     stats: null as StatsData | null,
@@ -96,10 +103,10 @@ Page({
         stats: statsData,
         loading: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load stats:', error);
       wx.showToast({
-        title: error.message || '加载失败',
+        title: getErrorMessage(error, '加载失败'),
         icon: 'none',
       });
       this.setData({ loading: false });

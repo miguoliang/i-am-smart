@@ -25,6 +25,28 @@ export function getApiBaseUrlRuntime(): string {
   return apiBaseUrl;
 }
 
+function isApiEnvelope<T>(value: unknown): value is ApiResponse<T> {
+  return typeof value === 'object' && value !== null && ('data' in value || 'error' in value);
+}
+
+function extractResponseData<T>(payload: unknown): T {
+  if (isApiEnvelope<T>(payload)) {
+    if (payload.error) {
+      throw new Error(payload.error.message || '请求失败');
+    }
+    if (payload.data !== undefined) {
+      return payload.data;
+    }
+    throw new Error('响应数据格式错误');
+  }
+
+  if (payload !== undefined && payload !== null) {
+    return payload as T;
+  }
+
+  throw new Error('响应数据格式错误');
+}
+
 /**
  * Make an API request with automatic token handling
  */
@@ -67,36 +89,18 @@ export async function request<T>(
       },
       success: async (res) => {
         console.log('API response status:', res.statusCode);
-        console.log('API response data:', res.data);
+        console.log('API response summary:', {
+          endpoint,
+          hasBody: res.data !== undefined && res.data !== null,
+          bodyType: typeof res.data,
+        });
         
         if (res.statusCode === 200) {
-          const response = res.data as ApiResponse<T> | T;
-          
-          // Check if response has error field (standard ApiResponse format)
-          if (response && typeof response === 'object' && 'error' in response) {
-            const apiResponse = response as ApiResponse<T>;
-            if (apiResponse.error) {
-              console.error('API error:', apiResponse.error);
-              reject(new Error(apiResponse.error.message || '请求失败'));
-              return;
-            }
-            
-            // Standard format: {data: {...}}
-            if (apiResponse.data !== undefined) {
-              resolve(apiResponse.data);
-              return;
-            }
+          try {
+            resolve(extractResponseData<T>(res.data));
+          } catch (error) {
+            reject(error);
           }
-          
-          // Direct format: response is the data itself (for backward compatibility)
-          // This handles APIs that return data directly without {data: {...}} wrapper
-          if (response !== undefined && response !== null) {
-            resolve(response as T);
-            return;
-          }
-          
-          console.error('Response data is undefined:', response);
-          reject(new Error('响应数据格式错误'));
         } else if (res.statusCode === 401) {
           // Token expired or invalid, try to re-login
           console.log('API request returned 401, attempting re-login...');
@@ -127,13 +131,10 @@ export async function request<T>(
               },
               success: (retryRes) => {
                 if (retryRes.statusCode === 200) {
-                  const retryResponse = retryRes.data as ApiResponse<T>;
-                  if (retryResponse.error) {
-                    reject(new Error(retryResponse.error.message || '请求失败'));
-                  } else if (retryResponse.data !== undefined) {
-                    resolve(retryResponse.data);
-                  } else {
-                    reject(new Error('响应数据格式错误'));
+                  try {
+                    resolve(extractResponseData<T>(retryRes.data));
+                  } catch (error) {
+                    reject(error);
                   }
                 } else {
                   reject(new Error(`请求失败: ${retryRes.statusCode}`));

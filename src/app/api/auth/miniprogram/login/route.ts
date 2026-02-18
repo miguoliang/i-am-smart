@@ -193,7 +193,6 @@ export async function POST(req: NextRequest) {
       hasHashedToken: !!hashedToken,
       linkDataKeys: linkData ? Object.keys(linkData) : [],
       propertiesKeys: linkData?.properties ? Object.keys(linkData.properties) : [],
-      linkDataString: JSON.stringify(linkData),
     });
 
     if (linkError || !emailOtp) {
@@ -201,7 +200,6 @@ export async function POST(req: NextRequest) {
         error: linkError?.message,
         hasLinkData: !!linkData,
         hasOtp: !!emailOtp,
-        linkDataString: JSON.stringify(linkData),
       });
       throw ApiError.internal("生成登录凭证失败");
     }
@@ -210,7 +208,6 @@ export async function POST(req: NextRequest) {
       email,
       hasOtp: !!emailOtp,
       otpLength: emailOtp?.length,
-      otpPrefix: emailOtp?.substring(0, 10),
     });
 
     // Create a Supabase client without cookies (for miniprogram)

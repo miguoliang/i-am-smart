@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Feedback, FeedbackRepository } from '../feedback.repository';
 import { handleRepositoryError } from '../utils/error-handling';
+import { FeedbackContent } from '@/lib/types/feedback';
 
 export class SupabaseFeedbackRepository implements FeedbackRepository {
   constructor(private client: SupabaseClient) {}
@@ -23,5 +24,18 @@ export class SupabaseFeedbackRepository implements FeedbackRepository {
       data: (data as Feedback[]) || [],
       total: count || 0,
     };
+  }
+
+  async create(userId: string, content: FeedbackContent): Promise<void> {
+    const { error } = await this.client
+      .from('feedback')
+      .insert({
+        user_id: userId,
+        content,
+      });
+
+    if (error) {
+      handleRepositoryError(error, 'Create feedback');
+    }
   }
 }

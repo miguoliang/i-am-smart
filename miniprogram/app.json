@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/review/review",
     "pages/stats/stats",
     "pages/feedback/feedback",
     "pages/settings/settings"

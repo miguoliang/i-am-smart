@@ -11,6 +11,13 @@ import { storage } from '../../utils/storage';
 
 const DAILY_DUE_LIMIT_PRESETS = [10, 50, 200] as const;
 
+function getErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallbackMessage;
+}
+
 Page({
   data: {
     account: null as Account | null,
@@ -76,10 +83,10 @@ Page({
         dailyLimitIndex: dailyLimitIndex >= 0 ? dailyLimitIndex : 0,
         loading: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load account:', error);
       wx.showToast({
-        title: error.message || '加载失败',
+        title: getErrorMessage(error, '加载失败'),
         icon: 'none',
       });
       this.setData({ loading: false });
@@ -140,10 +147,10 @@ Page({
         title: '更新成功',
         icon: 'success',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update daily limit:', error);
       wx.showToast({
-        title: error.message || '更新失败',
+        title: getErrorMessage(error, '更新失败'),
         icon: 'none',
       });
     }
