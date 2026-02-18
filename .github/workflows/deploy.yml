@@ -66,6 +66,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check shared contract sync
+        run: npm run check:shared-sync
+
       - name: Type check (web)
         run: npx tsc --noEmit
 
