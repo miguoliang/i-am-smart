@@ -130,7 +130,7 @@ function generateSeedFiles() {
       unlinkSync(join(seedsDir, file));
       console.log(`  Removed old file: ${file}`);
     });
-  } catch (error) {
+  } catch {
     // Ignore errors during cleanup
   }
   
