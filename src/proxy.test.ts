@@ -108,11 +108,6 @@ describe("proxy", () => {
       expect(res.status).toBe(200);
     });
 
-    it("should allow access to /about", async () => {
-      const res = await proxy(buildRequest("/about"));
-
-      expect(res.status).toBe(200);
-    });
 
     it("should allow access to /terms", async () => {
       const res = await proxy(buildRequest("/terms"));

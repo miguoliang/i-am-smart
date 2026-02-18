@@ -8,21 +8,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 1.0,
     },
-    {
-      url: "/about",
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: "/features",
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: "/pricing",
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
+    // Note: /features and /pricing redirect to homepage anchors (#features, #pricing)
+    // They are excluded from sitemap to avoid SEO issues with redirect-only pages
     {
       url: "/terms",
       changeFrequency: "yearly",
