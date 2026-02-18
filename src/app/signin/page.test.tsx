@@ -991,6 +991,7 @@ describe('SignIn', () => {
     beforeEach(() => {
       process.env = {
         ...originalEnv,
+        NEXT_PUBLIC_APP_ENV: 'development',
         NEXT_PUBLIC_WECHAT_OPEN_APP_ID: 'wx_test_id',
         NEXT_PUBLIC_APPLE_CLIENT_ID: 'com.example.auth',
       };
