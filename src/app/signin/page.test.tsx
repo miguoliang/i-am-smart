@@ -5,14 +5,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider } from 'next-themes';
 import SignIn from './page';
-import { useSignIn } from '../hooks/useSignIn';
 import { usePhoneSignIn } from '../hooks/usePhoneSignIn';
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useDebounce } from '../hooks/useDebounce';
 import { useCountdown } from '../hooks/useCountdown';
 
 // Mock hooks
-jest.mock('../hooks/useSignIn');
 jest.mock('../hooks/usePhoneSignIn');
 jest.mock('../hooks/useAppleSignIn');
 jest.mock('../hooks/useDebounce');
@@ -61,14 +59,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe('SignIn', () => {
-  const mockSetEmail = jest.fn();
   const mockSetOtp = jest.fn();
   const mockHandleSendOtp = jest.fn();
   const mockHandleVerifyOtp = jest.fn();
   const mockHandleResendOtp = jest.fn();
   const mockHandleAppleSignIn = jest.fn();
   const mockResetCountdown = jest.fn();
-  const mockOtpInputRef = { current: null };
 
   // Phone mocks
   const mockSetPhone = jest.fn();
@@ -89,20 +85,6 @@ describe('SignIn', () => {
     };
     jest.clearAllMocks();
     mockPush.mockClear();
-
-    // Default mock implementations for email sign in
-    (useSignIn as jest.Mock).mockReturnValue({
-      email: '',
-      setEmail: mockSetEmail,
-      otp: '',
-      setOtp: mockSetOtp,
-      otpSent: false,
-      loading: false,
-      otpInputRef: mockOtpInputRef,
-      handleSendOtp: mockHandleSendOtp,
-      handleVerifyOtp: mockHandleVerifyOtp,
-      handleResendOtp: mockHandleResendOtp,
-    });
 
     // Default mock implementations for phone sign in
     (usePhoneSignIn as jest.Mock).mockReturnValue({
@@ -138,15 +120,6 @@ describe('SignIn', () => {
     fireEvent.click(checkbox);
   }
 
-  function switchToEmailTab() {
-    const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
-    fireEvent.click(emailTab);
-  }
-
-  function switchToPhoneTab() {
-    const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
-    fireEvent.click(phoneTab);
-  }
 
   describe('Accessibility', () => {
     it('should have no accessibility violations', async () => {
@@ -176,21 +149,6 @@ describe('SignIn', () => {
       expect(sendButton).toBeInTheDocument();
     });
 
-    it('should have accessible form controls in email mode', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByLabelText(/邮箱地址/i);
-      expect(emailInput).toBeInTheDocument();
-      expect(emailInput).toHaveAttribute('type', 'email');
-      expect(emailInput).toHaveAttribute('id', 'email-input');
-    });
-
     it('should have proper ARIA attributes for phone input', () => {
       render(
         <TestWrapper>
@@ -203,19 +161,6 @@ describe('SignIn', () => {
       expect(phoneInput).toHaveAttribute('aria-invalid', 'false');
     });
 
-    it('should have proper ARIA attributes for email input', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByLabelText(/邮箱地址/i);
-      expect(emailInput).toHaveAttribute('aria-describedby', 'email-description');
-      expect(emailInput).toHaveAttribute('aria-invalid', 'false');
-    });
 
     it('should have proper ARIA attributes for OTP input when visible', () => {
       (usePhoneSignIn as jest.Mock).mockReturnValue({
@@ -247,65 +192,6 @@ describe('SignIn', () => {
     });
   });
 
-  describe('Login Mode Tabs', () => {
-    it('should render phone and email tabs', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      expect(screen.getByRole('tab', { name: /手机号登录/ })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /邮箱登录/ })).toBeInTheDocument();
-    });
-
-    it('should default to phone login mode', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
-      expect(phoneTab).toHaveAttribute('aria-selected', 'true');
-
-      const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
-      expect(emailTab).toHaveAttribute('aria-selected', 'false');
-
-      expect(screen.getByPlaceholderText(/手机号/i)).toBeInTheDocument();
-    });
-
-    it('should switch to email mode when email tab is clicked', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailTab = screen.getByRole('tab', { name: /邮箱登录/ });
-      expect(emailTab).toHaveAttribute('aria-selected', 'true');
-
-      expect(screen.getByPlaceholderText(/邮箱/i)).toBeInTheDocument();
-    });
-
-    it('should switch back to phone mode when phone tab is clicked', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-      switchToPhoneTab();
-
-      const phoneTab = screen.getByRole('tab', { name: /手机号登录/ });
-      expect(phoneTab).toHaveAttribute('aria-selected', 'true');
-
-      expect(screen.getByPlaceholderText(/手机号/i)).toBeInTheDocument();
-    });
-  });
 
   describe('Phone Input', () => {
     it('should render phone input field by default', () => {
@@ -410,148 +296,6 @@ describe('SignIn', () => {
     });
   });
 
-  describe('Email Input', () => {
-    it('should render email input field after switching to email tab', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByPlaceholderText(/邮箱/i);
-      expect(emailInput).toBeInTheDocument();
-    });
-
-    it('should call setEmail when email input changes', () => {
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByPlaceholderText(/邮箱/i);
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-
-      expect(mockSetEmail).toHaveBeenCalledWith('test@example.com');
-    });
-
-    it('should show error message for invalid email', () => {
-      (useDebounce as jest.Mock).mockReturnValue('invalid-email');
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      expect(screen.getByText(/邮箱格式不正确/i)).toBeInTheDocument();
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-    });
-
-    it('should update aria-invalid when email error exists', () => {
-      (useDebounce as jest.Mock).mockReturnValue('invalid-email');
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByLabelText(/邮箱地址/i);
-      expect(emailInput).toHaveAttribute('aria-invalid', 'true');
-    });
-
-    it('should call handleSendOtp when Enter key is pressed on email input', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
-        otp: '',
-        setOtp: mockSetOtp,
-        otpSent: false,
-        loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
-      });
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-      agreeToTerms();
-      const emailInput = screen.getByPlaceholderText(/邮箱/i);
-      fireEvent.keyDown(emailInput, { key: 'Enter' });
-
-      expect(mockHandleSendOtp).toHaveBeenCalled();
-    });
-
-    it('should not call handleSendOtp when Enter key is pressed if email is invalid', () => {
-      (useDebounce as jest.Mock).mockReturnValue('invalid-email');
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'invalid-email',
-        setEmail: mockSetEmail,
-        otp: '',
-        setOtp: mockSetOtp,
-        otpSent: false,
-        loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
-      });
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByPlaceholderText(/邮箱/i);
-      fireEvent.keyDown(emailInput, { key: 'Enter' });
-
-      expect(mockHandleSendOtp).not.toHaveBeenCalled();
-    });
-
-    it('should disable email input when OTP is sent', () => {
-      (useSignIn as jest.Mock).mockReturnValue({
-        email: 'test@example.com',
-        setEmail: mockSetEmail,
-        otp: '',
-        setOtp: mockSetOtp,
-        otpSent: true,
-        loading: false,
-        otpInputRef: mockOtpInputRef,
-        handleSendOtp: mockHandleSendOtp,
-        handleVerifyOtp: mockHandleVerifyOtp,
-        handleResendOtp: mockHandleResendOtp,
-      });
-
-      render(
-        <TestWrapper>
-          <SignIn />
-        </TestWrapper>
-      );
-
-      switchToEmailTab();
-
-      const emailInput = screen.getByPlaceholderText(/邮箱/i);
-      expect(emailInput).toBeDisabled();
-    });
-  });
 
   describe('OTP Input', () => {
     beforeEach(() => {
@@ -1147,9 +891,11 @@ describe('SignIn', () => {
       expect(screen.getByText('登录中…')).toBeInTheDocument();
     });
 
-    it('should not render Apple button when NEXT_PUBLIC_APPLE_CLIENT_ID is not set', () => {
+    it('should not render Apple button when NEXT_PUBLIC_APPLE_CLIENT_ID is not set and not in development', () => {
       process.env = { ...originalEnv };
       delete process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+      // Set to production to test non-development behavior
+      process.env.NEXT_PUBLIC_APP_ENV = 'production';
 
       render(
         <TestWrapper>
