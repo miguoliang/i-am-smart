@@ -21,6 +21,8 @@ const eslintConfig = defineConfig([
     "miniprogram/**/*.js",
     "miniprogram/shared/**/*.js",
     "shared/**/*.js",
+    // Supabase Edge Functions (Deno runtime, separate toolchain)
+    "supabase/functions/**",
   ]),
   {
     rules: {

@@ -240,15 +240,16 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
 template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
-max_frequency = "5s"
+max_frequency = "60s"
 
-# Use pre-defined map of phone number to OTP for testing.
+# Use pre-defined map of phone number to OTP for testing (local dev only).
+# Uncomment to avoid actually sending SMS during development.
 # [auth.sms.test_otp]
 # 4152127777 = "123456"
 
@@ -269,7 +270,17 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# This hook is called when GoTrue needs to send an SMS (e.g. phone OTP).
+# We use it to route SMS through Alibaba Cloud SMS service via an Edge Function.
+# For production: enable this in Supabase Dashboard > Auth > Hooks > Send SMS.
+# For local dev: uncomment and ensure the edge function is running.
+# [auth.hook.send_sms]
+# enabled = true
+# uri = "https://<project-ref>.supabase.co/functions/v1/send-sms"
+# secrets = "env(SUPABASE_AUTH_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Note: When using the send_sms hook above, you can leave this disabled — the hook bypasses built-in providers.
 [auth.sms.twilio]
 enabled = false
 account_sid = ""
