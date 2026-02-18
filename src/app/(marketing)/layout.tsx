@@ -8,6 +8,8 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { MarketingFooter } from "./components/MarketingFooter";
 import { Navigation } from "./components/Navigation";
 
+// Default metadata for marketing layout
+// Individual pages should override with their own metadata
 export const metadata: Metadata = generateSEOMetadata({
   title: "聪明的背单词工具",
   description:

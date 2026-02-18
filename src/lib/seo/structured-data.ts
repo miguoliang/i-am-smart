@@ -21,7 +21,8 @@ export function generateOrganizationStructuredData(): WithContext<Organization> 
     logo: `${siteUrl}/logo.png`,
     description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识",
     sameAs: [
-      // Add social media links here
+      "https://github.com/miguoliang/be-it-forever",
+      // Add other social media links when available
     ],
   };
 }

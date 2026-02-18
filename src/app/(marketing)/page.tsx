@@ -1,7 +1,41 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { Button } from "@/components/form/Button";
 import { Card } from "@/components/container/Card";
+
+export const metadata: Metadata = generateSEOMetadata({
+  title: "聪明的背单词工具 - 用碎片时间，提英语成绩",
+  description:
+    "随时随地，科学复习，无需下载，多端同步。基于SM-2算法的英语学习应用，支持A1-C2全级别单词，帮助您终身掌握知识。免费版和Pro版可选，适合不同学习需求。",
+  keywords: [
+    "英语学习",
+    "背单词",
+    "间隔重复",
+    "SM-2算法",
+    "碎片时间学习",
+    "多端同步",
+    "PWA应用",
+    "语言学习工具",
+    "英语词汇",
+    "记忆卡片",
+    "学习应用",
+    "在线学习",
+  ],
+  openGraph: {
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "聪明的背单词工具 - 用碎片时间，提英语成绩",
+      },
+    ],
+  },
+  canonical: "/",
+});
 
 export default function HomePage() {
   const features = [

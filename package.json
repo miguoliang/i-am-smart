@@ -93,6 +93,7 @@
     "rehype-pretty-code": "^0.14.1",
     "remark-gfm": "^4.0.1",
     "schema-dts": "^1.1.5",
+    "sharp": "^0.34.5",
     "storybook": "^10.1.11",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
