@@ -59,7 +59,21 @@ jobs:
         run: npm ci
 
       - name: Build miniprogram config
+        env:
+          ALLOW_MISSING_CONFIG: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
         run: npm run build:miniprogram-config
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check (web)
+        run: npx tsc --noEmit
+
+      - name: Type check (miniprogram)
+        run: npm run type-check:miniprogram
+
+      - name: Test
+        run: npm run test -- --runInBand
 
       - name: Cache .next
         uses: actions/cache@v4
