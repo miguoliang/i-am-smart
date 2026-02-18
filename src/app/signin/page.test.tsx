@@ -78,7 +78,15 @@ describe('SignIn', () => {
   const mockHandleResendPhoneOtp = jest.fn();
   const mockPhoneOtpInputRef = { current: null };
 
+  // Store original env to restore after tests
+  const originalEnv = process.env;
+
   beforeEach(() => {
+    // Ensure tests run in development mode so OTP login form is visible
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_APP_ENV: 'development',
+    };
     jest.clearAllMocks();
     mockPush.mockClear();
 
@@ -1239,5 +1247,10 @@ describe('SignIn', () => {
       expect(screen.getByText('微信登录')).toBeInTheDocument();
       expect(screen.getByText('通过 Apple 登录')).toBeInTheDocument();
     });
+  });
+
+  afterEach(() => {
+    // Restore original environment variables
+    process.env = originalEnv;
   });
 });
