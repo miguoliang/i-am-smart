@@ -184,9 +184,6 @@ function SignInContent() {
     return !isValidPhone(sanitized) ? "手机号格式不正确" : null;
   }, [debouncedPhone]);
 
-  // Current input error based on mode
-  const inputError = loginMode === "phone" ? phoneError : emailError;
-
   // Handle email change
   const handleEmailChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
