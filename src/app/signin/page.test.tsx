@@ -871,7 +871,7 @@ describe('SignIn', () => {
       );
 
       expect(screen.getByText(/聪明的背单词工具/i)).toBeInTheDocument();
-      expect(screen.getByText(/登录/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: '登录' })).toBeInTheDocument();
     });
 
     it('should render informational note', () => {
