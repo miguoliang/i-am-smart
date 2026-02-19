@@ -61,14 +61,30 @@ export interface AlipayNotifyParams {
   gmt_payment?: string;
 }
 
-function normalizeKey(key: string): string {
+function normalizeKey(key: string, isPrivateKey: boolean): string {
   if (!key) return key;
   
-  // 处理环境变量中的换行符：支持 \n 和实际换行
+  // 移除所有空白字符和换行符，获取纯 Base64 内容
+  const base64Content = key.trim().replace(/\\n/g, "").replace(/\s+/g, "");
+  
+  // 如果密钥没有 BEGIN/END 标记，说明是支付宝密钥生成工具生成的纯 Base64 格式
+  if (!base64Content.includes("BEGIN")) {
+    // 将 Base64 字符串按每 64 字符换行（PEM 格式标准）
+    const wrappedBase64 = base64Content.match(/.{1,64}/g)?.join("\n") || base64Content;
+    
+    // 根据密钥类型添加相应的 PEM 标记
+    if (isPrivateKey) {
+      return `-----BEGIN RSA PRIVATE KEY-----\n${wrappedBase64}\n-----END RSA PRIVATE KEY-----\n`;
+    } else {
+      return `-----BEGIN PUBLIC KEY-----\n${wrappedBase64}\n-----END PUBLIC KEY-----\n`;
+    }
+  }
+  
+  // 如果已有 BEGIN/END 标记，只处理换行符
   let normalized = key.replace(/\\n/g, "\n");
   
-  // 确保以换行符结尾（如果包含 BEGIN/END 标记）
-  if (normalized.includes("BEGIN") && !normalized.endsWith("\n")) {
+  // 确保以换行符结尾
+  if (!normalized.endsWith("\n")) {
     normalized += "\n";
   }
   
@@ -84,17 +100,11 @@ function getConfig(): AlipayConfig {
   if (!privateKey) throw new Error("ALIPAY_PRIVATE_KEY is not set");
   if (!alipayPublicKey) throw new Error("ALIPAY_PUBLIC_KEY is not set");
 
-  // 验证私钥格式
-  const normalizedPrivateKey = normalizeKey(privateKey);
-  if (!normalizedPrivateKey.includes("BEGIN") || !normalizedPrivateKey.includes("PRIVATE KEY")) {
-    throw new Error("ALIPAY_PRIVATE_KEY format is invalid. Must be PEM format with BEGIN/END markers.");
-  }
-
-  // 验证公钥格式
-  const normalizedPublicKey = normalizeKey(alipayPublicKey);
-  if (!normalizedPublicKey.includes("BEGIN") || !normalizedPublicKey.includes("PUBLIC KEY")) {
-    throw new Error("ALIPAY_PUBLIC_KEY format is invalid. Must be PEM format with BEGIN/END markers.");
-  }
+  // 标准化私钥（支持支付宝密钥生成工具的纯 Base64 格式）
+  const normalizedPrivateKey = normalizeKey(privateKey, true);
+  
+  // 标准化公钥（支持支付宝密钥生成工具的纯 Base64 格式）
+  const normalizedPublicKey = normalizeKey(alipayPublicKey, false);
 
   return {
     appId,

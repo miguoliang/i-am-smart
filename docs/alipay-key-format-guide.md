@@ -14,7 +14,9 @@
 
 ## 正确的密钥格式
 
-### 私钥格式（RSA2）
+### 格式一：PEM 格式（带 BEGIN/END 标记）
+
+#### 私钥格式（RSA2）
 
 ```bash
 -----BEGIN RSA PRIVATE KEY-----
@@ -24,7 +26,7 @@ MIIEpAIBAAKCAQEA...
 -----END RSA PRIVATE KEY-----
 ```
 
-### 公钥格式（支付宝公钥）
+#### 公钥格式（支付宝公钥）
 
 ```bash
 -----BEGIN PUBLIC KEY-----
@@ -34,18 +36,56 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...
 -----END PUBLIC KEY-----
 ```
 
+### 格式二：支付宝密钥生成工具格式（纯 Base64，推荐）
+
+支付宝密钥生成工具生成的密钥是**纯 Base64 字符串**，没有 BEGIN/END 标记和换行符：
+
+**私钥示例：**
+```
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDxRE7Q/DM14xPBbgQVSXC7huwWEiLPLQESYFxoHRy11u9SF1BBVh3DyYmREXhgGB5E6f0u4bEbPK+e9r8CU++rChrIep1SHYjY5BOKCBLiHPWK12HBvZfnrEVPJZjWmwmqa5w9tUQFWMt4HfbjoC/cRUExSWKB3jha8bL+vkAkD+qGpLortdGIVXwIyzNZJ8ie9Re8hUrNYPJUcoLRqF/5y5Zwc1oFJh5c2k7x75K5Cos2kWbRnpuDKDWH54s1Hzl0gLbO/4McNlmPk5m5TLpwm5QsWTroYXYO0YoIXQegU6hAf3o63yrSNHIyPbBiyMUSBnoVgka0Jv9hr2U+YQn9AgMBAAECggEARfMxCsRkMJZyrt0vz+AoECaxIkEF2J1Kt0I66HCwV0RGxL0/poHKRW6UNPwks2+qrv5MSqBi0evJW0Rc4tblIOjgFQn/vMQVXhTaWWW329jbk/KYRCys8x1uRuE2q9ntdnyWowl//DDfZScC4sIZvjpSCXEmX1LHcg6rf9I3FHz8vEKkv1qrLgj6FEsthkTSDRRC6j052u28IZ0tZwDtXq41FpKqUkRIq+vhK/iojPbp4+uH9P9CCO2DCIgnBTINDFe//eTow0J31TWdfeKwvJnvz/1dZ/I4tS0YxSSkOezbLUqS8gkpM2ngiA3NAg45O3QbAl2SouBdAKUIKMnZfQKBgQD5+x3hFEZ3PLle2zNSGPIzINBkLEtol5mZ6xPmYAD23IxIIxOA44acMLFbg2scQ3xLDBsuUpQjbW46w5d0pfnHIHUk0AsCfY4VGcnQk+Bp2fIdYFils30Tg5Bb43AI+oWrKAOWtgeHzEfEK71dXElSROiNCGc/C/KQtm3h3XlnqwKBgQD3E3o5Rm/DYATuo4hA8X7b8by+eEF7KqtEUZXq3iJHc1hlSkP15aWPBeA1hMbubXqmQLoZZL0ezAWeC5UW2dN103LIQaJZTaeXr+CuKqJ7MxnggcAVFoCKmACvk2zxTUJXAyVnDB9/m8Gl2SWRzEO4B5ysajyGEWNqCL6SbiYM9wKBgGySVHfdhn1jMl+wdKnDi+4I4nmfg2D59wySvSHhsImHYKY0FdR0/ZH41A8bFPpBlUpDB8smspBwht+e87kGHWYPAtHqSd3bCkq/2JduoplWv4Fixx2wxzIigiBmt9IufL/JsUVT6hFg+AqLtMNHwdCpfRdD/xOy7LdNhIwE1SXhAoGAArbkEN0FPVBAvZ5uUMhWbHQrbqxDi+bcGtQKoZnvJnnN7s7yEDGFsByQagYbaWMqhckQQlco/L2hEituZ+HcwN6h1DFkZzbDMJduEHvHbTMShbTnN1QX9W3WFBe6iqwennYaYxdvASfk6L2J/CASXmM3BW3lXFO0k+Wkslcjc+ECgYBONwsQEleCyUCWBKdY3ZqsG2VrbiVwrrxMXPwMvTN2W2E4lrgY8Q9FxFiZLL8poaG+eLG+2i64H2SgFBvKlouVKBOOSFZ+Z1d9Bl2XH6Qw1NePjR6vgbsStw7vW3/pfF0GVD1frfiMqTle4f5GsfoORcHylGU6FRrvwlx8gMqIwQ==
+```
+
+**公钥示例：**
+```
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+```
+
+**✅ 代码会自动处理：**
+- 自动检测是否为纯 Base64 格式（无 BEGIN/END 标记）
+- 自动添加 PEM 格式标记
+- 自动按每 64 字符换行（PEM 标准格式）
+- 无需手动转换，直接使用即可
+
 ## 配置方法
 
-### 方法一：使用 `\n` 表示换行（推荐）
+### 方法一：支付宝密钥生成工具格式（最简单，推荐）
 
-在环境变量中，使用 `\n` 表示换行符：
+**直接从支付宝密钥生成工具复制，无需任何处理：**
+
+```bash
+# 私钥：直接复制纯 Base64 字符串
+ALIPAY_PRIVATE_KEY="MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDxRE7Q/DM14xPBbgQVSXC7huwWEiLPLQESYFxoHRy11u9SF1BBVh3DyYmREXhgGB5E6f0u4bEbPK+e9r8CU++rChrIep1SHYjY5BOKCBLiHPWK12HBvZfnrEVPJZjWmwmqa5w9tUQFWMt4HfbjoC/cRUExSWKB3jha8bL+vkAkD+qGpLortdGIVXwIyzNZJ8ie9Re8hUrNYPJUcoLRqF/5y5Zwc1oFJh5c2k7x75K5Cos2kWbRnpuDKDWH54s1Hzl0gLbO/4McNlmPk5m5TLpwm5QsWTroYXYO0YoIXQegU6hAf3o63yrSNHIyPbBiyMUSBnoVgka0Jv9hr2U+YQn9AgMBAAECggEARfMxCsRkMJZyrt0vz+AoECaxIkEF2J1Kt0I66HCwV0RGxL0/poHKRW6UNPwks2+qrv5MSqBi0evJW0Rc4tblIOjgFQn/vMQVXhTaWWW329jbk/KYRCys8x1uRuE2q9ntdnyWowl//DDfZScC4sIZvjpSCXEmX1LHcg6rf9I3FHz8vEKkv1qrLgj6FEsthkTSDRRC6j052u28IZ0tZwDtXq41FpKqUkRIq+vhK/iojPbp4+uH9P9CCO2DCIgnBTINDFe//eTow0J31TWdfeKwvJnvz/1dZ/I4tS0YxSSkOezbLUqS8gkpM2ngiA3NAg45O3QbAl2SouBdAKUIKMnZfQKBgQD5+x3hFEZ3PLle2zNSGPIzINBkLEtol5mZ6xPmYAD23IxIIxOA44acMLFbg2scQ3xLDBsuUpQjbW46w5d0pfnHIHUk0AsCfY4VGcnQk+Bp2fIdYFils30Tg5Bb43AI+oWrKAOWtgeHzEfEK71dXElSROiNCGc/C/KQtm3h3XlnqwKBgQD3E3o5Rm/DYATuo4hA8X7b8by+eEF7KqtEUZXq3iJHc1hlSkP15aWPBeA1hMbubXqmQLoZZL0ezAWeC5UW2dN103LIQaJZTaeXr+CuKqJ7MxnggcAVFoCKmACvk2zxTUJXAyVnDB9/m8Gl2SWRzEO4B5ysajyGEWNqCL6SbiYM9wKBgGySVHfdhn1jMl+wdKnDi+4I4nmfg2D59wySvSHhsImHYKY0FdR0/ZH41A8bFPpBlUpDB8smspBwht+e87kGHWYPAtHqSd3bCkq/2JduoplWv4Fixx2wxzIigiBmt9IufL/JsUVT6hFg+AqLtMNHwdCpfRdD/xOy7LdNhIwE1SXhAoGAArbkEN0FPVBAvZ5uUMhWbHQrbqxDi+bcGtQKoZnvJnnN7s7yEDGFsByQagYbaWMqhckQQlco/L2hEituZ+HcwN6h1DFkZzbDMJduEHvHbTMShbTnN1QX9W3WFBe6iqwennYaYxdvASfk6L2J/CASXmM3BW3lXFO0k+Wkslcjc+ECgYBONwsQEleCyUCWBKdY3ZqsG2VrbiVwrrxMXPwMvTN2W2E4lrgY8Q9FxFiZLL8poaG+eLG+2i64H2SgFBvKlouVKBOOSFZ+Z1d9Bl2XH6Qw1NePjR6vgbsStw7vW3/pfF0GVD1frfiMqTle4f5GsfoORcHylGU6FRrvwlx8gMqIwQ=="
+
+# 公钥：从支付宝开放平台获取的支付宝公钥（也是纯 Base64）
+ALIPAY_PUBLIC_KEY="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..."
+```
+
+**✅ 优势：**
+- 无需手动添加 BEGIN/END 标记
+- 无需处理换行符
+- 代码会自动转换为标准 PEM 格式
+- 直接从工具复制粘贴即可
+
+### 方法二：使用 `\n` 表示换行（PEM 格式）
+
+如果使用标准的 PEM 格式，在环境变量中使用 `\n` 表示换行符：
 
 ```bash
 ALIPAY_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n...\n-----END RSA PRIVATE KEY-----"
 ALIPAY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...\n...\n-----END PUBLIC KEY-----"
 ```
 
-### 方法二：使用实际换行（某些平台支持）
+### 方法三：使用实际换行（某些平台支持）
 
 ```bash
 ALIPAY_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
