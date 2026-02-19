@@ -1,5 +1,7 @@
+import type { Thing, WithContext } from "schema-dts";
+
 interface StructuredDataProps {
-  data: object;
+  data: WithContext<Thing>;
 }
 
 /**

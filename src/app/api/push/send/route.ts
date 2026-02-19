@@ -23,6 +23,13 @@ export async function POST(req: NextRequest) {
 
     const { title, body } = await req.json();
 
+    if (!title || typeof title !== 'string' || title.length > 200) {
+      throw ApiError.validationError("title is required and must be at most 200 characters");
+    }
+    if (!body || typeof body !== 'string' || body.length > 1000) {
+      throw ApiError.validationError("body is required and must be at most 1000 characters");
+    }
+
     // Get user subscriptions
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
@@ -47,9 +54,14 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    // Cleanup failed subscriptions (410 Gone means unsubscribed)
-    // In a real app, you'd delete them from the DB here.
-    
+    // Clean up expired subscriptions (410 Gone)
+    const gone = results
+      .map((r, i) => r.status === 'rejected' && (r.reason as { statusCode?: number })?.statusCode === 410 ? subscriptions[i].id : null)
+      .filter(Boolean);
+    if (gone.length > 0) {
+      await supabase.from('push_subscriptions').delete().in('id', gone);
+    }
+
     const successful = results.filter(r => r.status === 'fulfilled').length;
 
     return apiSuccess({ 
