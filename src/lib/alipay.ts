@@ -3,7 +3,7 @@
  * 仅服务端使用，依赖 ALIPAY_* 环境变量
  */
 
-import { createSign, createVerify, randomBytes } from "crypto";
+import { createSign, createVerify } from "crypto";
 
 const ALIPAY_GATEWAY = "https://openapi.alipay.com/gateway.do";
 
