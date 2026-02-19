@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.auth.signInWithOtp({
       phone: phoneWithCode,
       options: {
-        shouldCreateUser: true,
+        shouldCreateUser: false,
       },
     });
 

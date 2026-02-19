@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
     const { supabase } = await requireOperator(req);
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
 
     const feedbackService = await createFeedbackService(supabase);
     const result = await feedbackService.getFeedbacks(page, limit);

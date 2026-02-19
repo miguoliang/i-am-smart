@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createNativeOrder } from "@/lib/wechatPay";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
-import { createRouteHandlerClient } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/middleware/auth";
 import { logger } from "@/lib/utils/logger";
 
 const MIN_TOTAL_CENTS = 1;
@@ -43,12 +43,8 @@ export async function POST(req: NextRequest) {
       throw ApiError.validationError("商品描述必填且不超过 127 字");
     }
 
-    let accountId: string | null = null;
-    const supabase = await createRouteHandlerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) accountId = user.id;
+    const { user } = await requireAuth(req);
+    const accountId = user.id;
 
     const outTradeNo = `N${Date.now()}${Math.random().toString(36).slice(2, 10)}`;
     const notifyUrl = `${getAppOrigin()}/api/pay/wechat/notify`;
