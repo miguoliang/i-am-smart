@@ -5,7 +5,17 @@
 
 import { createSign, createVerify } from "crypto";
 
-const ALIPAY_GATEWAY = "https://openapi.alipay.com/gateway.do";
+// 支付宝网关地址
+// 正式环境: https://openapi.alipay.com/gateway.do
+// 沙箱环境: https://openapi.alipaydev.com/gateway.do
+function getAlipayGateway(): string {
+  return (
+    process.env.ALIPAY_GATEWAY ||
+    (process.env.NODE_ENV === "production"
+      ? "https://openapi.alipay.com/gateway.do"
+      : "https://openapi.alipaydev.com/gateway.do")
+  );
+}
 
 export interface AlipayConfig {
   appId: string;
@@ -113,6 +123,7 @@ function buildCommonParams(method: string, config: AlipayConfig): Record<string,
  */
 export function createPagePayForm(params: CreatePagePayParams): string {
   const config = getConfig();
+  const gateway = getAlipayGateway();
   const method = "alipay.trade.page.pay";
 
   const bizContent = JSON.stringify({
@@ -145,7 +156,7 @@ export function createPagePayForm(params: CreatePagePayParams): string {
 <html>
 <head><meta charset="utf-8"><title>正在跳转到支付宝...</title></head>
 <body>
-<form id="alipayForm" action="${ALIPAY_GATEWAY}" method="POST">
+<form id="alipayForm" action="${gateway}" method="POST">
 ${formFields}
 </form>
 <script>document.getElementById('alipayForm').submit();</script>
@@ -158,6 +169,7 @@ ${formFields}
  */
 export function createWapPayForm(params: CreateWapPayParams): string {
   const config = getConfig();
+  const gateway = getAlipayGateway();
   const method = "alipay.trade.wap.pay";
 
   const bizContent = JSON.stringify({
@@ -190,7 +202,7 @@ export function createWapPayForm(params: CreateWapPayParams): string {
 <html>
 <head><meta charset="utf-8"><title>正在跳转到支付宝...</title></head>
 <body>
-<form id="alipayForm" action="${ALIPAY_GATEWAY}" method="POST">
+<form id="alipayForm" action="${gateway}" method="POST">
 ${formFields}
 </form>
 <script>document.getElementById('alipayForm').submit();</script>
