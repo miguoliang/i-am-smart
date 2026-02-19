@@ -61,6 +61,20 @@ export interface AlipayNotifyParams {
   gmt_payment?: string;
 }
 
+function normalizeKey(key: string): string {
+  if (!key) return key;
+  
+  // 处理环境变量中的换行符：支持 \n 和实际换行
+  let normalized = key.replace(/\\n/g, "\n");
+  
+  // 确保以换行符结尾（如果包含 BEGIN/END 标记）
+  if (normalized.includes("BEGIN") && !normalized.endsWith("\n")) {
+    normalized += "\n";
+  }
+  
+  return normalized;
+}
+
 function getConfig(): AlipayConfig {
   const appId = process.env.ALIPAY_APP_ID;
   const privateKey = process.env.ALIPAY_PRIVATE_KEY;
@@ -70,10 +84,22 @@ function getConfig(): AlipayConfig {
   if (!privateKey) throw new Error("ALIPAY_PRIVATE_KEY is not set");
   if (!alipayPublicKey) throw new Error("ALIPAY_PUBLIC_KEY is not set");
 
+  // 验证私钥格式
+  const normalizedPrivateKey = normalizeKey(privateKey);
+  if (!normalizedPrivateKey.includes("BEGIN") || !normalizedPrivateKey.includes("PRIVATE KEY")) {
+    throw new Error("ALIPAY_PRIVATE_KEY format is invalid. Must be PEM format with BEGIN/END markers.");
+  }
+
+  // 验证公钥格式
+  const normalizedPublicKey = normalizeKey(alipayPublicKey);
+  if (!normalizedPublicKey.includes("BEGIN") || !normalizedPublicKey.includes("PUBLIC KEY")) {
+    throw new Error("ALIPAY_PUBLIC_KEY format is invalid. Must be PEM format with BEGIN/END markers.");
+  }
+
   return {
     appId,
-    privateKey: privateKey.replace(/\\n/g, "\n"),
-    alipayPublicKey: alipayPublicKey.replace(/\\n/g, "\n"),
+    privateKey: normalizedPrivateKey,
+    alipayPublicKey: normalizedPublicKey,
   };
 }
 
