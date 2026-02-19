@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       throw ApiError.validationError(t().validation.invalidLevel);
     }
 
-    const cardService = await createCardService(req);
+    const cardService = await createCardService(supabase);
     const result = await cardService.getDueCards(user.id, level, timezoneOffset, dailyLimit);
 
     return apiSuccess(result);

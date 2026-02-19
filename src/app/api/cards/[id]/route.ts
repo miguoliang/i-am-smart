@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user } = await requireAuth(req);
+    const { user, supabase } = await requireAuth(req);
     const { id } = await params;
 
     const cardId = parseInt(id, 10);
@@ -17,7 +17,7 @@ export async function GET(
       throw ApiError.validationError(t().validation.invalidCardId);
     }
 
-    const cardService = await createCardService(req);
+    const cardService = await createCardService(supabase);
     const card = await cardService.getCardById(cardId, user.id);
 
     if (!card) {
