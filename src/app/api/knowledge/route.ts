@@ -21,7 +21,7 @@ interface CefrKnowledgeItem {
 
 export async function GET(req: NextRequest) {
   try {
-    const { user } = await requireOperator(req);
+    const { user, supabase } = await requireOperator(req);
 
     logger.debug('Knowledge GET: Operator authenticated', {
       userId: user.id,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const knowledgeService = await createKnowledgeService(req)
+    const knowledgeService = await createKnowledgeService(supabase)
     const result = await knowledgeService.getPaginatedKnowledge({ page, pageSize })
     
     logger.debug('Knowledge GET: Success', {
@@ -114,13 +114,13 @@ export async function POST(req: NextRequest) {
       },
     }));
 
-    const { user } = await requireOperator(req);
+    const { user, supabase } = await requireOperator(req);
 
     logger.debug('Knowledge POST: Operator authenticated', {
       userId: user.id,
     });
 
-    const knowledgeService = await createKnowledgeService(req)
+    const knowledgeService = await createKnowledgeService(supabase)
     const result = await knowledgeService.importKnowledge(items);
     
     if (!result.success && result.message === "No valid items found") {

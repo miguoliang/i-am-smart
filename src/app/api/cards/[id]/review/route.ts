@@ -34,7 +34,7 @@ export async function POST(
       throw ApiError.validationError(t().validation.invalidCardId);
     }
 
-    const cardService = await createCardService(request);
+    const cardService = await createCardService(supabase);
     const result = await cardService.reviewCard(user.id, cardId, quality, timezoneOffset, dailyLimit);
 
     return apiSuccess(result);

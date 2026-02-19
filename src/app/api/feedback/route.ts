@@ -9,13 +9,13 @@ import { t } from "@/lib/i18n";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireOperator(req);
+    const { supabase } = await requireOperator(req);
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const feedbackService = await createFeedbackService(req);
+    const feedbackService = await createFeedbackService(supabase);
     const result = await feedbackService.getFeedbacks(page, limit);
 
     return apiSuccess(result);
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user } = await requireAuth(req);
+    const { user, supabase } = await requireAuth(req);
 
     const { content: rawContent } = await req.json();
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     // Sanitize validated content
     const content = sanitizeFeedbackContent(validatedContent);
 
-    const feedbackService = await createFeedbackService(req);
+    const feedbackService = await createFeedbackService(supabase);
     await feedbackService.submitFeedback(user.id, content);
 
     logger.info("Feedback submitted", {
