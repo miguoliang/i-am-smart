@@ -6,7 +6,7 @@ import { t } from '@/lib/i18n';
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await requireAuth(request);
+    const { user, supabase } = await requireAuth(request);
 
     const { searchParams } = new URL(request.url);
     const timezoneOffset = Number(searchParams.get('offset') || '0');
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       throw ApiError.validationError(t().validation.invalidTimezoneOffset);
     }
 
-    const statsService = await createStatsService(request);
+    const statsService = await createStatsService(supabase);
     const data = await statsService.getStats(user.id, timezoneOffset);
 
     return apiSuccess(data);
