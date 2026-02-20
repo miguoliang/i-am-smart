@@ -95,15 +95,14 @@ export default function OperatorOrdersPage() {
         },
       },
       {
-        accessorKey: "channel",
+        accessorKey: "pay_channel",
         header: "支付方式",
         cell: ({ row }) => {
-          const ch = row.getValue("channel") as string | null;
-          return (
-            <span>
-              {ch === "wechat" ? "微信" : ch === "alipay" ? "支付宝" : ch ?? "-"}
-            </span>
-          );
+          const ch = row.getValue("pay_channel") as string | null;
+          if (!ch) return "-";
+          if (ch.startsWith("wechat")) return "微信";
+          if (ch.startsWith("alipay")) return "支付宝";
+          return ch;
         },
       },
       {

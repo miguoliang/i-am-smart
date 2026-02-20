@@ -8,7 +8,7 @@ export interface OrderRow {
   status: string;
   amount_total: number;
   description: string | null;
-  channel: string | null;
+  pay_channel: string | null;
   account_id: string | null;
   created_at: string;
   paid_at: string | null;
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     const admin = createSupabaseAdmin();
     const select =
-      "out_trade_no, status, amount_total, description, channel, account_id, created_at, paid_at";
+      "out_trade_no, status, amount_total, description, pay_channel, account_id, created_at, paid_at";
 
     let query = admin.from("pay_orders").select(select, { count: "exact" });
 
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       query = query.eq("status", status);
     }
     if (channel !== "all") {
-      query = query.eq("channel", channel);
+      query = query.like("pay_channel", `${channel}%`);
     }
     if (startDate) {
       query = query.gte("created_at", `${startDate}T00:00:00.000Z`);
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
       .select("amount_total, status")
       .eq("status", "paid");
     if (channel !== "all") {
-      summaryQuery = summaryQuery.eq("channel", channel);
+      summaryQuery = summaryQuery.like("pay_channel", `${channel}%`);
     }
     if (startDate) {
       summaryQuery = summaryQuery.gte("created_at", `${startDate}T00:00:00.000Z`);

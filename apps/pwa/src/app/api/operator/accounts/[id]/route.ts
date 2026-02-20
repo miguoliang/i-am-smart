@@ -27,7 +27,7 @@ export interface UserDetailOrder {
   status: string;
   amount_total: number;
   description: string | null;
-  channel: string | null;
+  pay_channel: string | null;
   created_at: string;
   paid_at: string | null;
 }
@@ -89,7 +89,7 @@ export async function GET(
 
     const { data: ordersData, error: ordersError } = await admin
       .from("pay_orders")
-      .select("out_trade_no, status, amount_total, description, channel, created_at, paid_at")
+      .select("out_trade_no, status, amount_total, description, pay_channel, created_at, paid_at")
       .eq("account_id", id)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -101,7 +101,7 @@ export async function GET(
           status: row.status,
           amount_total: row.amount_total ?? 0,
           description: row.description ?? null,
-          channel: row.channel ?? null,
+          pay_channel: row.pay_channel ?? null,
           created_at: row.created_at,
           paid_at: row.paid_at ?? null,
         }));

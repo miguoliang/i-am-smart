@@ -395,7 +395,7 @@ export default function AccountsPage() {
                         <div>
                           <span className="font-mono text-xs">{order.out_trade_no}</span>
                           <span className="ml-2 text-muted-foreground">
-                            {order.channel === "wechat" ? "微信" : order.channel === "alipay" ? "支付宝" : order.channel ?? "-"}
+                            {order.pay_channel?.startsWith("wechat") ? "微信" : order.pay_channel?.startsWith("alipay") ? "支付宝" : order.pay_channel ?? "-"}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">

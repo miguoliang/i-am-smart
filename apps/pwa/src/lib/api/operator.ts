@@ -55,7 +55,7 @@ export interface UserDetailOrder {
   status: string;
   amount_total: number;
   description: string | null;
-  channel: string | null;
+  pay_channel: string | null;
   created_at: string;
   paid_at: string | null;
 }
@@ -104,7 +104,7 @@ export interface OrderRow {
   status: string;
   amount_total: number;
   description: string | null;
-  channel: string | null;
+  pay_channel: string | null;
   account_id: string | null;
   created_at: string;
   paid_at: string | null;
