@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
+    const search = searchParams.get('search')?.trim() || undefined;
+    const level = searchParams.get('level')?.trim() || undefined;
 
     // Validate pagination parameters
     if (page < 1) {
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
     }
 
     const knowledgeService = await createKnowledgeService(supabase)
-    const result = await knowledgeService.getPaginatedKnowledge({ page, pageSize })
+    const result = await knowledgeService.getPaginatedKnowledge({ page, pageSize, search, level })
     
     logger.debug('Knowledge GET: Success', {
       userId: user.id,

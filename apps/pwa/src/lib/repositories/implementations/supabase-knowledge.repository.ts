@@ -22,14 +22,23 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
   }
 
   async getPaginated(params: PaginationParams): Promise<PaginatedResult<KnowledgeItem>> {
-    const { page, pageSize } = params;
+    const { page, pageSize, search, level } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Get total count
-    const { count, error: countError } = await this.client
+    // Build base query for count
+    let countQuery = this.client
       .from('knowledge')
       .select('*', { count: 'exact', head: true });
+
+    if (search) {
+      countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    if (level) {
+      countQuery = countQuery.eq('metadata->>level', level);
+    }
+
+    const { count, error: countError } = await countQuery;
 
     if (countError) {
       handleRepositoryError(countError, 'Fetch knowledge count');
@@ -38,12 +47,20 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
     const total = count || 0;
     const totalPages = Math.ceil(total / pageSize);
 
-    // Get paginated data
-    const { data, error } = await this.client
+    // Build data query
+    let dataQuery = this.client
       .from('knowledge')
       .select('code, name, description, metadata, created_at, updated_at')
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      .order('created_at', { ascending: false });
+
+    if (search) {
+      dataQuery = dataQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    if (level) {
+      dataQuery = dataQuery.eq('metadata->>level', level);
+    }
+
+    const { data, error } = await dataQuery.range(from, to);
 
     if (error) {
       handleRepositoryError(error, 'Fetch paginated knowledge');

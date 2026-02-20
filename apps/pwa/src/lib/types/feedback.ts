@@ -13,4 +13,6 @@ export interface Feedback {
   user_id: string | null;
   content: FeedbackContent;
   created_at: string;
+  status?: string;
+  operator_note?: string | null;
 }

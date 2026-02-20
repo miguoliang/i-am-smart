@@ -26,14 +26,18 @@ export interface PaginatedKnowledgeResult {
 export interface FetchKnowledgesParams {
   page?: number;
   pageSize?: number;
+  search?: string;
+  level?: string;
 }
 
 export async function fetchKnowledges(params: FetchKnowledgesParams = {}): Promise<PaginatedKnowledgeResult> {
-  const { page = 1, pageSize = 10 } = params;
+  const { page = 1, pageSize = 10, search, level } = params;
   const searchParams = new URLSearchParams({
     page: page.toString(),
     pageSize: pageSize.toString(),
   });
+  if (search?.trim()) searchParams.set("search", search.trim());
+  if (level?.trim()) searchParams.set("level", level.trim());
 
   const res = await fetch(`/api/knowledge?${searchParams.toString()}`);
   if (!res.ok) {
@@ -44,7 +48,37 @@ export async function fetchKnowledges(params: FetchKnowledgesParams = {}): Promi
     throw new Error(message);
   }
   const json = await res.json();
-  // API returns { data: { data, total, page, pageSize, totalPages } }
   return json.data || { data: [], total: 0, page: 1, pageSize: 10, totalPages: 0 };
+}
+
+export async function updateKnowledge(
+  code: string,
+  data: { name?: string; description?: string; metadata?: Record<string, unknown> }
+): Promise<Knowledge> {
+  const res = await fetch(`/api/knowledge/${encodeURIComponent(code)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "更新失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function deleteKnowledge(code: string): Promise<void> {
+  const res = await fetch(`/api/knowledge/${encodeURIComponent(code)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "删除失败");
+    throw new Error(message);
+  }
+}
+
+export async function deleteKnowledgeBatch(codes: string[]): Promise<void> {
+  await Promise.all(codes.map((code) => deleteKnowledge(code)));
 }
 
