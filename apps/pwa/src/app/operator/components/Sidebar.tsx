@@ -17,6 +17,7 @@ const sidebarItems: SidebarItem[] = [
   { href: "/operator/accounts", label: "账户管理", icon: "👥" },
   { href: "/operator/push", label: "推送通知", icon: "🔔" },
   { href: "/operator/feedback", label: "用户反馈", icon: "💬" },
+  { href: "/operator/logs", label: "操作日志", icon: "📋" },
   // Add more sidebar items here as needed
 ];
 

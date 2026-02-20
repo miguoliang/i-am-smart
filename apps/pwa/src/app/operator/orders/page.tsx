@@ -8,6 +8,7 @@ import { DataTable } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { Paginator } from "../import/components/Paginator";
 import { Button } from "@/components/form/Button";
+import { downloadCSV } from "@/lib/utils/csv";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 
@@ -208,6 +209,28 @@ export default function OperatorOrdersPage() {
           }}
         >
           重置筛选
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={orders.length === 0}
+          onClick={() =>
+            downloadCSV(
+              orders as unknown as Record<string, unknown>[],
+              [
+                { key: "out_trade_no", label: "订单号" },
+                { key: "account_id", label: "用户ID" },
+                { key: "amount_total", label: "金额(分)" },
+                { key: "pay_channel", label: "支付方式" },
+                { key: "status", label: "状态" },
+                { key: "created_at", label: "创建时间" },
+                { key: "paid_at", label: "支付时间" },
+              ],
+              `orders-${new Date().toISOString().slice(0, 10)}`
+            )
+          }
+        >
+          导出 CSV
         </Button>
       </div>
 

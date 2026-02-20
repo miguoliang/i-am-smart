@@ -12,6 +12,7 @@ import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { Feedback } from "@/lib/types/feedback";
 import { Button } from "@/components/form/Button";
+import { downloadCSV } from "@/lib/utils/csv";
 import { Textarea } from "@/components/form/Textarea";
 import {
   Dialog,
@@ -191,6 +192,37 @@ export default function FeedbackPage() {
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           查看用户提交的反馈和建议
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2"
+          disabled={feedbacks.length === 0}
+          onClick={() =>
+            downloadCSV(
+              feedbacks.map((f) => ({
+                id: f.id,
+                status: f.status || "pending",
+                occupation: f.content.occupation || "",
+                willRecommend: f.content.willRecommend || "",
+                openFeedback: f.content.openFeedback || "",
+                operator_note: f.operator_note || "",
+                created_at: f.created_at,
+              })),
+              [
+                { key: "id", label: "ID" },
+                { key: "status", label: "状态" },
+                { key: "occupation", label: "职业" },
+                { key: "willRecommend", label: "是否推荐" },
+                { key: "openFeedback", label: "开放意见" },
+                { key: "operator_note", label: "运营备注" },
+                { key: "created_at", label: "提交时间" },
+              ],
+              `feedback-${new Date().toISOString().slice(0, 10)}`
+            )
+          }
+        >
+          导出 CSV
+        </Button>
       </div>
 
       <DataTable

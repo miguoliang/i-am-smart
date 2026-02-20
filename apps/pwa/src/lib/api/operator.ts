@@ -15,10 +15,18 @@ export interface DashboardData {
   totalUsers: number;
   todayReviews: number;
   todayRevenue: number;
+  todayDAU: number;
+  retention: {
+    nextDayRetention: number;
+    sevenDayRetention: number;
+    paidConversion: number;
+    totalActivatedUsers: number;
+  };
   trends: {
     registrations: DayMetric[];
     reviews: DayMetric[];
     revenue: DayRevenue[];
+    dau: DayMetric[];
   };
 }
 

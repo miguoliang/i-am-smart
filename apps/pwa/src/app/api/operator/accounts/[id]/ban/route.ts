@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { writeAuditLog } from "@/lib/utils/auditLog";
 
 interface BanBody {
   banned: boolean;
@@ -13,7 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireOperator(req);
+    const { user } = await requireOperator(req);
     const { id } = await params;
     if (!id) {
       throw ApiError.validationError("缺少用户 ID");
@@ -40,6 +41,13 @@ export async function POST(
     if (error) {
       throw ApiError.internal(error.message);
     }
+
+    void writeAuditLog({
+      operator_id: user.id,
+      action: body.banned ? "ban_user" : "unban_user",
+      target_type: "user",
+      target_id: id,
+    });
 
     return apiSuccess({ banned: body.banned });
   } catch (e) {
