@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchDashboard,
@@ -8,6 +9,18 @@ import {
 } from "@/lib/api/operator";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { Info, X } from "lucide-react";
+
+const METRIC_HELP: Record<string, string> = {
+  今日注册: "今天（按本地时区）新注册的用户数，来源于 Supabase Auth 的 created_at 字段。",
+  总用户数: "系统中所有已注册用户的总数，包含已封禁用户。",
+  今日复习量: "今天所有用户完成的卡片复习总次数，基于 account_cards 表中 repetitions > 0 且 updated_at 在今天范围内的记录。",
+  今日收入: "今天状态为 paid 的订单金额总和（单位：元），基于 pay_orders 表的 amount_total 字段（存储单位为分）。",
+  今日活跃: "今天至少复习过 1 张卡片的独立用户数（DAU），基于 account_cards 表中 updated_at 在今天且 repetitions > 0 的去重 account_id。",
+  次日留存: "在所有激活用户（至少有 1 张卡片）中，在 2 个或以上不同日期进行过复习的用户占比。反映用户是否在注册后第二天还会回来。",
+  "7日留存": "在所有激活用户中，在 7 个或以上不同日期进行过复习的用户占比。反映用户的长期粘性。",
+  付费转化: "在所有激活用户中，至少有 1 笔已支付订单的用户占比。计算公式：付费用户数 / 激活用户数 × 100%。",
+};
 
 function MetricCard({
   label,
@@ -18,10 +31,30 @@ function MetricCard({
   value: string | number;
   color: string;
 }) {
+  const [showHelp, setShowHelp] = useState(false);
+  const help = METRIC_HELP[label];
+
   return (
-    <div className={`${color} text-white rounded-2xl p-4 md:p-6 text-center`}>
-      <p className="text-2xl md:text-4xl font-bold">{value}</p>
-      <p className="text-xs md:text-sm mt-1 md:mt-2 opacity-90">{label}</p>
+    <div className={`${color} text-white rounded-2xl p-4 md:p-6 text-center relative`}>
+      {help && (
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="absolute top-2 right-2 opacity-60 hover:opacity-100 transition-opacity"
+          aria-label={`${label}说明`}
+        >
+          {showHelp ? <X size={14} /> : <Info size={14} />}
+        </button>
+      )}
+      {showHelp ? (
+        <p className="text-xs leading-relaxed text-white/90 text-left px-1 py-2">
+          {help}
+        </p>
+      ) : (
+        <>
+          <p className="text-2xl md:text-4xl font-bold">{value}</p>
+          <p className="text-xs md:text-sm mt-1 md:mt-2 opacity-90">{label}</p>
+        </>
+      )}
     </div>
   );
 }
