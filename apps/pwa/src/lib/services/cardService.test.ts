@@ -34,60 +34,56 @@ describe('CardService', () => {
     it('should return the count from repository', async () => {
       cardRepository.getReviewedTodayCount.mockResolvedValue(5);
 
-      const count = await cardService.getReviewedTodayCount('user-123');
+      const count = await cardService.getReviewedTodayCount('profile-123');
 
       expect(count).toBe(5);
       expect(cardRepository.getReviewedTodayCount).toHaveBeenCalledWith(
-        'user-123', 
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/), // ISO date format
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)  // ISO date format
+        'profile-123', 
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
       );
     });
   });
 
   describe('reviewCard', () => {
     it('should successfully review a card', async () => {
-      // Setup
       const mockCard = createMockCard();
       cardRepository.getCardById.mockResolvedValue(mockCard);
       cardRepository.getReviewedTodayCount.mockResolvedValue(0);
       cardRepository.reviewCard.mockResolvedValue();
 
-      // Execute
-      const result = await cardService.reviewCard('user-123', 1, 5); // Quality 5
+      const result = await cardService.reviewCard('profile-123', 1, 5);
 
-      // Assert
       expect(result.success).toBe(true);
       expect(cardRepository.reviewCard).toHaveBeenCalledWith(expect.objectContaining({
         cardId: 1,
-        userId: 'user-123',
+        profileId: 'profile-123',
         quality: 5,
-        repetitions: 1, // 0 -> 1
-        intervalDays: 1, // 0 -> 1
+        repetitions: 1,
+        intervalDays: 1,
       }));
     });
 
     it('should throw ApiError if daily limit is exceeded', async () => {
        const mockCard = createMockCard();
        cardRepository.getCardById.mockResolvedValue(mockCard);
-       cardRepository.getReviewedTodayCount.mockResolvedValue(10); // Limit reached
+       cardRepository.getReviewedTodayCount.mockResolvedValue(10);
 
        await expect(
-         cardService.reviewCard('user-123', 1, 5)
+         cardService.reviewCard('profile-123', 1, 5)
        ).rejects.toThrow(/今日已复习/);
     });
 
     it('should NOT check daily limit if card was already reviewed today', async () => {
         const todayCard = createMockCard({
-          last_reviewed_at: new Date().toISOString() // Reviewed just now
+          last_reviewed_at: new Date().toISOString()
         });
         
         cardRepository.getCardById.mockResolvedValue(todayCard);
         cardRepository.reviewCard.mockResolvedValue();
         
-        await cardService.reviewCard('user-123', 1, 4);
+        await cardService.reviewCard('profile-123', 1, 4);
 
-        // Should NOT have called count check because it's a re-review
         expect(cardRepository.getReviewedTodayCount).not.toHaveBeenCalled(); 
         expect(cardRepository.reviewCard).toHaveBeenCalled();
     });
@@ -96,16 +92,16 @@ describe('CardService', () => {
         cardRepository.getCardById.mockResolvedValue(null);
 
         await expect(
-            cardService.reviewCard('user-123', 999, 5)
+            cardService.reviewCard('profile-123', 999, 5)
         ).rejects.toThrow(/卡片不存在/);
     });
   });
 
   describe('getDueCards', () => {
       it('should return empty list if daily limit reached', async () => {
-          cardRepository.getReviewedTodayCount.mockResolvedValue(10); // Limit
+          cardRepository.getReviewedTodayCount.mockResolvedValue(10);
 
-          const result = await cardService.getDueCards('user-123');
+          const result = await cardService.getDueCards('profile-123');
 
           expect(result.reviewedCount).toBe(10);
           expect(result.cards).toEqual([]);
@@ -117,12 +113,11 @@ describe('CardService', () => {
           cardRepository.getReviewedTodayCount.mockResolvedValue(5);
           cardRepository.getDueCards.mockResolvedValue([mockCard]);
 
-          const result = await cardService.getDueCards('user-123');
+          const result = await cardService.getDueCards('profile-123');
 
           expect(result.reviewedCount).toBe(5);
           expect(result.cards).toHaveLength(1);
-          // Limit is 10. Reviewed 5. Remaining 5. Level is optional (undefined).
-          expect(cardRepository.getDueCards).toHaveBeenCalledWith('user-123', 5, undefined);
+          expect(cardRepository.getDueCards).toHaveBeenCalledWith('profile-123', 5, undefined);
       });
 
       it('should fetch due cards with level filter', async () => {
@@ -130,11 +125,11 @@ describe('CardService', () => {
           cardRepository.getReviewedTodayCount.mockResolvedValue(5);
           cardRepository.getDueCards.mockResolvedValue([mockCard]);
 
-          const result = await cardService.getDueCards('user-123', 'A1');
+          const result = await cardService.getDueCards('profile-123', 'A1');
 
           expect(result.reviewedCount).toBe(5);
           expect(result.cards).toHaveLength(1);
-          expect(cardRepository.getDueCards).toHaveBeenCalledWith('user-123', 5, 'A1');
+          expect(cardRepository.getDueCards).toHaveBeenCalledWith('profile-123', 5, 'A1');
       });
   });
 });

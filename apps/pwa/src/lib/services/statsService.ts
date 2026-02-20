@@ -3,10 +3,10 @@ import { StatsRepository, UserStats, HeatmapPoint } from '@/lib/repositories/sta
 export class StatsService {
   constructor(private repo: StatsRepository) {}
 
-  async getStats(userId: string, timezoneOffset: number): Promise<{ stats: UserStats, heatmap: HeatmapPoint[] }> {
+  async getStats(profileId: string, timezoneOffset: number): Promise<{ stats: UserStats, heatmap: HeatmapPoint[] }> {
     const [stats, heatmap] = await Promise.all([
-      this.repo.getUserStats(userId),
-      this.repo.getReviewHeatmap(userId, timezoneOffset)
+      this.repo.getUserStats(profileId),
+      this.repo.getReviewHeatmap(profileId, timezoneOffset)
     ]);
     return { stats, heatmap };
   }

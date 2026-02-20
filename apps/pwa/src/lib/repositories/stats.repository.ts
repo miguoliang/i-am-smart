@@ -11,6 +11,6 @@ export interface HeatmapPoint {
 }
 
 export interface StatsRepository {
-  getUserStats(userId: string): Promise<UserStats>;
-  getReviewHeatmap(userId: string, timezoneOffset: number): Promise<HeatmapPoint[]>;
+  getUserStats(profileId: string): Promise<UserStats>;
+  getReviewHeatmap(profileId: string, timezoneOffset: number): Promise<HeatmapPoint[]>;
 }

@@ -1,11 +1,11 @@
 /**
  * Integration tests for GET /api/cards/due
- * Tests the route handler with mocked auth and CardService (full request → response flow).
+ * Tests the route handler with mocked auth, CardService, and ProfileService.
  * @jest-environment node
  */
 import { GET } from "./route";
 import { requireAuth } from "@/lib/middleware/auth";
-import { createCardService } from "@/lib/services/factory";
+import { createCardService, createProfileService } from "@/lib/services/factory";
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/middleware/auth");
@@ -15,9 +15,13 @@ const mockRequireAuth = requireAuth as jest.MockedFunction<typeof requireAuth>;
 const mockCreateCardService = createCardService as jest.MockedFunction<
   typeof createCardService
 >;
+const mockCreateProfileService = createProfileService as jest.MockedFunction<
+  typeof createProfileService
+>;
 
 describe("GET /api/cards/due (integration)", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
+  const mockDefaultProfile = { id: "profile-default", account_id: "user-123", name: "我", is_default: true };
   const mockSupabase = {
     from: jest.fn(() => ({
       select: jest.fn(() => ({
@@ -34,6 +38,10 @@ describe("GET /api/cards/due (integration)", () => {
       user: mockUser as never,
       supabase: mockSupabase as never,
     });
+    mockCreateProfileService.mockResolvedValue({
+      getDefaultProfile: jest.fn().mockResolvedValue(mockDefaultProfile),
+      getProfiles: jest.fn().mockResolvedValue([mockDefaultProfile]),
+    } as never);
   });
 
   it("returns 200 and due cards when auth and service succeed", async () => {
@@ -72,7 +80,7 @@ describe("GET /api/cards/due (integration)", () => {
     expect(body.data.cards[0].knowledge_code).toBe("k1");
     expect(mockRequireAuth).toHaveBeenCalledTimes(1);
     expect(mockGetDueCards).toHaveBeenCalledWith(
-      "user-123",
+      "profile-default",
       "A1",
       -480,
       10
@@ -98,7 +106,7 @@ describe("GET /api/cards/due (integration)", () => {
     expect(body.data.reviewedCount).toBe(10);
     expect(body.data.cards).toEqual([]);
     expect(mockGetDueCards).toHaveBeenCalledWith(
-      "user-123",
+      "profile-default",
       undefined,
       undefined,
       10

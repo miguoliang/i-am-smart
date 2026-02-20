@@ -31,10 +31,10 @@ describe('StatsService', () => {
     mockRepo.getUserStats.mockResolvedValue(mockStats);
     mockRepo.getReviewHeatmap.mockResolvedValue(mockHeatmap);
 
-    const result = await service.getStats('user-1', -480);
+    const result = await service.getStats('profile-1', -480);
 
-    expect(mockRepo.getUserStats).toHaveBeenCalledWith('user-1');
-    expect(mockRepo.getReviewHeatmap).toHaveBeenCalledWith('user-1', -480);
+    expect(mockRepo.getUserStats).toHaveBeenCalledWith('profile-1');
+    expect(mockRepo.getReviewHeatmap).toHaveBeenCalledWith('profile-1', -480);
     expect(result).toEqual({
       stats: mockStats,
       heatmap: mockHeatmap,
@@ -44,6 +44,6 @@ describe('StatsService', () => {
   it('should propagate errors from repository', async () => {
     mockRepo.getUserStats.mockRejectedValue(new Error('DB Error'));
 
-    await expect(service.getStats('user-1', 0)).rejects.toThrow('DB Error');
+    await expect(service.getStats('profile-1', 0)).rejects.toThrow('DB Error');
   });
 });

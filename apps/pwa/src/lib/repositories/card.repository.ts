@@ -2,7 +2,7 @@ import { Card } from '@/app/learn/types';
 
 export interface ReviewCardParams {
   cardId: number;
-  userId: string;
+  profileId: string;
   quality: number;
   easeFactor: number;
   intervalDays: number;
@@ -11,8 +11,8 @@ export interface ReviewCardParams {
 }
 
 export interface CardRepository {
-  getReviewedTodayCount(userId: string, startDate: string, endDate: string): Promise<number>;
-  getDueCards(userId: string, limit: number, level?: string): Promise<Card[]>;
-  getCardById(cardId: number, userId: string): Promise<Card | null>;
+  getReviewedTodayCount(profileId: string, startDate: string, endDate: string): Promise<number>;
+  getDueCards(profileId: string, limit: number, level?: string): Promise<Card[]>;
+  getCardById(cardId: number, profileId: string): Promise<Card | null>;
   reviewCard(params: ReviewCardParams): Promise<void>;
 }

@@ -7,11 +7,13 @@ import { SupabaseAccountRepository } from '@/lib/repositories/implementations/su
 import { SupabaseKnowledgeRepository } from '@/lib/repositories/implementations/supabase-knowledge.repository';
 import { SupabaseFeedbackRepository } from '@/lib/repositories/implementations/supabase-feedback.repository';
 import { SupabaseStatsRepository } from '@/lib/repositories/implementations/supabase-stats.repository';
+import { SupabaseProfileRepository } from '@/lib/repositories/implementations/supabase-profile.repository';
 import { CardService } from './cardService';
 import { AccountService } from './accountService';
 import { KnowledgeService } from './knowledgeService';
 import { FeedbackService } from './feedbackService';
 import { StatsService } from './statsService';
+import { ProfileService } from './profileService';
 
 /**
  * Resolve a Supabase user-context client: reuse if provided, otherwise create from request.
@@ -65,6 +67,17 @@ export async function createStatsService(reqOrClient?: NextRequest | SupabaseCli
   const supabase = await resolveClient(reqOrClient);
   const repo = new SupabaseStatsRepository(supabase);
   return new StatsService(repo);
+}
+
+/**
+ * Factory for ProfileService
+ * Uses Route Handler Client (User Context)
+ * @param reqOrClient - NextRequest or existing SupabaseClient to reuse
+ */
+export async function createProfileService(reqOrClient?: NextRequest | SupabaseClient): Promise<ProfileService> {
+  const supabase = await resolveClient(reqOrClient);
+  const repo = new SupabaseProfileRepository(supabase);
+  return new ProfileService(repo);
 }
 
 /**

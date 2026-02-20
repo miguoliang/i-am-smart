@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireAuth } from "@/lib/middleware/auth";
+import { createProfileService } from "@/lib/services/factory";
 import { MIN_DAILY_DUE_LIMIT, MAX_DAILY_DUE_LIMIT, DAILY_REVIEW_LIMIT } from "@/lib/constants";
 import { t } from "@/lib/i18n";
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from("accounts")
-      .select("username, daily_due_limit")
+      .select("username, daily_due_limit, plan")
       .eq("id", user.id)
       .single();
 
@@ -18,9 +19,14 @@ export async function GET(req: NextRequest) {
       throw ApiError.internal(t().settings.loadFailed);
     }
 
+    const profileService = await createProfileService(supabase);
+    const profiles = await profileService.getProfiles(user.id);
+
     return apiSuccess({
       username: data?.username ?? null,
       daily_due_limit: data?.daily_due_limit ?? DAILY_REVIEW_LIMIT,
+      plan: data?.plan ?? 'free',
+      profiles,
     });
   } catch (error) {
     return handleApiError(error);
@@ -32,7 +38,6 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  // Support PUT for miniprogram compatibility (miniprogram doesn't support PATCH)
   return updateAccount(req);
 }
 

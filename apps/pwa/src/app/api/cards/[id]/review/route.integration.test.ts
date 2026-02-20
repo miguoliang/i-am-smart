@@ -1,11 +1,11 @@
 /**
  * Integration tests for POST /api/cards/[id]/review
- * Tests the route handler with mocked auth and CardService (full request → response flow).
+ * Tests the route handler with mocked auth, CardService, and ProfileService.
  * @jest-environment node
  */
 import { POST } from "./route";
 import { requireAuth } from "@/lib/middleware/auth";
-import { createCardService } from "@/lib/services/factory";
+import { createCardService, createProfileService } from "@/lib/services/factory";
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/middleware/auth");
@@ -15,9 +15,13 @@ const mockRequireAuth = requireAuth as jest.MockedFunction<typeof requireAuth>;
 const mockCreateCardService = createCardService as jest.MockedFunction<
   typeof createCardService
 >;
+const mockCreateProfileService = createProfileService as jest.MockedFunction<
+  typeof createProfileService
+>;
 
 describe("POST /api/cards/[id]/review (integration)", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
+  const mockDefaultProfile = { id: "profile-default", account_id: "user-123", name: "我", is_default: true };
   const mockSupabase = {
     from: jest.fn(() => ({
       select: jest.fn(() => ({
@@ -34,6 +38,10 @@ describe("POST /api/cards/[id]/review (integration)", () => {
       user: mockUser as never,
       supabase: mockSupabase as never,
     });
+    mockCreateProfileService.mockResolvedValue({
+      getDefaultProfile: jest.fn().mockResolvedValue(mockDefaultProfile),
+      getProfiles: jest.fn().mockResolvedValue([mockDefaultProfile]),
+    } as never);
   });
 
   it("returns 200 and nextReview when review succeeds", async () => {
@@ -61,7 +69,7 @@ describe("POST /api/cards/[id]/review (integration)", () => {
     expect(body.data.success).toBe(true);
     expect(body.data.nextReview).toBe(nextReview);
     expect(mockReviewCard).toHaveBeenCalledWith(
-      "user-123",
+      "profile-default",
       1,
       5,
       -480,
