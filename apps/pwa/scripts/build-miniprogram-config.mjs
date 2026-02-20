@@ -14,8 +14,8 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const rootDir = join(__dirname, '..');
-const configPath = join(rootDir, 'miniprogram', 'config.ts');
+const rootDir = join(__dirname, '..', '..', '..');
+const configPath = join(rootDir, 'apps', 'miniprogram', 'config.ts');
 
 // Read environment variables (required, no defaults)
 const apiBaseUrl = process.env.NEXT_PUBLIC_APP_ORIGIN;
