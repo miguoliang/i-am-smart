@@ -102,15 +102,14 @@ jobs:
         run: |
           pkg=deploy/${{ env.PACKAGE_NAME }}
           mkdir -p "$pkg"
-          # Monorepo standalone: server.js is under apps/pwa/ within standalone output
-          cp -r apps/pwa/.next/standalone/apps/pwa/. "$pkg/"
-          # Copy shared node_modules from standalone root
-          cp -r apps/pwa/.next/standalone/node_modules "$pkg/node_modules"
-          [ -d apps/pwa/.next/standalone/package.json ] && cp apps/pwa/.next/standalone/package.json "$pkg/" || true
-          cp -r apps/pwa/public "$pkg/public"
-          mkdir -p "$pkg/.next"
-          cp -r apps/pwa/.next/static "$pkg/.next/static"
-          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE SUPABASE_AUTH_HOOK_SECRET; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
+          # Copy entire standalone output preserving monorepo structure
+          cp -r apps/pwa/.next/standalone/. "$pkg/"
+          # Copy public and static assets into the app directory
+          cp -r apps/pwa/public "$pkg/apps/pwa/public"
+          mkdir -p "$pkg/apps/pwa/.next"
+          cp -r apps/pwa/.next/static "$pkg/apps/pwa/.next/static"
+          # Write .env into the app directory where server.js runs
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE SUPABASE_AUTH_HOOK_SECRET; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
           tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
       - name: Upload tarball
@@ -154,12 +153,12 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
-            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next"
+            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next" "$DEPLOY_PATH/apps"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
             if command -v pm2 &>/dev/null; then
-              cd "$DEPLOY_PATH"
+              cd "$DEPLOY_PATH/apps/pwa"
               pm2 restart be-it-forever-preview 2>/dev/null || PORT=3001 pm2 start server.js --name be-it-forever-preview || true
             fi
             echo "Deploy done."
@@ -198,12 +197,12 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
-            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next"
+            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next" "$DEPLOY_PATH/apps"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
             if command -v pm2 &>/dev/null; then
-              cd "$DEPLOY_PATH"
+              cd "$DEPLOY_PATH/apps/pwa"
               pm2 restart be-it-forever 2>/dev/null || PORT=3000 pm2 start server.js --name be-it-forever || true
             fi
             echo "Deploy done."
