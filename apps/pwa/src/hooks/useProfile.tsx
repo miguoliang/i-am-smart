@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProfiles, type LearnerProfile } from "@/lib/api/profiles";
 
@@ -22,12 +22,14 @@ const ProfileContext = createContext<ProfileContextValue>({
   refetch: () => {},
 });
 
+function getStoredProfileId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACTIVE_PROFILE_KEY);
+}
+
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(ACTIVE_PROFILE_KEY);
-  });
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(getStoredProfileId);
 
   const { data: profiles = [], isLoading, refetch } = useQuery({
     queryKey: ["profiles"],
@@ -35,26 +37,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Resolve active profile
-  const activeProfile =
-    profiles.find((p) => p.id === activeProfileId) ??
-    profiles.find((p) => p.is_default) ??
-    profiles[0] ??
-    null;
-
-  // Sync activeProfileId when profiles load
-  useEffect(() => {
-    if (activeProfile && activeProfile.id !== activeProfileId) {
-      setActiveProfileIdState(activeProfile.id);
-      localStorage.setItem(ACTIVE_PROFILE_KEY, activeProfile.id);
+  // Resolve active profile — pure derivation, no effect needed
+  const activeProfile = useMemo(() => {
+    const byId = profiles.find((p) => p.id === activeProfileId);
+    if (byId) return byId;
+    const defaultProfile = profiles.find((p) => p.is_default) ?? profiles[0] ?? null;
+    // Sync localStorage if we fell back
+    if (defaultProfile && defaultProfile.id !== activeProfileId) {
+      localStorage.setItem(ACTIVE_PROFILE_KEY, defaultProfile.id);
     }
-  }, [activeProfile, activeProfileId]);
+    return defaultProfile;
+  }, [profiles, activeProfileId]);
 
   const setActiveProfileId = useCallback(
     (id: string) => {
       setActiveProfileIdState(id);
       localStorage.setItem(ACTIVE_PROFILE_KEY, id);
-      // Invalidate learning data queries so they refetch with new profile
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
