@@ -20,6 +20,7 @@ import {
 import { t } from "@/lib/i18n";
 import { DAILY_DUE_LIMIT_PRESETS } from "@/lib/constants";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 
 interface TopBarProps {
   onSignOut: () => void;
@@ -163,6 +164,11 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
 
           {/* Level List & Daily Limit */}
           <div className="flex-1 overflow-y-auto p-4">
+            {/* Profile Switcher */}
+            <div className="mb-6">
+              <ProfileSwitcher />
+            </div>
+
             {/* Daily due limit */}
             <div className="space-y-2 mb-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-3">

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ThemeProvider } from 'next-themes'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ProfileProvider } from '@/hooks/useProfile'
 
 // Valid routes that should handle auth state changes
 const VALID_ROUTES = ["/", "/learn", "/stats", "/operator"];
@@ -65,7 +66,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        {children}
+        <ProfileProvider>
+          {children}
+        </ProfileProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

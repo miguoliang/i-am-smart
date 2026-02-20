@@ -24,6 +24,17 @@ jest.mock("@/lib/utils/apiError", () => ({
   parseApiErrorResponse: async (_res: Response, defaultMessage: string) => defaultMessage,
 }));
 
+jest.mock("@/hooks/useProfile", () => ({
+  useProfile: () => ({
+    profiles: [{ id: "profile-1", account_id: "user-1", name: "我", is_default: true }],
+    activeProfile: { id: "profile-1", account_id: "user-1", name: "我", is_default: true },
+    setActiveProfileId: jest.fn(),
+    isLoading: false,
+    refetch: jest.fn(),
+  }),
+  ProfileProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 const mockCard = {
   id: 1,
   knowledge_code: "k1",
@@ -141,7 +152,7 @@ describe("Learn flow (integration)", () => {
     await userEvent.click(perfectButton);
 
     await waitFor(() => {
-      expect(mockReviewCard).toHaveBeenCalledWith(1, 5);
+      expect(mockReviewCard).toHaveBeenCalledWith(1, 5, "profile-1");
     });
   });
 });
