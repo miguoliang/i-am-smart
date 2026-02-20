@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,16 +11,19 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage
 
 # next.js
-/.next/
-/out/
-/.swc/
+.next/
+out/
+.swc/
 
 # production
-/build
-/deploy
+build
+deploy
+
+# turbo
+.turbo
 
 # misc
 .DS_Store
@@ -44,24 +47,24 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# packages build output
+packages/*/dist
+
 # PWA files
-public/sw.js
-public/sw.js.map
-public/workbox-*.js
-public/workbox-*.js.map
-public/sw 2.js
+apps/pwa/public/sw.js
+apps/pwa/public/sw.js.map
+apps/pwa/public/workbox-*.js
+apps/pwa/public/workbox-*.js.map
+apps/pwa/public/sw 2.js
 
 *storybook.log
 storybook-static
 .aider*
 
 # WeChat miniprogram
-miniprogram/node_modules
-miniprogram/.tea
-miniprogram/miniprogram_npm
+apps/miniprogram/node_modules
+apps/miniprogram/.tea
+apps/miniprogram/miniprogram_npm
 # Compiled JavaScript files (generated from TypeScript)
-miniprogram/**/*.js
-!miniprogram/node_modules/**/*.js
-# Shared directory compiled files (both root and miniprogram copies)
-shared/**/*.js
-miniprogram/shared/**/*.js
+apps/miniprogram/**/*.js
+!apps/miniprogram/node_modules/**/*.js

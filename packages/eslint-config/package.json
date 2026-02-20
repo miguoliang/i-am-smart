@@ -1,0 +1,11 @@
+{
+  "name": "@i-am-smart/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "peerDependencies": {
+    "eslint": ">=9",
+    "eslint-config-next": ">=15"
+  }
+}

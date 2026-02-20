@@ -1,1 +1,1 @@
-npm run lint && npx tsc --noEmit && npm test
+pnpm --filter @i-am-smart/pwa run lint && pnpm --filter @i-am-smart/pwa run type-check && pnpm --filter @i-am-smart/pwa run test
