@@ -18,10 +18,18 @@ interface DashboardResponse {
   totalUsers: number;
   todayReviews: number;
   todayRevenue: number;
+  todayDAU: number;
+  retention: {
+    nextDayRetention: number;
+    sevenDayRetention: number;
+    paidConversion: number;
+    totalActivatedUsers: number;
+  };
   trends: {
     registrations: DayMetric[];
     reviews: DayMetric[];
     revenue: DayRevenue[];
+    dau: DayMetric[];
   };
 }
 
@@ -116,15 +124,46 @@ export async function GET(req: NextRequest) {
       amount: revenueMap.get(d) || 0,
     }));
 
+    // --- DAU (RPC) ---
+    const { data: dauRpc } = await admin.rpc("get_dashboard_dau", {
+      p_tz_offset: offset,
+      p_days: 30,
+    });
+
+    const dauMap = new Map<string, number>();
+    for (const row of dauRpc ?? []) {
+      dauMap.set(row.active_date, Number(row.active_users));
+    }
+    const todayDAU = dauMap.get(today.dateStr) || 0;
+    const dauTrends: DayMetric[] = days.map((d) => ({
+      date: d,
+      count: dauMap.get(d) || 0,
+    }));
+
+    // --- Retention & Conversion (RPC) ---
+    const { data: retentionData } = await admin.rpc("get_dashboard_retention", {
+      p_tz_offset: offset,
+    });
+
+    const retention = retentionData ?? {
+      nextDayRetention: 0,
+      sevenDayRetention: 0,
+      paidConversion: 0,
+      totalActivatedUsers: 0,
+    };
+
     const response: DashboardResponse = {
       todayRegistrations,
       totalUsers,
       todayReviews,
       todayRevenue,
+      todayDAU,
+      retention,
       trends: {
         registrations: registrationTrends,
         reviews: reviewTrends,
         revenue: revenueTrends,
+        dau: dauTrends,
       },
     };
 

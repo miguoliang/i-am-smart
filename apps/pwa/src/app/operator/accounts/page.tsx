@@ -12,6 +12,7 @@ import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
+import { downloadCSV } from "@/lib/utils/csv";
 import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
 import {
@@ -259,14 +260,36 @@ export default function AccountsPage() {
         </p>
       </div>
 
-      <div className="mb-4 max-w-sm">
+      <div className="mb-4 flex items-center gap-3">
         <Input
           type="search"
           placeholder="按用户名或邮箱搜索..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full"
+          className="max-w-sm"
         />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={accounts.length === 0}
+          onClick={() =>
+            downloadCSV(
+              accounts as unknown as Record<string, unknown>[],
+              [
+                { key: "id", label: "ID" },
+                { key: "username", label: "用户名" },
+                { key: "email", label: "邮箱" },
+                { key: "role", label: "角色" },
+                { key: "dailyReviewCount", label: "今日复习" },
+                { key: "last_sign_in_at", label: "最后登录" },
+                { key: "created_at", label: "创建时间" },
+              ],
+              `accounts-${new Date().toISOString().slice(0, 10)}`
+            )
+          }
+        >
+          导出 CSV
+        </Button>
       </div>
 
       <DataTable

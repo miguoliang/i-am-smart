@@ -96,8 +96,8 @@ export default function OperatorDashboard() {
         仪表盘
       </h1>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+      {/* Metric cards - row 1 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         <MetricCard
           label="今日注册"
           value={data.todayRegistrations}
@@ -120,9 +120,34 @@ export default function OperatorDashboard() {
         />
       </div>
 
+      {/* Metric cards - row 2 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+        <MetricCard
+          label="今日活跃"
+          value={data.todayDAU}
+          color="bg-teal-500"
+        />
+        <MetricCard
+          label="次日留存"
+          value={`${data.retention.nextDayRetention}%`}
+          color="bg-purple-500"
+        />
+        <MetricCard
+          label="7日留存"
+          value={`${data.retention.sevenDayRetention}%`}
+          color="bg-pink-500"
+        />
+        <MetricCard
+          label="付费转化"
+          value={`${data.retention.paidConversion}%`}
+          color="bg-rose-500"
+        />
+      </div>
+
       {/* Trend charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TrendCard title="注册趋势 (30天)" data={data.trends.registrations} valueKey="count" />
+        <TrendCard title="DAU 趋势 (30天)" data={data.trends.dau} valueKey="count" />
         <TrendCard title="复习趋势 (30天)" data={data.trends.reviews} valueKey="count" />
         <TrendCard
           title="收入趋势 (30天)"

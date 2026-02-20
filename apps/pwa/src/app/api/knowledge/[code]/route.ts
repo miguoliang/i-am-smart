@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { writeAuditLog } from "@/lib/utils/auditLog";
 
 /** PUT: Update a knowledge item */
 export async function PUT(
@@ -9,7 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    await requireOperator(req);
+    const { user } = await requireOperator(req);
     const { code } = await params;
     if (!code) throw ApiError.validationError("缺少 code");
 
@@ -51,6 +52,14 @@ export async function PUT(
     if (error) throw ApiError.internal(error.message);
     if (!data) throw ApiError.notFound("知识条目不存在");
 
+    void writeAuditLog({
+      operator_id: user.id,
+      action: "update_knowledge",
+      target_type: "knowledge",
+      target_id: code,
+      detail: update,
+    });
+
     return apiSuccess(data);
   } catch (e) {
     return handleApiError(e);
@@ -63,7 +72,7 @@ export async function DELETE(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    await requireOperator(req);
+    const { user } = await requireOperator(req);
     const { code } = await params;
     if (!code) throw ApiError.validationError("缺少 code");
 
@@ -74,6 +83,13 @@ export async function DELETE(
       .eq("code", code);
 
     if (error) throw ApiError.internal(error.message);
+
+    void writeAuditLog({
+      operator_id: user.id,
+      action: "delete_knowledge",
+      target_type: "knowledge",
+      target_id: code,
+    });
 
     return apiSuccess({ deleted: true });
   } catch (e) {

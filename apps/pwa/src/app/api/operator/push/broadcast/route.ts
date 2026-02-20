@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { writeAuditLog } from "@/lib/utils/auditLog";
 
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
   webpush.setVapidDetails(
@@ -15,7 +16,7 @@ if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
 /** POST: Broadcast push notification to all or specific users (operator only) */
 export async function POST(req: NextRequest) {
   try {
-    await requireOperator(req);
+    const { user } = await requireOperator(req);
 
     if (!process.env.VAPID_PRIVATE_KEY) {
       throw ApiError.internal("VAPID keys not configured");
@@ -75,6 +76,12 @@ export async function POST(req: NextRequest) {
     }
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
+
+    void writeAuditLog({
+      operator_id: user.id,
+      action: "push_broadcast",
+      detail: { title: body.title, sent, total: subscriptions.length },
+    });
 
     return apiSuccess({ sent, total: subscriptions.length });
   } catch (e) {
