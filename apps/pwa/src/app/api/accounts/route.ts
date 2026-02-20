@@ -10,9 +10,10 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = parseInt(searchParams.get("perPage") || "10", 10);
+    const search = searchParams.get("search")?.trim() || undefined;
 
     const accountService = createAccountService();
-    const result = await accountService.listUsers(page, perPage);
+    const result = await accountService.listUsers(page, perPage, search);
 
     return apiSuccess({
       accounts: result.data,
