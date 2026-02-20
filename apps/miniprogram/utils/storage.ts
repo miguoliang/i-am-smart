@@ -5,11 +5,9 @@
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const LEVEL_KEY = 'learn_level';
+const ACTIVE_PROFILE_KEY = 'active_profile_id';
 
 export const storage = {
-  /**
-   * Get access token from storage
-   */
   getAccessToken(): string | null {
     try {
       return wx.getStorageSync(ACCESS_TOKEN_KEY) || null;
@@ -18,9 +16,6 @@ export const storage = {
     }
   },
 
-  /**
-   * Set access token to storage
-   */
   setAccessToken(token: string): void {
     try {
       wx.setStorageSync(ACCESS_TOKEN_KEY, token);
@@ -29,9 +24,6 @@ export const storage = {
     }
   },
 
-  /**
-   * Get refresh token from storage
-   */
   getRefreshToken(): string | null {
     try {
       return wx.getStorageSync(REFRESH_TOKEN_KEY) || null;
@@ -40,9 +32,6 @@ export const storage = {
     }
   },
 
-  /**
-   * Set refresh token to storage
-   */
   setRefreshToken(token: string): void {
     try {
       wx.setStorageSync(REFRESH_TOKEN_KEY, token);
@@ -51,9 +40,6 @@ export const storage = {
     }
   },
 
-  /**
-   * Clear all auth tokens
-   */
   clearAuth(): void {
     try {
       wx.removeStorageSync(ACCESS_TOKEN_KEY);
@@ -63,9 +49,6 @@ export const storage = {
     }
   },
 
-  /**
-   * Get learning level from storage
-   */
   getLevel(): string {
     try {
       return wx.getStorageSync(LEVEL_KEY) || 'A1';
@@ -74,14 +57,27 @@ export const storage = {
     }
   },
 
-  /**
-   * Set learning level to storage
-   */
   setLevel(level: string): void {
     try {
       wx.setStorageSync(LEVEL_KEY, level);
     } catch (error) {
       console.error('Failed to save level:', error);
+    }
+  },
+
+  getActiveProfileId(): string | null {
+    try {
+      return wx.getStorageSync(ACTIVE_PROFILE_KEY) || null;
+    } catch {
+      return null;
+    }
+  },
+
+  setActiveProfileId(id: string): void {
+    try {
+      wx.setStorageSync(ACTIVE_PROFILE_KEY, id);
+    } catch (error) {
+      console.error('Failed to save active profile id:', error);
     }
   },
 };

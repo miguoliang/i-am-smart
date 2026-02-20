@@ -5,6 +5,7 @@
 import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { Account } from '../../shared/types/user';
+import type { LearnerProfile } from '../../shared/types/profile';
 import { isAuthenticated } from '../../utils/auth';
 import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
 import { storage } from '../../utils/storage';
@@ -28,6 +29,9 @@ Page({
     dailyLimitPresets: DAILY_DUE_LIMIT_PRESETS,
     dailyLimitIndex: 0,
     dailyDueLimit: 10,
+    // Profiles
+    profiles: [] as LearnerProfile[],
+    activeProfileId: '' as string,
     // Helper data for template conditionals
     proLevels: ['B1', 'B2'],
     comingSoonLevels: ['C1', 'C2'],
@@ -43,6 +47,7 @@ Page({
     // Wait for authentication before loading account
     await this.waitForAuth();
     this.loadAccount();
+    this.loadProfiles();
   },
 
   async waitForAuth() {
@@ -154,6 +159,42 @@ Page({
         icon: 'none',
       });
     }
+  },
+
+  async loadProfiles() {
+    if (!isAuthenticated()) return;
+
+    try {
+      const profiles = await request<LearnerProfile[]>(API_ENDPOINTS.PROFILES);
+      const activeProfileId = storage.getActiveProfileId();
+      const resolved = activeProfileId && profiles.find((p) => p.id === activeProfileId)
+        ? activeProfileId
+        : (profiles.find((p) => p.is_default)?.id ?? profiles[0]?.id ?? '');
+
+      if (resolved && resolved !== activeProfileId) {
+        storage.setActiveProfileId(resolved);
+      }
+
+      this.setData({
+        profiles,
+        activeProfileId: resolved,
+      });
+    } catch (error: unknown) {
+      console.error('Failed to load profiles:', error);
+    }
+  },
+
+  onProfileChange(e: WechatMiniprogram.TouchEvent) {
+    const profileId = e.currentTarget.dataset.id as string;
+    if (!profileId || profileId === this.data.activeProfileId) return;
+
+    storage.setActiveProfileId(profileId);
+    this.setData({ activeProfileId: profileId });
+
+    wx.showToast({
+      title: '已切换档案',
+      icon: 'success',
+    });
   },
 
 });

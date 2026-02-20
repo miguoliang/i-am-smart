@@ -6,6 +6,7 @@ import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { StatsData } from '../../shared/types/stats';
 import { isAuthenticated } from '../../utils/auth';
+import { storage } from '../../utils/storage';
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   if (error instanceof Error && error.message) {
@@ -63,9 +64,12 @@ Page({
 
     try {
       const timezoneOffset = new Date().getTimezoneOffset();
-      const response = await request<StatsData>(
-        `${API_ENDPOINTS.STATS}?offset=${timezoneOffset}`
-      );
+      const profileId = storage.getActiveProfileId();
+      let statsUrl = `${API_ENDPOINTS.STATS}?offset=${timezoneOffset}`;
+      if (profileId) {
+        statsUrl += `&profileId=${profileId}`;
+      }
+      const response = await request<StatsData>(statsUrl);
       
       console.log('Stats API response:', response);
       

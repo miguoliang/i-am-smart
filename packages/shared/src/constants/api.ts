@@ -29,7 +29,11 @@ export const API_ENDPOINTS = {
   
   // Account
   ACCOUNTS_ME: '/api/accounts/me',
-  
+
+  // Profiles
+  PROFILES: '/api/profiles',
+  PROFILE: (id: string) => `/api/profiles/${id}`,
+
   // Stats
   STATS: '/api/stats',
   

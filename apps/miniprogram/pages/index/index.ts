@@ -114,7 +114,11 @@ Page({
     
     try {
       const level = this.data.level;
-      const endpoint = `${API_ENDPOINTS.CARDS_DUE}?level=${level}`;
+      const profileId = storage.getActiveProfileId();
+      let endpoint = `${API_ENDPOINTS.CARDS_DUE}?level=${level}`;
+      if (profileId) {
+        endpoint += `&profileId=${profileId}`;
+      }
       console.log('Requesting endpoint:', endpoint);
       
       const result = await request<DueCardsResult>(endpoint);
@@ -217,7 +221,7 @@ Page({
         API_ENDPOINTS.CARD_REVIEW(card.id),
         {
           method: 'POST',
-          data: { quality },
+          data: { quality, profileId: storage.getActiveProfileId() },
         }
       );
 
