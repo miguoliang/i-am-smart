@@ -11,6 +11,7 @@ export interface DueCardsResponse {
 
 export interface FetchDueCardsParams {
   level?: string;
+  profileId?: string;
 }
 
 export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCardsResponse> {
@@ -18,10 +19,10 @@ export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCa
   if (params?.level) {
     searchParams.set('level', params.level);
   }
+  if (params?.profileId) {
+    searchParams.set('profileId', params.profileId);
+  }
 
-  // Add timezone offset
-  // getTimezoneOffset() returns the difference in minutes between UTC and local time
-  // e.g., -480 for UTC+8, 480 for UTC-8
   const timezoneOffset = new Date().getTimezoneOffset();
   searchParams.set('timezoneOffset', timezoneOffset.toString());
 
@@ -38,12 +39,12 @@ export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCa
   return json.data ?? { reviewedCount: 0, cards: [] };
 }
 
-export async function reviewCard(cardId: number, quality: number): Promise<void> {
+export async function reviewCard(cardId: number, quality: number, profileId?: string): Promise<void> {
   const timezoneOffset = new Date().getTimezoneOffset();
   const res = await fetch(`/api/cards/${cardId}/review`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quality, timezoneOffset }),
+    body: JSON.stringify({ quality, timezoneOffset, profileId }),
   });
 
   if (!res.ok) {
@@ -51,4 +52,3 @@ export async function reviewCard(cardId: number, quality: number): Promise<void>
     throw new Error(message);
   }
 }
-

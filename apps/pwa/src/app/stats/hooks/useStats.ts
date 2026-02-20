@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toDateString } from '@/lib/utils/dateUtils'
 import type { ApiResponse } from '@/lib/utils/apiError'
+import { useProfile } from '@/hooks/useProfile'
 
 export interface StatsData {
   total: number;
@@ -22,6 +23,7 @@ interface StatsApiPayload {
 }
 
 export function useStats() {
+  const { activeProfile } = useProfile();
   const [stats, setStats] = useState<StatsData>({
     total: 0,
     mastered: 0,
@@ -35,7 +37,8 @@ export function useStats() {
     const fetchStats = async () => {
       try {
         const offset = new Date().getTimezoneOffset();
-        const res = await fetch(`/api/stats?offset=${offset}`);
+        const profileParam = activeProfile?.id ? `&profileId=${activeProfile.id}` : '';
+        const res = await fetch(`/api/stats?offset=${offset}${profileParam}`);
         if (!res.ok) throw new Error('Failed to fetch stats');
         
         const response = (await res.json()) as ApiResponse<StatsApiPayload> | StatsApiPayload;
@@ -71,7 +74,7 @@ export function useStats() {
       }
     }
     fetchStats()
-  }, [])
+  }, [activeProfile?.id])
 
   return stats;
 }
