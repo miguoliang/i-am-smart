@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
 import createMDX from "@next/mdx";
+import path from "path";
 
 // Use string references for plugins to ensure serializable options
 const withMDX = createMDX({
@@ -12,6 +13,8 @@ const withMDX = createMDX({
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Required for monorepo: trace files up to the repo root
+  outputFileTracingRoot: path.join(__dirname, "../../"),
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
   webpack: (config) => {
     config.resolve.alias = {

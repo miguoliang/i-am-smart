@@ -1,0 +1,10 @@
+{
+  "extends": "@i-am-smart/tsconfig/miniprogram.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": ".",
+    "rootDir": "."
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "**/*.js"]
+}

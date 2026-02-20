@@ -1,13 +1,11 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "extends": "./base.json",
   "compilerOptions": {
-    "target": "ES2017",
+    "strict": false,
     "module": "CommonJS",
     "lib": ["ES2017"],
-    "strict": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true,
     "baseUrl": ".",
     "outDir": ".",
     "rootDir": ".",
@@ -15,7 +13,5 @@
     "noImplicitAny": false,
     "declaration": false,
     "sourceMap": false
-  },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "**/*.js"]
+  }
 }

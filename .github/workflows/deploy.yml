@@ -59,52 +59,52 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build miniprogram config
         env:
           ALLOW_MISSING_CONFIG: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-        run: npm run build:miniprogram-config
+        run: pnpm --filter @i-am-smart/pwa run build:miniprogram-config
 
       - name: Lint
-        run: npm run lint
+        run: pnpm --filter @i-am-smart/pwa run lint
 
-      - name: Check shared contract sync
-        run: npm run check:shared-sync
-
-      - name: Type check (web)
-        run: npx tsc --noEmit
+      - name: Type check (pwa)
+        run: pnpm --filter @i-am-smart/pwa run type-check
 
       - name: Type check (miniprogram)
-        run: npm run type-check:miniprogram
+        run: pnpm --filter @i-am-smart/miniprogram run type-check
 
       - name: Test
-        run: npm run test -- --runInBand
+        run: pnpm --filter @i-am-smart/pwa run test -- --runInBand
 
       - name: Cache .next
         uses: actions/cache@v4
         with:
-          path: .next
-          key: next-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/next.config.*') }}-${{ env.NEXT_PUBLIC_APP_ENV }}
+          path: apps/pwa/.next
+          key: next-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/pwa/**/*.ts', 'apps/pwa/**/*.tsx', 'apps/pwa/**/next.config.*') }}-${{ env.NEXT_PUBLIC_APP_ENV }}
 
       - name: Build
-        run: npm run build
+        run: pnpm --filter @i-am-smart/pwa run build
 
       - name: Package
         if: github.event_name != 'pull_request'
         run: |
           pkg=deploy/${{ env.PACKAGE_NAME }}
           mkdir -p "$pkg"
-          cp -r .next/standalone/. "$pkg/"
-          cp -r public "$pkg/public"
-          cp -r .next/static "$pkg/.next/static"
+          cp -r apps/pwa/.next/standalone/. "$pkg/"
+          cp -r apps/pwa/public "$pkg/public"
+          cp -r apps/pwa/.next/static "$pkg/.next/static"
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE SUPABASE_AUTH_HOOK_SECRET; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/.env"
           tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
 
