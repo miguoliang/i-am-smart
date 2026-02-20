@@ -17,34 +17,34 @@ export interface ReviewCardResult {
 
 /**
  * Card service: due cards, today's review count, and card review (SM-2).
+ * All methods now operate on profileId instead of userId.
  */
 export class CardService {
   constructor(private cardRepository: CardRepository) {}
 
   /**
-   * Returns how many cards the user has already reviewed today (in their timezone).
+   * Returns how many cards the profile has already reviewed today (in their timezone).
    */
-  async getReviewedTodayCount(userId: string, timezoneOffset?: number): Promise<number> {
+  async getReviewedTodayCount(profileId: string, timezoneOffset?: number): Promise<number> {
     const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
     return this.cardRepository.getReviewedTodayCount(
-      userId, 
+      profileId, 
       startOfToday.toISOString(), 
       endOfToday.toISOString()
     );
   }
 
   /**
-   * Returns due cards for the user, respecting the daily review limit.
-   * If the user has already reached the limit today, returns an empty list.
+   * Returns due cards for the profile, respecting the daily review limit.
    * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
    */
   async getDueCards(
-    userId: string,
+    profileId: string,
     level?: string,
     timezoneOffset?: number,
     dailyLimit: number = DAILY_REVIEW_LIMIT
   ): Promise<DueCardsResult> {
-    const currentReviewedCount = await this.getReviewedTodayCount(userId, timezoneOffset);
+    const currentReviewedCount = await this.getReviewedTodayCount(profileId, timezoneOffset);
 
     if (currentReviewedCount >= dailyLimit) {
       return {
@@ -54,7 +54,7 @@ export class CardService {
     }
 
     const remainingSlots = dailyLimit - currentReviewedCount;
-    const cards = await this.cardRepository.getDueCards(userId, remainingSlots, level);
+    const cards = await this.cardRepository.getDueCards(profileId, remainingSlots, level);
 
     return {
       reviewedCount: currentReviewedCount,
@@ -63,38 +63,29 @@ export class CardService {
   }
 
   /**
-   * Gets a card by ID for the user.
-   * @param cardId - Card ID
-   * @param userId - User ID
-   * @returns Card or null if not found
+   * Gets a card by ID for the profile.
    */
-  async getCardById(cardId: number, userId: string): Promise<Card | null> {
-    return this.cardRepository.getCardById(cardId, userId);
+  async getCardById(cardId: number, profileId: string): Promise<Card | null> {
+    return this.cardRepository.getCardById(cardId, profileId);
   }
 
   /**
    * Records a review for a card using the SM-2 spaced repetition algorithm.
    *
-   * Steps: (1) load card and enforce daily limit, (2) compute new interval/ease/reps via SM-2,
-   * (3) persist via repository.
-   *
-   * @see https://en.wikipedia.org/wiki/SuperMemo#SM-2_algorithm
-   * @param userId - Account ID
+   * @param profileId - Learner profile ID
    * @param cardId - Card ID
-   * @param quality - User rating 0–5: 0–2 = incorrect, 3–5 = correct (higher = easier)
-   * @param timezoneOffset - Minutes offset from UTC (e.g. from Date.getTimezoneOffset()) for “today”
-   * @returns Next review date (ISO string) and success
+   * @param quality - User rating 0–5
+   * @param timezoneOffset - Minutes offset from UTC
    * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
-   * @throws ApiError.notFound if card missing, ApiError.dailyLimitExceeded if daily limit reached
    */
   async reviewCard(
-    userId: string,
+    profileId: string,
     cardId: number,
     quality: number,
     timezoneOffset?: number,
     dailyLimit: number = DAILY_REVIEW_LIMIT
   ): Promise<ReviewCardResult> {
-    const card = await this.cardRepository.getCardById(cardId, userId);
+    const card = await this.cardRepository.getCardById(cardId, profileId);
     if (!card) {
       throw ApiError.notFound(t().cards.cardNotFound);
     }
@@ -106,7 +97,7 @@ export class CardService {
       new Date(card.last_reviewed_at) <= endOfToday;
 
     if (!isCardReviewedToday) {
-      const reviewedTodayCount = await this.getReviewedTodayCount(userId, timezoneOffset);
+      const reviewedTodayCount = await this.getReviewedTodayCount(profileId, timezoneOffset);
       if (reviewedTodayCount >= dailyLimit) {
         throw ApiError.dailyLimitExceeded(
           translate(t().cards.dailyLimitExceeded, { limit: dailyLimit })
@@ -141,7 +132,7 @@ export class CardService {
 
     await this.cardRepository.reviewCard({
       cardId,
-      userId,
+      profileId,
       quality,
       easeFactor: parseFloat(newEase.toFixed(2)),
       intervalDays: newInterval,

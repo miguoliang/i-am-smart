@@ -5,16 +5,15 @@ import { validateUserStats } from '../utils/validation';
 
 interface HeatmapRow {
   review_date: string;
-  // Postgres bigint can be returned as string (node-pg) or number (PostgREST/Supabase)
   review_count: string | number;
 }
 
 export class SupabaseStatsRepository implements StatsRepository {
   constructor(private supabase: SupabaseClient) {}
 
-  async getUserStats(userId: string): Promise<UserStats> {
+  async getUserStats(profileId: string): Promise<UserStats> {
     const { data, error } = await this.supabase
-      .rpc('get_user_stats', { p_user_id: userId });
+      .rpc('get_profile_stats', { p_profile_id: profileId });
 
     if (error) {
       handleRepositoryError(error, 'Get user stats');
@@ -27,10 +26,10 @@ export class SupabaseStatsRepository implements StatsRepository {
     return validateUserStats(data);
   }
 
-  async getReviewHeatmap(userId: string, timezoneOffset: number): Promise<HeatmapPoint[]> {
+  async getReviewHeatmap(profileId: string, timezoneOffset: number): Promise<HeatmapPoint[]> {
     const { data, error } = await this.supabase
-      .rpc('get_review_heatmap', { 
-        p_user_id: userId, 
+      .rpc('get_profile_review_heatmap', { 
+        p_profile_id: profileId, 
         p_timezone_offset: timezoneOffset 
       });
 
@@ -41,10 +40,9 @@ export class SupabaseStatsRepository implements StatsRepository {
     }
 
     if (!Array.isArray(data)) {
-      throw new Error('Expected array from get_review_heatmap RPC');
+      throw new Error('Expected array from get_profile_review_heatmap RPC');
     }
 
-    // Postgres bigint may return as string (node-pg) or number (PostgREST/Supabase)
     return data.map((row: HeatmapRow) => {
       if (!row.review_date || typeof row.review_date !== 'string') {
         throw new Error(`Invalid heatmap row: missing or invalid review_date`);

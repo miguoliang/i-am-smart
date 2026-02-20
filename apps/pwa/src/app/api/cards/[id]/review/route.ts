@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createCardService } from '@/lib/services/factory'
+import { createCardService, createProfileService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireAuth } from '@/lib/middleware/auth'
 import { MAX_QUALITY, MIN_QUALITY, DAILY_REVIEW_LIMIT } from '@/lib/constants'
@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { quality, timezoneOffset } = await request.json();
+    const { quality, timezoneOffset, profileId: requestProfileId } = await request.json();
 
     if (typeof quality !== 'number' || quality < MIN_QUALITY || quality > MAX_QUALITY) {
       throw ApiError.validationError(
@@ -34,8 +34,23 @@ export async function POST(
       throw ApiError.validationError(t().validation.invalidCardId);
     }
 
+    // Resolve profile
+    const profileService = await createProfileService(supabase);
+    let resolvedProfileId: string;
+    if (requestProfileId) {
+      const profiles = await profileService.getProfiles(user.id);
+      const match = profiles.find((p) => p.id === requestProfileId);
+      if (!match) {
+        throw ApiError.notFound('学习档案不存在');
+      }
+      resolvedProfileId = match.id;
+    } else {
+      const defaultProfile = await profileService.getDefaultProfile(user.id);
+      resolvedProfileId = defaultProfile.id;
+    }
+
     const cardService = await createCardService(supabase);
-    const result = await cardService.reviewCard(user.id, cardId, quality, timezoneOffset, dailyLimit);
+    const result = await cardService.reviewCard(resolvedProfileId, cardId, quality, timezoneOffset, dailyLimit);
 
     return apiSuccess(result);
   } catch (error) {

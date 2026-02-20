@@ -7,11 +7,11 @@ import { CardRowSchema } from '../schemas/card.schema';
 export class SupabaseCardRepository implements CardRepository {
   constructor(private client: SupabaseClient) {}
 
-  async getReviewedTodayCount(userId: string, startDate: string, endDate: string): Promise<number> {
+  async getReviewedTodayCount(profileId: string, startDate: string, endDate: string): Promise<number> {
     const { count, error } = await this.client
       .from('account_cards')
       .select('*', { count: 'exact', head: true })
-      .eq('account_id', userId)
+      .eq('profile_id', profileId)
       .gte('last_reviewed_at', startDate)
       .lte('last_reviewed_at', endDate);
 
@@ -22,10 +22,10 @@ export class SupabaseCardRepository implements CardRepository {
     return count ?? 0;
   }
 
-  async getDueCards(userId: string, limit: number, level?: string): Promise<Card[]> {
+  async getDueCards(profileId: string, limit: number, level?: string): Promise<Card[]> {
     const { data, error } = await this.client
-      .rpc('get_due_cards', {
-        p_user_id: userId,
+      .rpc('get_due_cards_by_profile', {
+        p_profile_id: profileId,
         p_limit: limit,
         p_level: level,
       })
@@ -55,7 +55,7 @@ export class SupabaseCardRepository implements CardRepository {
     }
 
     if (!Array.isArray(data)) {
-      throw new Error('Expected array from get_due_cards RPC');
+      throw new Error('Expected array from get_due_cards_by_profile RPC');
     }
 
     const cards: Card[] = data.map((row: unknown, index: number) => {
@@ -70,7 +70,7 @@ export class SupabaseCardRepository implements CardRepository {
     return cards;
   }
 
-  async getCardById(cardId: number, userId: string): Promise<Card | null> {
+  async getCardById(cardId: number, profileId: string): Promise<Card | null> {
     const { data, error } = await this.client
       .from('account_cards')
       .select(`
@@ -89,7 +89,7 @@ export class SupabaseCardRepository implements CardRepository {
         )
       `)
       .eq('id', cardId)
-      .eq('account_id', userId)
+      .eq('profile_id', profileId)
       .single();
 
     if (error || !data) {
@@ -105,9 +105,9 @@ export class SupabaseCardRepository implements CardRepository {
   }
 
   async reviewCard(params: ReviewCardParams): Promise<void> {
-    const { error } = await this.client.rpc('review_card', {
+    const { error } = await this.client.rpc('review_card_by_profile', {
       p_card_id: params.cardId,
-      p_user_id: params.userId,
+      p_profile_id: params.profileId,
       p_quality: params.quality,
       p_ease_factor: params.easeFactor,
       p_interval_days: params.intervalDays,
