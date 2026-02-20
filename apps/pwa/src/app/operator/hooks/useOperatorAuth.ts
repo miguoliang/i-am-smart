@@ -15,7 +15,7 @@ export function useOperatorAuth() {
       const { data, error } = await supabase.auth.getUser();
 
       if (error || !data?.user) {
-        router.replace("/learn");
+        router.replace("/operator/login");
         return;
       }
 
@@ -29,7 +29,7 @@ export function useOperatorAuth() {
       });
 
       if (role !== "operator") {
-        router.replace("/learn");
+        router.replace("/operator/login");
         return;
       }
 
@@ -44,7 +44,7 @@ export function useOperatorAuth() {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           const user = session?.user;
           if (!user) {
-            router.replace("/learn");
+            router.replace("/operator/login");
             return;
           }
 
@@ -54,11 +54,11 @@ export function useOperatorAuth() {
             setUser(user);
             setLoading(false);
           } else {
-            router.replace("/learn");
+            router.replace("/operator/login");
           }
         }
         if (event === "SIGNED_OUT") {
-          router.replace("/");
+          router.replace("/operator/login");
         }
       }
     );
