@@ -86,7 +86,7 @@ jobs:
         run: pnpm --filter @i-am-smart/miniprogram run type-check
 
       - name: Test
-        run: pnpm --filter @i-am-smart/pwa run test -- --runInBand
+        run: pnpm --filter @i-am-smart/pwa run test --runInBand
 
       - name: Cache .next
         uses: actions/cache@v4
