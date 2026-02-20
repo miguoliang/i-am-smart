@@ -10,6 +10,7 @@ export interface Account {
   created_at: string;
   updated_at: string;
   last_sign_in_at: string | null;
+  banned_until?: string | null;
   dailyReviewCount?: number;
 }
 
@@ -35,11 +36,16 @@ export class AccountService {
   ) {}
 
   /**
-   * List users with pagination using Admin API
+   * List users with pagination using Admin API.
+   * Optional search filters by username or email (server-side filter over listed users; auth API has no native search).
    */
-  async listUsers(page: number = 1, perPage: number = 10): Promise<PaginationResult<Account>> {
+  async listUsers(
+    page: number = 1,
+    perPage: number = 10,
+    search?: string
+  ): Promise<PaginationResult<Account>> {
     const [userResult, reviewCounts] = await Promise.all([
-      this.accountRepository.listUsers(page, perPage),
+      this.accountRepository.listUsers(page, perPage, search),
       this.accountRepository.getAccountsDailyReviewCounts(),
     ]);
 

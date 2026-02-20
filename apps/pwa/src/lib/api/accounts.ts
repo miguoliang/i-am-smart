@@ -23,9 +23,12 @@ export interface AccountsResponse {
 
 export async function fetchAccounts(
   page: number = 1,
-  perPage: number = 10
+  perPage: number = 10,
+  search?: string
 ): Promise<AccountsResponse> {
-  const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
+  const params = new URLSearchParams({ page: String(page), perPage: String(perPage) });
+  if (search?.trim()) params.set("search", search.trim());
+  const res = await fetch(`/api/accounts?${params.toString()}`);
   if (!res.ok) {
     const message = await parseApiErrorResponse(res, "Failed to fetch accounts");
     throw new Error(message);

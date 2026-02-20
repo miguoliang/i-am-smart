@@ -1,25 +1,80 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, User } from '@supabase/supabase-js';
 import { AccountRepository, CardDistribution } from '../account.repository';
 import { Account } from '@/lib/services/accountService';
 
 export class SupabaseAccountRepository implements AccountRepository {
   constructor(private adminClient: SupabaseClient) {}
 
-  async listUsers(page: number, perPage: number): Promise<{ users: Account[]; hasMore: boolean }> {
-    const { data: usersResponse, error } = await this.adminClient.auth.admin.listUsers({
-      page,
-      perPage,
-    });
+  /**
+   * List users with optional search. Note: Supabase auth.admin.listUsers does not
+   * support server-side search by username/email. When search is provided we
+   * fetch up to SEARCH_MAX_PAGES of users and filter client-side (in this process).
+   */
+  async listUsers(
+    page: number,
+    perPage: number,
+    search?: string
+  ): Promise<{ users: Account[]; hasMore: boolean }> {
+    const searchTerm = search?.trim().toLowerCase();
+    const SEARCH_MAX_PAGES = 20;
+    const PAGE_SIZE = 100;
 
-    if (error) {
-      throw new Error(`List users failed: ${error.message}`);
+    if (!searchTerm) {
+      const { data: usersResponse, error } = await this.adminClient.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+
+      if (error) {
+        throw new Error(`List users failed: ${error.message}`);
+      }
+
+      if (!usersResponse || !usersResponse.users) {
+        throw new Error("无法获取用户列表");
+      }
+
+      const users = usersResponse.users.map((u) => this.mapAuthUserToAccount(u));
+      const hasMore = usersResponse.users.length === perPage;
+      return { users, hasMore };
     }
 
-    if (!usersResponse || !usersResponse.users) {
-      throw new Error("无法获取用户列表");
+    const allFetched: Account[] = [];
+    let hasMorePages = true;
+    let currentPage = 1;
+
+    while (hasMorePages && currentPage <= SEARCH_MAX_PAGES) {
+      const { data: usersResponse, error } = await this.adminClient.auth.admin.listUsers({
+        page: currentPage,
+        perPage: PAGE_SIZE,
+      });
+
+      if (error) {
+        throw new Error(`List users failed: ${error.message}`);
+      }
+      if (!usersResponse?.users?.length) {
+        break;
+      }
+
+      const batch = usersResponse.users.map((u) => this.mapAuthUserToAccount(u));
+      const matched = batch.filter(
+        (u) =>
+          u.username.toLowerCase().includes(searchTerm) ||
+          (u.email && u.email.toLowerCase().includes(searchTerm))
+      );
+      allFetched.push(...matched);
+      hasMorePages = usersResponse.users.length === PAGE_SIZE;
+      currentPage++;
     }
 
-    const users = usersResponse.users.map((u) => ({
+    const start = (page - 1) * perPage;
+    const users = allFetched.slice(start, start + perPage);
+    const hasMore = allFetched.length > start + perPage;
+
+    return { users, hasMore };
+  }
+
+  private mapAuthUserToAccount(u: User): Account {
+    return {
       id: u.id,
       username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
       email: u.email || "",
@@ -27,11 +82,8 @@ export class SupabaseAccountRepository implements AccountRepository {
       created_at: u.created_at,
       updated_at: u.updated_at || u.created_at,
       last_sign_in_at: u.last_sign_in_at || null,
-    }));
-
-    const hasMore = usersResponse.users.length === perPage;
-
-    return { users, hasMore };
+      banned_until: (u as User & { banned_until?: string | null }).banned_until ?? null,
+    };
   }
 
   async getUserById(userId: string): Promise<Account | null> {
@@ -41,16 +93,7 @@ export class SupabaseAccountRepository implements AccountRepository {
       return null;
     }
 
-    const u = data.user;
-    return {
-      id: u.id,
-      username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
-      email: u.email || "",
-      role: (u.app_metadata?.role as string)?.trim() || "learner",
-      created_at: u.created_at,
-      updated_at: u.updated_at || u.created_at,
-      last_sign_in_at: u.last_sign_in_at || null,
-    };
+    return this.mapAuthUserToAccount(data.user);
   }
 
   async getAccountsDailyReviewCounts(): Promise<{ accountId: string; reviewCount: number }[]> {

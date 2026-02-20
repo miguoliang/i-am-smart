@@ -13,7 +13,11 @@ export interface CardDistribution {
 }
 
 export interface AccountRepository {
-  listUsers(page: number, perPage: number): Promise<{ users: Account[]; hasMore: boolean }>;
+  listUsers(
+    page: number,
+    perPage: number,
+    search?: string
+  ): Promise<{ users: Account[]; hasMore: boolean }>;
   getUserById(userId: string): Promise<Account | null>;
   getAccountsDailyReviewCounts(): Promise<{ accountId: string; reviewCount: number }[]>;
   distributeCards(userId: string, cards: CardDistribution[]): Promise<{ count: number; skipped: number }>;
