@@ -154,6 +154,7 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
+            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
@@ -197,6 +198,7 @@ jobs:
             set -e
             DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
+            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
