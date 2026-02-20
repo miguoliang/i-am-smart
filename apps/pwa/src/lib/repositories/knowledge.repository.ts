@@ -3,6 +3,8 @@ import { KnowledgeItem, ImportKnowledgeParams } from '@/lib/services/knowledgeSe
 export interface PaginationParams {
   page: number;
   pageSize: number;
+  search?: string;
+  level?: string;
 }
 
 export interface PaginatedResult<T> {

@@ -13,6 +13,8 @@ export interface KnowledgeItem {
 export interface KnowledgePaginationParams {
   page?: number;
   pageSize?: number;
+  search?: string;
+  level?: string;
 }
 
 export interface ImportKnowledgeParams {
@@ -63,14 +65,18 @@ export class KnowledgeService {
   async getPaginatedKnowledge(params: KnowledgePaginationParams = {}): Promise<PaginatedResult<KnowledgeItem>> {
     const page = params.page || 1;
     const pageSize = params.pageSize || 10;
+    const search = params.search;
+    const level = params.level;
 
     logger.debug('Fetching paginated knowledge items', {
       page,
       pageSize,
+      search,
+      level,
     });
     
     try {
-      const result = await this.knowledgeRepository.getPaginated({ page, pageSize });
+      const result = await this.knowledgeRepository.getPaginated({ page, pageSize, search, level });
       
       logger.debug('Successfully fetched paginated knowledge items', {
         page,

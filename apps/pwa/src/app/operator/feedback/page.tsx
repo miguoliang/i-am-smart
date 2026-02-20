@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchFeedbacks } from "@/lib/api/feedback";
+import { updateFeedback } from "@/lib/api/operator";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
@@ -11,12 +12,21 @@ import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { Feedback } from "@/lib/types/feedback";
 import { Button } from "@/components/form/Button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/overlay/Dialog";
+import { Textarea } from "@/components/form/Textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/overlay/Dialog";
+import { toast } from "sonner";
 
-// 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "id", label: "ID", visible: false },
   { key: "created_at", label: "提交时间", visible: true },
+  { key: "status", label: "状态", visible: true },
   { key: "occupation", label: "职业", visible: true },
   { key: "willRecommend", label: "是否推荐", visible: true },
   { key: "openFeedback", label: "开放意见", visible: true },
@@ -27,10 +37,14 @@ const STORAGE_KEY = "feedback_table_columns";
 
 export default function FeedbackPage() {
   useOperatorAuth();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
-  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
+    null
+  );
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [note, setNote] = useState("");
 
   const {
     data: feedbackData,
@@ -47,7 +61,23 @@ export default function FeedbackPage() {
   const totalPages = Math.ceil(total / perPage);
   const error = queryError ? getErrorMessage(queryError) : null;
 
-  // 定义列
+  const resolveMutation = useMutation({
+    mutationFn: ({
+      id,
+      status,
+      operator_note,
+    }: {
+      id: string;
+      status: "pending" | "resolved";
+      operator_note?: string;
+    }) => updateFeedback(id, { status, operator_note }),
+    onSuccess: () => {
+      toast.success("反馈状态已更新");
+      void queryClient.invalidateQueries({ queryKey: ["feedbacks"] });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
   const columns = useMemo<ColumnDef<Feedback>[]>(
     () => [
       {
@@ -60,9 +90,24 @@ export default function FeedbackPage() {
       {
         accessorKey: "created_at",
         header: "提交时间",
+        cell: ({ row }) => formatDate(row.getValue("created_at") as string),
+      },
+      {
+        id: "status",
+        header: "状态",
         cell: ({ row }) => {
-          const date = row.getValue("created_at") as string;
-          return formatDate(date);
+          const status = row.original.status || "pending";
+          return (
+            <span
+              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                status === "resolved"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400"
+              }`}
+            >
+              {status === "resolved" ? "已处理" : "待处理"}
+            </span>
+          );
         },
       },
       {
@@ -101,22 +146,40 @@ export default function FeedbackPage() {
         id: "actions",
         header: "操作",
         cell: ({ row }) => {
+          const fb = row.original;
+          const isResolved = fb.status === "resolved";
           return (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedFeedback(row.original);
-                setDetailsOpen(true);
-              }}
-            >
-              查看详情
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedFeedback(fb);
+                  setNote(fb.operator_note || "");
+                  setDetailsOpen(true);
+                }}
+              >
+                查看详情
+              </Button>
+              <Button
+                variant={isResolved ? "outline" : "default"}
+                size="sm"
+                onClick={() =>
+                  resolveMutation.mutate({
+                    id: String(fb.id),
+                    status: isResolved ? "pending" : "resolved",
+                  })
+                }
+                disabled={resolveMutation.isPending}
+              >
+                {isResolved ? "重新打开" : "标记已处理"}
+              </Button>
+            </div>
           );
         },
       },
     ],
-    []
+    [resolveMutation]
   );
 
   return (
@@ -141,12 +204,9 @@ export default function FeedbackPage() {
           storageKey: STORAGE_KEY,
           defaultColumns: DEFAULT_COLUMNS,
         }}
-        sorting={{ enabled: false }} // server-side sort implied
+        sorting={{ enabled: false }}
         emptyMessage="暂无反馈数据"
-        refreshButton={{
-          onClick: () => refetch(),
-          loading: loading,
-        }}
+        refreshButton={{ onClick: () => refetch(), loading }}
       />
 
       {!loading && feedbacks.length > 0 && (
@@ -161,33 +221,48 @@ export default function FeedbackPage() {
         </div>
       )}
 
+      {/* Detail Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>反馈详情</DialogTitle>
             <DialogDescription>
-              提交时间: {selectedFeedback ? formatDate(selectedFeedback.created_at) : ""}
+              提交时间:{" "}
+              {selectedFeedback
+                ? formatDate(selectedFeedback.created_at)
+                : ""}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedFeedback && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold mb-1 text-sm text-muted-foreground">用户ID</h4>
-                  <p className="font-mono text-sm">{selectedFeedback.user_id || "匿名用户"}</p>
+                  <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                    用户ID
+                  </h4>
+                  <p className="font-mono text-sm">
+                    {selectedFeedback.user_id || "匿名用户"}
+                  </p>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-1 text-sm text-muted-foreground">职业</h4>
+                  <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                    职业
+                  </h4>
                   <p>{selectedFeedback.content.occupation || "-"}</p>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">学习目的</h4>
+                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                  学习目的
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedFeedback.content.learningPurpose?.map((p, i) => (
-                    <span key={i} className="bg-secondary px-2 py-1 rounded text-sm">
+                    <span
+                      key={i}
+                      className="bg-secondary px-2 py-1 rounded text-sm"
+                    >
                       {p}
                     </span>
                   )) || "-"}
@@ -195,21 +270,30 @@ export default function FeedbackPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">碎片时间利用是否有帮助</h4>
+                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                  碎片时间利用是否有帮助
+                </h4>
                 <p>
-                  {selectedFeedback.content.fragmentTimeHelpful === "yes" ? "是" : "否"}
+                  {selectedFeedback.content.fragmentTimeHelpful === "yes"
+                    ? "是"
+                    : "否"}
                 </p>
                 {selectedFeedback.content.fragmentTimeHelpful === "no" && (
                   <p className="mt-1 text-sm text-red-500 bg-red-50 p-2 rounded">
-                    原因: {selectedFeedback.content.fragmentTimeNotHelpfulReason}
+                    原因:{" "}
+                    {selectedFeedback.content.fragmentTimeNotHelpfulReason}
                   </p>
                 )}
               </div>
 
               <div>
-                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">是否推荐给朋友</h4>
+                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                  是否推荐给朋友
+                </h4>
                 <p>
-                  {selectedFeedback.content.willRecommend === "yes" ? "是" : "否"}
+                  {selectedFeedback.content.willRecommend === "yes"
+                    ? "是"
+                    : "否"}
                 </p>
                 {selectedFeedback.content.willRecommend === "no" && (
                   <p className="mt-1 text-sm text-red-500 bg-red-50 p-2 rounded">
@@ -219,10 +303,55 @@ export default function FeedbackPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">开放意见/建议</h4>
+                <h4 className="font-semibold mb-1 text-sm text-muted-foreground">
+                  开放意见/建议
+                </h4>
                 <div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap">
                   {selectedFeedback.content.openFeedback || "无"}
                 </div>
+              </div>
+
+              {/* Operator note */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-2 text-sm text-muted-foreground">
+                  运营备注
+                </h4>
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="添加备注..."
+                  rows={3}
+                  className="mb-3"
+                />
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      resolveMutation.mutate({
+                        id: String(selectedFeedback.id),
+                        status: "pending",
+                        operator_note: note,
+                      });
+                      setDetailsOpen(false);
+                    }}
+                    disabled={resolveMutation.isPending}
+                  >
+                    保存备注
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      resolveMutation.mutate({
+                        id: String(selectedFeedback.id),
+                        status: "resolved",
+                        operator_note: note,
+                      });
+                      setDetailsOpen(false);
+                    }}
+                    disabled={resolveMutation.isPending}
+                  >
+                    标记已处理并保存
+                  </Button>
+                </DialogFooter>
               </div>
             </div>
           )}

@@ -133,3 +133,38 @@ export async function fetchOrders(params: OrderQueryParams = {}): Promise<Orders
   const json = await res.json();
   return json.data;
 }
+
+export async function updateFeedback(
+  id: string,
+  data: { status?: "pending" | "resolved"; operator_note?: string }
+): Promise<{ id: string; status: string; operator_note: string | null }> {
+  const res = await fetch(`/api/operator/feedback/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "更新反馈失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function broadcastPush(params: {
+  title: string;
+  body: string;
+  userIds?: string[];
+}): Promise<{ sent: number; total: number }> {
+  const res = await fetch("/api/operator/push/broadcast", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "推送失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}
