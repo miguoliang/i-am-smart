@@ -46,7 +46,7 @@ export async function PATCH(
 
     const admin = createSupabaseAdmin();
     const { data, error } = await admin
-      .from("feedbacks")
+      .from("feedback")
       .update(update)
       .eq("id", id)
       .select("id, status, operator_note")
