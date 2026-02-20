@@ -9,10 +9,8 @@ const MIN_AMOUNT = 0.01;
 const MAX_AMOUNT = 999999.99;
 
 function getAppOrigin(): string {
-  const origin =
-    process.env.NEXT_PUBLIC_APP_ORIGIN ||
-    (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`);
-  if (!origin) throw new Error("NEXT_PUBLIC_APP_ORIGIN or VERCEL_URL required");
+  const origin = process.env.NEXT_PUBLIC_APP_ORIGIN;
+  if (!origin) throw new Error("NEXT_PUBLIC_APP_ORIGIN is required");
   return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 }
 
