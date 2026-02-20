@@ -25,8 +25,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <nav className="p-4 md:p-6">
-      <ul className="space-y-2">
+    <nav className="p-3 md:p-6">
+      <ul className="space-y-1 md:space-y-2">
         {sidebarItems.map((item) => {
           const isActive = pathname === item.href;
           return (

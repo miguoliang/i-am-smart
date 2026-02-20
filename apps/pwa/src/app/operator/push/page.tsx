@@ -29,9 +29,9 @@ export default function PushPage() {
   const canSend = title.trim().length > 0 && body.trim().length > 0;
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
           推送通知
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
