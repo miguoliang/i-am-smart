@@ -9,10 +9,8 @@ const MIN_TOTAL_CENTS = 1;
 const MAX_TOTAL_CENTS = 99999999;
 
 function getAppOrigin(): string {
-  const origin =
-    process.env.NEXT_PUBLIC_APP_ORIGIN ||
-    (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`);
-  if (!origin) throw new Error("NEXT_PUBLIC_APP_ORIGIN or VERCEL_URL required");
+  const origin = process.env.NEXT_PUBLIC_APP_ORIGIN;
+  if (!origin) throw new Error("NEXT_PUBLIC_APP_ORIGIN is required");
   return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 }
 

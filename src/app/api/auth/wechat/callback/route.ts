@@ -22,11 +22,9 @@ interface WeChatTokenResponse {
 }
 
 function getAppOrigin(): string {
-  const origin =
-    process.env.NEXT_PUBLIC_APP_ORIGIN ||
-    (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`);
+  const origin = process.env.NEXT_PUBLIC_APP_ORIGIN;
   if (!origin) {
-    throw new Error("NEXT_PUBLIC_APP_ORIGIN or VERCEL_URL is required for WeChat callback");
+    throw new Error("NEXT_PUBLIC_APP_ORIGIN is required for WeChat callback");
   }
   return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 }
