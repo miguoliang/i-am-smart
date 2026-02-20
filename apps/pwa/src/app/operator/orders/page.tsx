@@ -129,9 +129,9 @@ export default function OperatorOrdersPage() {
   );
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
           订单管理
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -141,7 +141,7 @@ export default function OperatorOrdersPage() {
 
       {/* Summary */}
       {!loading && (
-        <div className="mb-4 flex flex-wrap items-center gap-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
+        <div className="mb-4 flex flex-wrap items-center gap-3 md:gap-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 md:px-4 py-3 text-sm">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             当前筛选共 <strong className="text-foreground">{summary.count}</strong> 笔订单
           </span>

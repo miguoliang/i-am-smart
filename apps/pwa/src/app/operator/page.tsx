@@ -19,9 +19,9 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className={`${color} text-white rounded-2xl p-6 text-center`}>
-      <p className="text-4xl font-bold">{value}</p>
-      <p className="text-sm mt-2 opacity-90">{label}</p>
+    <div className={`${color} text-white rounded-2xl p-4 md:p-6 text-center`}>
+      <p className="text-2xl md:text-4xl font-bold">{value}</p>
+      <p className="text-xs md:text-sm mt-1 md:mt-2 opacity-90">{label}</p>
     </div>
   );
 }
@@ -65,9 +65,9 @@ export default function OperatorDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-8">
-        <h1 className="text-3xl font-bold mb-8">仪表盘</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="p-4 md:p-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-8">仪表盘</h1>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -81,8 +81,8 @@ export default function OperatorDashboard() {
 
   if (error) {
     return (
-      <div className="p-6 md:p-8">
-        <h1 className="text-3xl font-bold mb-4">仪表盘</h1>
+      <div className="p-4 md:p-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4">仪表盘</h1>
         <p className="text-red-500">{getErrorMessage(error)}</p>
       </div>
     );
@@ -91,13 +91,13 @@ export default function OperatorDashboard() {
   if (!data) return null;
 
   return (
-    <div className="p-6 md:p-8">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+    <div className="p-4 md:p-8">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6 md:mb-8">
         仪表盘
       </h1>
 
       {/* Metric cards - row 1 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
         <MetricCard
           label="今日注册"
           value={data.todayRegistrations}
@@ -121,7 +121,7 @@ export default function OperatorDashboard() {
       </div>
 
       {/* Metric cards - row 2 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
         <MetricCard
           label="今日活跃"
           value={data.todayDAU}
@@ -145,7 +145,7 @@ export default function OperatorDashboard() {
       </div>
 
       {/* Trend charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <TrendCard title="注册趋势 (30天)" data={data.trends.registrations} valueKey="count" />
         <TrendCard title="DAU 趋势 (30天)" data={data.trends.dau} valueKey="count" />
         <TrendCard title="复习趋势 (30天)" data={data.trends.reviews} valueKey="count" />
