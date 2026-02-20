@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
@@ -12,10 +13,20 @@ export default function OperatorLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  // Login page renders without auth wrapper
+  if (pathname === "/operator/login") {
+    return <>{children}</>;
+  }
+
+  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+}
+
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, supabase } = useOperatorAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Redirect is handled by the hook
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
@@ -27,7 +38,6 @@ export default function OperatorLayout({
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await supabase.auth.signOut();
-    // Redirect handled by hook onAuthStateChange
   };
 
   return (
