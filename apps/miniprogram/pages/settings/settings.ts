@@ -125,7 +125,7 @@ Page({
 
     try {
       await request(API_ENDPOINTS.PROFILE(profileId), {
-        method: 'PATCH',
+        method: 'PUT',
         data: { level },
       });
     } catch (error: unknown) {

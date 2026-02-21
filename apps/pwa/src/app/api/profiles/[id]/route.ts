@@ -31,6 +31,9 @@ export async function PATCH(
   }
 }
 
+// PUT delegates to PATCH (WeChat miniprogram doesn't support PATCH)
+export const PUT = PATCH;
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
