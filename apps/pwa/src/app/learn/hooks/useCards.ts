@@ -58,9 +58,10 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
 }
 
 export function useCards() {
-  const { activeProfile } = useProfile();
+  const { activeProfile, isLoading: profileLoading } = useProfile();
   const level = activeProfile?.level ?? 'A1';
-  const { data, isLoading: loading } = useDueCardsQuery();
+  const { data, isLoading: queryLoading } = useDueCardsQuery();
+  const loading = profileLoading || queryLoading;
   const prevLevelRef = useRef(level);
 
   const [{ localCards, lastValidLevel, initialReviewedCount, initialTotalCount }, dispatch] = useReducer(cardsReducer, {
