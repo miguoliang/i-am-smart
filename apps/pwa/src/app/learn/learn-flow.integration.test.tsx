@@ -35,6 +35,10 @@ jest.mock("@/hooks/useProfile", () => ({
   ProfileProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock("@/app/(marketing)/hooks/useAuth", () => ({
+  useAuth: () => ({ user: { id: "user-1" }, loading: false, isAuthenticated: true }),
+}));
+
 const mockCard = {
   id: 1,
   knowledge_code: "k1",
