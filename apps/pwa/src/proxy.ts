@@ -8,6 +8,9 @@ const PROTECTED_ROUTES = ["/learn", "/stats", "/feedback", "/operator"];
 // Routes only accessible when NOT authenticated
 const AUTH_ROUTES = ["/signin"];
 
+// Routes that redirect to /learn when authenticated
+const MARKETING_ROUTES = ["/"];
+
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -60,6 +63,13 @@ export async function proxy(req: NextRequest) {
 
   // Redirect authenticated users away from auth routes (e.g. signin)
   if (user && isAuthRoute(pathname)) {
+    const learnUrl = req.nextUrl.clone();
+    learnUrl.pathname = "/learn";
+    return redirectWithCookies(learnUrl, res);
+  }
+
+  // Redirect authenticated users from marketing homepage to /learn
+  if (user && MARKETING_ROUTES.includes(pathname)) {
     const learnUrl = req.nextUrl.clone();
     learnUrl.pathname = "/learn";
     return redirectWithCookies(learnUrl, res);
