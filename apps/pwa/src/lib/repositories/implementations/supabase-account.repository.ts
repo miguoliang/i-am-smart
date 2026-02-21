@@ -1,5 +1,5 @@
 import { SupabaseClient, User } from '@supabase/supabase-js';
-import { AccountRepository, CardDistribution } from '../account.repository';
+import { AccountRepository } from '../account.repository';
 import { Account } from '@/lib/services/accountService';
 
 export class SupabaseAccountRepository implements AccountRepository {
@@ -108,61 +108,5 @@ export class SupabaseAccountRepository implements AccountRepository {
       accountId: row.account_id,
       reviewCount: Number(row.review_count),
     }));
-  }
-
-  async getSystemDefaultCardTypeCode(): Promise<string | null> {
-    const { data, error } = await this.adminClient
-      .from("card_types")
-      .select("code")
-      .limit(1);
-
-    if (error || !data || data.length === 0) {
-      return null;
-    }
-    return data[0].code;
-  }
-
-  async distributeCards(userId: string, cards: CardDistribution[]): Promise<{ count: number; skipped: number }> {
-     const { data: insertedData, error } = await this.adminClient
-      .from("account_cards")
-      .upsert(cards.map(c => ({
-        account_id: c.accountId,
-        knowledge_code: c.knowledgeCode,
-        card_type_code: c.cardTypeCode,
-        ease_factor: c.easeFactor,
-        interval_days: c.intervalDays,
-        repetitions: c.repetitions,
-        next_review_date: c.nextReviewDate,
-        created_at: c.createdAt,
-        updated_at: c.updatedAt
-      })), {
-        onConflict: "account_id,knowledge_code,card_type_code",
-        ignoreDuplicates: true,
-      })
-      .select();
-
-    if (error) {
-      throw new Error(`分配卡片失败: ${error.message}`);
-    }
-
-    const count = insertedData?.length || 0;
-    const skipped = cards.length - count;
-
-    return { count, skipped };
-  }
-
-  async distributeAllCards(userId: string, cardTypeCode: string): Promise<{ count: number; skipped: number }> {
-    const { data, error } = await this.adminClient.rpc('distribute_all_cards', {
-      p_user_id: userId,
-      p_card_type_code: cardTypeCode,
-    });
-
-    if (error) {
-      throw new Error(`批量分配卡片失败: ${error.message}`);
-    }
-
-    // Cast the returned JSON
-    const result = data as { inserted: number; skipped: number };
-    return { count: result.inserted, skipped: result.skipped };
   }
 }

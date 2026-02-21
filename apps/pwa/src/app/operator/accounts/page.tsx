@@ -13,7 +13,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
 import { downloadCSV } from "@/lib/utils/csv";
-import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
 import {
   Dialog,
@@ -23,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/overlay/Dialog";
-import { Gift, User, Ban, ShieldCheck } from "lucide-react";
+import { User, Ban, ShieldCheck } from "lucide-react";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { toast } from "sonner";
@@ -61,8 +60,6 @@ export default function AccountsPage() {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [banTarget, setBanTarget] = useState<Account | null>(null);
@@ -222,18 +219,6 @@ export default function AccountsPage() {
                     <Ban className="h-4 w-4" />
                     {isBanned ? "解封" : "封禁"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedAccount(account);
-                      setDistributeDialogOpen(true);
-                    }}
-                    className="gap-1"
-                  >
-                    <Gift className="h-4 w-4" />
-                    分配卡片
-                  </Button>
                 </>
               )}
               {isOperator && (
@@ -327,18 +312,6 @@ export default function AccountsPage() {
             totalItems={accounts.length}
           />
         </div>
-      )}
-
-      {selectedAccount && (
-        <DistributeCardsDialog
-          open={distributeDialogOpen}
-          onOpenChange={setDistributeDialogOpen}
-          accountId={selectedAccount.id}
-          accountUsername={selectedAccount.username}
-          onSuccess={() => {
-            // Optionally refresh accounts list
-          }}
-        />
       )}
 
       {/* User Detail Dialog */}
