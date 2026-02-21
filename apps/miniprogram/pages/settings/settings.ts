@@ -38,16 +38,10 @@ Page({
   },
 
   async onLoad() {
-    const level = storage.getLevel() as Level;
-    const levelIndex = AVAILABLE_LEVELS.indexOf(level);
-    this.setData({
-      level,
-      levelIndex: levelIndex >= 0 ? levelIndex : 0,
-    });
     // Wait for authentication before loading account
     await this.waitForAuth();
     this.loadAccount();
-    this.loadProfiles();
+    await this.loadProfiles();
   },
 
   async waitForAuth() {
@@ -98,7 +92,7 @@ Page({
     }
   },
 
-  onLevelChange(e: WechatMiniprogram.TouchEvent) {
+  async onLevelChange(e: WechatMiniprogram.TouchEvent) {
     const index = parseInt(e.currentTarget.dataset.index || '0', 10);
     const level = AVAILABLE_LEVELS[index] as Level;
     
@@ -121,11 +115,26 @@ Page({
       return;
     }
 
+    const profileId = this.data.activeProfileId;
+    if (!profileId) return;
+
     this.setData({ 
       level,
       levelIndex: index,
     });
-    storage.setLevel(level);
+
+    try {
+      await request(API_ENDPOINTS.PROFILE(profileId), {
+        method: 'PATCH',
+        data: { level },
+      });
+    } catch (error: unknown) {
+      console.error('Failed to update level:', error);
+      wx.showToast({
+        title: getErrorMessage(error, '更新失败'),
+        icon: 'none',
+      });
+    }
   },
 
   onDailyLimitChange(e: WechatMiniprogram.TouchEvent) {
@@ -175,9 +184,15 @@ Page({
         storage.setActiveProfileId(resolved);
       }
 
+      const activeProfile = profiles.find((p) => p.id === resolved);
+      const level = (activeProfile?.level ?? 'A1') as Level;
+      const levelIndex = AVAILABLE_LEVELS.indexOf(level);
+
       this.setData({
         profiles,
         activeProfileId: resolved,
+        level,
+        levelIndex: levelIndex >= 0 ? levelIndex : 0,
       });
     } catch (error: unknown) {
       console.error('Failed to load profiles:', error);
@@ -189,7 +204,16 @@ Page({
     if (!profileId || profileId === this.data.activeProfileId) return;
 
     storage.setActiveProfileId(profileId);
-    this.setData({ activeProfileId: profileId });
+
+    const profile = this.data.profiles.find((p) => p.id === profileId);
+    const level = (profile?.level ?? 'A1') as Level;
+    const levelIndex = AVAILABLE_LEVELS.indexOf(level);
+
+    this.setData({
+      activeProfileId: profileId,
+      level,
+      levelIndex: levelIndex >= 0 ? levelIndex : 0,
+    });
 
     wx.showToast({
       title: '已切换档案',

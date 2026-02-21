@@ -29,7 +29,7 @@ export function ProfileSwitcher() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => updateProfile(id, name),
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateProfile(id, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
       setEditingId(null);

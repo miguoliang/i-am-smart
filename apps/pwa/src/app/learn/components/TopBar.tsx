@@ -6,7 +6,10 @@ import { Button } from "@/components/form/Button";
 import { LogOut, Settings, Bell, BellOff, Loader2, Check, Lock } from "lucide-react";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useLevel } from "../hooks/useLevel";
+import { useProfile } from "@/hooks/useProfile";
+import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
+import { AVAILABLE_LEVELS } from "@i-am-smart/shared/constants";
+import type { Level } from "@i-am-smart/shared/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -102,7 +105,18 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { level, setLevel, availableLevels } = useLevel();
+  const { activeProfile, refetch: refetchProfiles } = useProfile();
+  const level = activeProfile?.level ?? 'A1';
+
+  const updateLevelMutation = useMutation({
+    mutationFn: (newLevel: Level) => updateProfileApi(activeProfile!.id, { level: newLevel }),
+    onSuccess: () => {
+      refetchProfiles();
+      queryClient.invalidateQueries({ queryKey: ["cards"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+    },
+  });
+
   const { data: me, isLoading: meLoading } = useQuery({
     queryKey: ["accounts", "me"],
     queryFn: fetchMe,
@@ -193,22 +207,22 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
                 选择等级
               </h3>
-              {availableLevels.map((levelOption) => {
+              {AVAILABLE_LEVELS.map((levelOption) => {
                 const isComingSoon = ["C1", "C2"].includes(levelOption);
                 const isPro = ["B1", "B2"].includes(levelOption);
                 
                 return (
                   <button
                     key={levelOption}
-                    disabled={isComingSoon}
+                    disabled={isComingSoon || updateLevelMutation.isPending}
                     onClick={() => {
                       if (isPro) {
                         setOpen(false);
                         router.push("/pay");
                         return;
                       }
-                      if (!isComingSoon) {
-                        setLevel(levelOption);
+                      if (!isComingSoon && activeProfile) {
+                        updateLevelMutation.mutate(levelOption);
                         setOpen(false);
                       }
                     }}
