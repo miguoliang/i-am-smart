@@ -51,13 +51,10 @@ describe("proxy", () => {
       mockGetUser.mockResolvedValue({ data: { user: null } });
     });
 
-    it("should redirect from /learn to /signin", async () => {
+    it("should allow access to /learn (guest mode)", async () => {
       const res = await proxy(buildRequest("/learn"));
 
-      expect(res.status).toBe(307);
-      const location = new URL(res.headers.get("location")!);
-      expect(location.pathname).toBe("/signin");
-      expect(location.searchParams.get("next")).toBe("/learn");
+      expect(res.status).toBe(200);
     });
 
     it("should redirect from /stats to /signin", async () => {
@@ -193,7 +190,7 @@ describe("proxy", () => {
         return { data: { user: null } };
       });
 
-      const res = await proxy(buildRequest("/learn"));
+      const res = await proxy(buildRequest("/stats"));
 
       expect(res.status).toBe(307);
       const location = new URL(res.headers.get("location")!);

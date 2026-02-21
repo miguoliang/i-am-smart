@@ -80,7 +80,7 @@ export default function HomePage() {
       <section id="cta" className="w-full py-16 md:py-24 from-amber-50 to-blue-50 dark:bg-background">
         <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
           <div className="text-center">
-            <Link href="/signin">
+            <Link href="/learn">
               <Button 
                 size="lg" 
                 className="text-lg md:text-xl px-12 py-6 bg-amber-400 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-600 text-gray-900 dark:text-white font-medium shadow-lg hover:shadow-xl transition-all"

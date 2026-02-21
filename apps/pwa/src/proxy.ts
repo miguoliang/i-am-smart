@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createMiddlewareClient } from "@/lib/supabaseServer";
 
 // Routes that require authentication
-const PROTECTED_ROUTES = ["/learn", "/stats", "/feedback", "/operator"];
+const PROTECTED_ROUTES = ["/stats", "/feedback", "/operator"];
 
 // Routes only accessible when NOT authenticated
 const AUTH_ROUTES = ["/signin"];
