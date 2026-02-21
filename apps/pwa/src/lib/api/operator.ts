@@ -207,6 +207,21 @@ export interface SaasMetrics {
     monthlyPayingUsers: number;
     monthlyArppu: number;
   };
+  mrr: {
+    currentMrr: number;
+    lastMrr: number;
+    momGrowth: number;
+  };
+  nrr: {
+    nrr: number;
+    cohortLastMonth: number;
+    cohortThisMonth: number;
+  };
+  ltv: {
+    ltv: number;
+    arppu: number;
+    monthlyChurnRate: number;
+  };
 }
 
 export async function fetchSaasMetrics(offset: number): Promise<SaasMetrics> {

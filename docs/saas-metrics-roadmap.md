@@ -1,55 +1,64 @@
 # SaaS 指标路线图
 
-## Phase A — 扩展现有 Dashboard（纯 Supabase）✅ 当前
+## 商业模式：订阅制 SaaS to C
 
-基于现有数据（account_cards, pay_orders, auth.users）计算：
+## Phase A — 已完成 ✅
 
-| 指标 | 计算方式 | 状态 |
+| 指标 | 状态 |
+|------|------|
+| DAU/WAU/MAU + DAU/MAU Ratio | ✅ `/operator/saas` |
+| Cohort Retention (D1/D7/D30) | ✅ 按注册周队列 |
+| Churn Rate (周/月) | ✅ |
+| ARPPU (全量+月度) | ✅ |
+| 注册→付费转化率 | ✅ 主仪表盘 |
+
+## Phase A2 — 订阅制指标（基于现有 pay_orders 近似）🔜
+
+可以先基于 pay_orders 按月聚合近似计算，等接 Stripe 后切换到真实订阅数据：
+
+| 指标 | 计算方式 | 备注 |
 |------|----------|------|
-| DAU/WAU/MAU + Ratio | account_cards.updated_at 去重 account_id | 待做 |
-| Cohort Retention (D1/D7/D30) | 按注册周分组，追踪后续活跃天数 | 待做 |
-| Churn Rate (周/月) | N天内无活跃 = 流失，流失数/期初活跃数 | 待做 |
-| ARPPU | pay_orders 总收入 / 付费用户数 | 待做 |
-| 注册→付费转化率 | 已有，微调展示 | 已有 |
+| MRR + 月环比 | 当月 paid 订单总额 | 近似值，真实 MRR 需要 Stripe 订阅 |
+| NRR (Net Revenue Retention) | 同批用户上月 vs 本月收入 | 需要按 account_id 追踪月度收入变化 |
+| LTV | ARPPU / Monthly Churn Rate | 简单公式先用 |
+| LTV/CAC Ratio | LTV / CAC | CAC 暂时为 0（无投放） |
 
-## Phase B — 需要接入外部数据源
+## Phase B — 需要外部依赖
 
-### B1: 付费/订阅指标（需确认付费模式）
+### B1: Stripe 订阅（解锁真实 MRR/NRR）
 
-当前付费是一次性购买（pay_orders），如果转订阅制：
+需要：
+- 接入 Stripe 或自建订阅管理（subscription 表：plan, status, current_period_start/end, cancel_at）
+- Webhook 处理续费、取消、升降级事件
+- 真实 MRR = 活跃订阅数 × 月费
 
-| 指标 | 依赖 | 备注 |
-|------|------|------|
-| MRR + 月环比 | Stripe 订阅数据 | 一次性付费无 MRR 概念 |
-| NRR (Net Revenue Retention) | 按月追踪同批用户收入 | 需要订阅续费/升降级数据 |
-| LTV | 历史付费 + 留存曲线拟合 | 可先用简单公式：ARPPU / Churn Rate |
-| LTV/CAC Ratio | LTV + CAC | 见 B2 |
+### B2: 前端埋点（解锁 Session 数据）
 
-**决策点：** 是否转订阅制？如果保持一次性付费，MRR/NRR 不适用，改为追踪「月收入」和「复购率」。
+| 指标 | 实现方案 |
+|------|----------|
+| Session Length/Frequency | PostHog（推荐）或自建 session_events 表 |
 
-### B2: 营销/获客指标
+PostHog 免费版 100 万事件/月，一次性解决所有行为分析。
 
-| 指标 | 依赖 | 备注 |
-|------|------|------|
-| CAC (获客成本) | 营销花费数据 | 需要手动录入或接广告平台 API |
-| CAC Payback Period | CAC + ARPPU | CAC / 月均 ARPPU |
+### B3: 增长指标
 
-**决策点：** 目前有投放渠道吗？如果纯自然增长，CAC ≈ 0，这组指标暂时无意义。
+| 指标 | 依赖 |
+|------|------|
+| K-factor (病毒系数) | 需要先做邀请/分享功能 |
+| CAC + Payback Period | 需要营销花费数据（等有投放再说） |
 
-### B3: 用户行为深度指标（需埋点）
+### B4: 用户满意度
 
-| 指标 | 依赖 | 实现方案 |
-|------|------|----------|
-| Session Length/Frequency | 前端埋点 | 方案 A: 接 PostHog（推荐）；方案 B: 自建 session_events 表 |
-| K-factor (病毒系数) | 邀请/分享事件 | 需要先做邀请功能 + 埋点追踪 |
-| NPS/CSAT | 用户反馈评分 | 可在 app 内弹评分卡，写入 feedback 表 |
+| 指标 | 实现方案 |
+|------|----------|
+| NPS/CSAT | app 内评分弹窗 → 写入 feedback 表（最简单，随时可做） |
 
-**决策点：** 是否接 PostHog？免费版 100 万事件/月，能一次性解决 session tracking + 所有行为分析。
+## 优先级
 
-## 优先级建议
-
-1. ✅ Phase A — 立即可做，纯 SQL
-2. 🔜 PostHog 接入 — 解锁 session/行为分析，ROI 最高
-3. 📋 邀请机制 — 解锁 K-factor，同时也是增长功能
-4. 💰 Stripe 订阅 — 如果决定转订阅制
-5. 📊 营销数据 — 等有投放再说
+1. ✅ Phase A — 已完成
+2. 🔜 Phase A2 — MRR/NRR/LTV 近似计算（纯 SQL，现在就能做）
+3. 🔜 NPS — 最简单，加个弹窗
+4. 📋 Stripe 订阅 — 解锁真实订阅指标
+5. 📋 PostHog — 解锁 session 分析
+6. 📋 邀请功能 — 解锁 K-factor
+7. 📋 营销投放 — 解锁 CAC

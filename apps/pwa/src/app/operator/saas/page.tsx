@@ -139,6 +139,35 @@ export default function SaasMetricsPage() {
         />
       </div>
 
+      {/* Revenue & Subscription */}
+      <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">收入</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
+        <StatCard
+          label="MRR"
+          value={`¥${(data.mrr.currentMrr / 100).toFixed(0)}`}
+          sub={`环比 ${data.mrr.momGrowth > 0 ? '+' : ''}${data.mrr.momGrowth}%`}
+          color="bg-emerald-500"
+        />
+        <StatCard
+          label="NRR"
+          value={`${data.nrr.nrr}%`}
+          sub={data.nrr.nrr >= 100 ? "健康" : "收缩"}
+          color={data.nrr.nrr >= 100 ? "bg-green-500" : "bg-red-500"}
+        />
+        <StatCard
+          label="LTV"
+          value={`¥${(data.ltv.ltv / 100).toFixed(0)}`}
+          sub={`月流失 ${data.ltv.monthlyChurnRate}%`}
+          color="bg-violet-500"
+        />
+        <StatCard
+          label="ARPPU"
+          value={`¥${(data.arppu.arppu / 100).toFixed(0)}`}
+          sub={`${data.arppu.payingUsers} 付费用户`}
+          color="bg-amber-500"
+        />
+      </div>
+
       {/* Churn */}
       <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">流失率</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
@@ -155,16 +184,16 @@ export default function SaasMetricsPage() {
           color="bg-red-500"
         />
         <StatCard
-          label="ARPPU (全部)"
-          value={`¥${(data.arppu.arppu / 100).toFixed(2)}`}
-          sub={`${data.arppu.payingUsers} 付费用户`}
-          color="bg-amber-500"
-        />
-        <StatCard
           label="ARPPU (月)"
           value={`¥${(data.arppu.monthlyArppu / 100).toFixed(2)}`}
           sub={`${data.arppu.monthlyPayingUsers} 付费用户`}
           color="bg-green-500"
+        />
+        <StatCard
+          label="转化率"
+          value={`—`}
+          sub="见主仪表盘"
+          color="bg-gray-500"
         />
       </div>
 

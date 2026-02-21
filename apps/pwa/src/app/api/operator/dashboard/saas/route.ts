@@ -33,6 +33,21 @@ export interface SaasMetricsResponse {
     monthlyPayingUsers: number;
     monthlyArppu: number;
   };
+  mrr: {
+    currentMrr: number;
+    lastMrr: number;
+    momGrowth: number;
+  };
+  nrr: {
+    nrr: number;
+    cohortLastMonth: number;
+    cohortThisMonth: number;
+  };
+  ltv: {
+    ltv: number;
+    arppu: number;
+    monthlyChurnRate: number;
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -42,11 +57,14 @@ export async function GET(req: NextRequest) {
     const offset = Number(req.nextUrl.searchParams.get("offset") ?? "0");
     const admin = createSupabaseAdmin();
 
-    const [activeUsersRes, cohortRes, churnRes, arppuRes] = await Promise.all([
+    const [activeUsersRes, cohortRes, churnRes, arppuRes, mrrRes, nrrRes, ltvRes] = await Promise.all([
       admin.rpc("get_dashboard_active_users", { p_tz_offset: offset }),
       admin.rpc("get_dashboard_cohort_retention", { p_tz_offset: offset, p_weeks: 8 }),
       admin.rpc("get_dashboard_churn", { p_tz_offset: offset }),
       admin.rpc("get_dashboard_arppu", { p_tz_offset: offset }),
+      admin.rpc("get_dashboard_mrr", { p_tz_offset: offset }),
+      admin.rpc("get_dashboard_nrr", { p_tz_offset: offset }),
+      admin.rpc("get_dashboard_ltv", { p_tz_offset: offset }),
     ]);
 
     const response: SaasMetricsResponse = {
@@ -61,6 +79,9 @@ export async function GET(req: NextRequest) {
         totalRevenue: 0, payingUsers: 0, arppu: 0,
         monthlyRevenue: 0, monthlyPayingUsers: 0, monthlyArppu: 0,
       },
+      mrr: mrrRes.data ?? { currentMrr: 0, lastMrr: 0, momGrowth: 0 },
+      nrr: nrrRes.data ?? { nrr: 0, cohortLastMonth: 0, cohortThisMonth: 0 },
+      ltv: ltvRes.data ?? { ltv: 0, arppu: 0, monthlyChurnRate: 0 },
     };
 
     return apiSuccess(response);
