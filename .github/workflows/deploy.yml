@@ -107,7 +107,7 @@ jobs:
           mkdir -p "$pkg/apps/pwa/.next"
           cp -r apps/pwa/.next/static "$pkg/apps/pwa/.next/static"
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE SUPABASE_AUTH_HOOK_SECRET; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
-          tar -czf /tmp/${{ env.PACKAGE_NAME }}.tar.gz -C deploy ${{ env.PACKAGE_NAME }}
+          tar -czf ${{ env.PACKAGE_NAME }}.tar.gz -C deploy ${{ env.PACKAGE_NAME }}
 
       # Deploy directly via SCP + SSH (no artifact needed)
       - name: Deploy to server
@@ -117,9 +117,8 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: /tmp/${{ env.PACKAGE_NAME }}.tar.gz
+          source: ${{ env.PACKAGE_NAME }}.tar.gz
           target: /tmp
-          strip_components: 1
 
       - name: Extract and restart
         if: github.event_name != 'pull_request'
