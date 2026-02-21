@@ -5,6 +5,7 @@
 import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { Card, ReviewCardResult } from '../../shared/types/card';
+import { storage } from '../../utils/storage';
 
 const QUALITY_OPTIONS = [
   { value: 0, label: '完全忘记' },
@@ -45,7 +46,9 @@ Page({
     this.setData({ loading: true });
     
     try {
-      const card = await request<Card>(API_ENDPOINTS.CARD_GET(cardId));
+      const profileId = storage.getActiveProfileId();
+      const profileParam = profileId ? `?profileId=${profileId}` : '';
+      const card = await request<Card>(`${API_ENDPOINTS.CARD_GET(cardId)}${profileParam}`);
       this.setData({ 
         card,
         loading: false,
@@ -88,7 +91,7 @@ Page({
         API_ENDPOINTS.CARD_REVIEW(card.id),
         {
           method: 'POST',
-          data: { quality },
+          data: { quality, profileId: storage.getActiveProfileId() },
         }
       );
 
