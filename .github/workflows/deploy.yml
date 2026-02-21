@@ -1,9 +1,8 @@
-# Build, package, and deploy to server via SSH.
-# - Pull request → build only (no package, no deploy).
-# - Push to main (after merge) → build + package → deploy-preview.
-# - Push tag (e.g. v1.0.0) → build + package → deploy-production.
-# - workflow_dispatch → build + package → deploy-preview.
-# Configure Secrets/Variables in repo or in Environment (production / preview).
+# Build, test, and deploy to server via SSH.
+# - Pull request → build + test only (no deploy).
+# - Push to main → build + deploy to preview.
+# - Push tag (v*) → build + deploy to production.
+# - workflow_dispatch → build + deploy to preview.
 name: Deploy to Server
 
 on:
@@ -18,11 +17,9 @@ jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
-    # PR: preview env for build; push tag → production, push main / dispatch → preview
     environment: ${{ github.event_name == 'pull_request' && 'preview' || (startsWith(github.ref, 'refs/tags/') && 'production' || 'preview') }}
     env:
       PACKAGE_NAME: ${{ github.event.repository.name }}
-      DEPLOY_TARBALL: deploy/${{ github.event.repository.name }}.tar.gz
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -80,21 +77,24 @@ jobs:
         run: pnpm --filter @i-am-smart/pwa run lint
 
       - name: Type check (pwa)
-        run: pnpm --filter @i-am-smart/pwa run type-check
+        run: pnpm --filter @i-am-smart/pwa run typecheck
 
       - name: Type check (miniprogram)
-        run: pnpm --filter @i-am-smart/miniprogram run type-check
+        run: pnpm --filter @i-am-smart/miniprogram run typecheck
 
       - name: Test
-        run: pnpm --filter @i-am-smart/pwa run test --runInBand
+        run: pnpm --filter @i-am-smart/pwa run test -- --run
 
       - name: Cache .next
+        if: github.event_name != 'pull_request'
         uses: actions/cache@v4
         with:
-          path: apps/pwa/.next
-          key: next-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/pwa/**/*.ts', 'apps/pwa/**/*.tsx', 'apps/pwa/**/next.config.*') }}-${{ env.NEXT_PUBLIC_APP_ENV }}
+          path: apps/pwa/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/pwa/src/**') }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Build
+        if: github.event_name != 'pull_request'
         run: pnpm --filter @i-am-smart/pwa run build
 
       - name: Package
@@ -102,48 +102,27 @@ jobs:
         run: |
           pkg=deploy/${{ env.PACKAGE_NAME }}
           mkdir -p "$pkg"
-          # Copy entire standalone output preserving monorepo structure
           cp -r apps/pwa/.next/standalone/. "$pkg/"
-          # Copy public and static assets into the app directory
           cp -r apps/pwa/public "$pkg/apps/pwa/public"
           mkdir -p "$pkg/apps/pwa/.next"
           cp -r apps/pwa/.next/static "$pkg/apps/pwa/.next/static"
-          # Write .env into the app directory where server.js runs
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE SUPABASE_AUTH_HOOK_SECRET; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
-          tar -czf ${{ env.DEPLOY_TARBALL }} -C deploy ${{ env.PACKAGE_NAME }}
+          tar -czf /tmp/${{ env.PACKAGE_NAME }}.tar.gz -C deploy ${{ env.PACKAGE_NAME }}
 
-      - name: Upload tarball
+      # Deploy directly via SCP + SSH (no artifact needed)
+      - name: Deploy to server
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: deploy-tarball
-          path: deploy/${{ env.PACKAGE_NAME }}.tar.gz
-
-  deploy-preview:
-    name: Deploy to Preview
-    runs-on: ubuntu-latest
-    needs: build
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-    environment: preview
-    env:
-      PACKAGE_NAME: ${{ github.event.repository.name }}
-
-    steps:
-      - name: Download tarball
-        uses: actions/download-artifact@v4
-        with:
-          name: deploy-tarball
-
-      - name: Deploy tarball to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: ${{ env.PACKAGE_NAME }}.tar.gz
-          target: "/tmp"
+          source: /tmp/${{ env.PACKAGE_NAME }}.tar.gz
+          target: /tmp
+          strip_components: 1
 
-      - name: Extract and restart on server
+      - name: Extract and restart
+        if: github.event_name != 'pull_request'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -156,53 +135,11 @@ jobs:
             rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next" "$DEPLOY_PATH/apps"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
-            rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
+            rm -f "$TARBALL"
             if command -v pm2 &>/dev/null; then
               cd "$DEPLOY_PATH/apps/pwa"
-              pm2 restart be-it-forever-preview 2>/dev/null || PORT=3001 pm2 start server.js --name be-it-forever-preview || true
-            fi
-            echo "Deploy done."
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    environment: production
-    env:
-      PACKAGE_NAME: ${{ github.event.repository.name }}
-
-    steps:
-      - name: Download tarball
-        uses: actions/download-artifact@v4
-        with:
-          name: deploy-tarball
-
-      - name: Deploy tarball to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          source: ${{ env.PACKAGE_NAME }}.tar.gz
-          target: "/tmp"
-
-      - name: Extract and restart on server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          script: |
-            set -e
-            DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
-            mkdir -p "$DEPLOY_PATH"
-            rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next" "$DEPLOY_PATH/apps"
-            TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
-            tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
-            rm -rf /tmp/deploy /tmp/${{ env.PACKAGE_NAME }}.tar.gz 2>/dev/null || true
-            if command -v pm2 &>/dev/null; then
-              cd "$DEPLOY_PATH/apps/pwa"
-              pm2 restart be-it-forever 2>/dev/null || PORT=3000 pm2 start server.js --name be-it-forever || true
+              PM2_NAME="${{ startsWith(github.ref, 'refs/tags/') && 'be-it-forever' || 'be-it-forever-preview' }}"
+              APP_PORT="${{ startsWith(github.ref, 'refs/tags/') && '3000' || '3001' }}"
+              pm2 restart "$PM2_NAME" 2>/dev/null || PORT="$APP_PORT" pm2 start server.js --name "$PM2_NAME" || true
             fi
             echo "Deploy done."
