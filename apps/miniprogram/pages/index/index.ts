@@ -270,15 +270,11 @@ Page({
     }
   },
 
-  onRate0() {
-    this.onRate(0);
+  onRateNo() {
+    this.onRate(1);
   },
 
-  onRate3() {
-    this.onRate(3);
-  },
-
-  onRate5() {
-    this.onRate(5);
+  onRateYes() {
+    this.onRate(4);
   },
 });

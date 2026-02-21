@@ -127,7 +127,7 @@ describe("Learn flow (integration)", () => {
     await userEvent.click(flipButton);
 
     await waitFor(() => {
-      const perfectButton = screen.getByRole("button", { name: /完美/ });
+      const perfectButton = screen.getByRole("button", { name: /会了/ });
       expect(perfectButton).toBeInTheDocument();
     });
   });
@@ -148,11 +148,11 @@ describe("Learn flow (integration)", () => {
     });
     await userEvent.click(flipButton);
 
-    const perfectButton = await screen.findByRole("button", { name: /完美/ });
+    const perfectButton = await screen.findByRole("button", { name: /会了/ });
     await userEvent.click(perfectButton);
 
     await waitFor(() => {
-      expect(mockReviewCard).toHaveBeenCalledWith(1, 5, "profile-1");
+      expect(mockReviewCard).toHaveBeenCalledWith(1, 4, "profile-1");
     });
   });
 });

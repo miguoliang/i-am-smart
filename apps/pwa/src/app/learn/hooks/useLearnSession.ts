@@ -14,7 +14,7 @@ export function useLearnSession() {
   const { cards, setCards, reviewedCount: apiReviewedCount, loading } = useCards();
   const { currentIndex, setCurrentIndex, currentCard } = useCardNavigation(cards);
   
-  const { flipped, toggleFlip, resetFlip } = useCardFlip();
+  const { flipped, toggleFlip, resetFlip, getResponseTimeMs } = useCardFlip();
   const { speak } = useSpeech();
   const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
 
@@ -24,13 +24,24 @@ export function useLearnSession() {
   const totalCount = apiReviewedCount + cards.length;
 
   // 3. Review Handler
-  const { handleRate } = useCardReview({
+  const { handleRate: rawHandleRate } = useCardReview({
     cards,
     currentIndex,
     setCurrentIndex,
     setCards,
     resetFlip,
   });
+
+  // Adjust quality based on response time:
+  // If user said "会了" (quality 4) but took >5s, downgrade to 3 (borderline)
+  const handleRate = (quality: number) => {
+    const responseTime = getResponseTimeMs();
+    let adjustedQuality = quality;
+    if (quality >= 4 && responseTime > 5000) {
+      adjustedQuality = 3;
+    }
+    rawHandleRate(adjustedQuality);
+  };
 
   // 4. Auth Handler
   // Handled by useSignOut hook
