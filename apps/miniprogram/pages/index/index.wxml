@@ -19,9 +19,9 @@
 
   <!-- Card Flip View -->
   <view wx:else class="card-container">
-    <!-- Progress Indicator -->
-    <view class="progress">
-      <text class="progress-text">{{(reviewedCount || 0) + (currentIndex || 0) + 1}} / {{(reviewedCount || 0) + (cards.length || 0)}}</text>
+    <!-- Progress Bar -->
+    <view class="progress-bar-container">
+      <view class="progress-bar" style="width: {{cards.length > 0 ? ((reviewedCount + currentIndex) / (reviewedCount + cards.length) * 100) : 0}}%"></view>
     </view>
 
     <!-- Card -->
@@ -50,9 +50,8 @@
 
     <!-- Rating Buttons (only show when flipped and card exists) -->
     <view wx:if="{{flipped && cards[currentIndex]}}" class="rating-buttons">
-      <button class="rating-btn rating-btn-0" bindtap="onRate0">完全忘记</button>
-      <button class="rating-btn rating-btn-3" bindtap="onRate3">一般</button>
-      <button class="rating-btn rating-btn-5" bindtap="onRate5">完美</button>
+      <button class="rating-btn rating-btn-no" bindtap="onRateNo">再看看 ✗</button>
+      <button class="rating-btn rating-btn-yes" bindtap="onRateYes">会了 ✓</button>
     </view>
   </view>
 </view>

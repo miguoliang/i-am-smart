@@ -61,15 +61,21 @@
   gap: 40rpx;
 }
 
-.progress {
-  text-align: center;
+.progress-bar-container {
+  width: 100%;
+  max-width: 600rpx;
+  height: 8rpx;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4rpx;
+  overflow: hidden;
   margin-bottom: 20rpx;
 }
 
-.progress-text {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+.progress-bar {
+  height: 100%;
+  background-color: #22c55e;
+  border-radius: 4rpx;
+  transition: width 0.5s ease-out;
 }
 
 .card-wrapper {
@@ -162,31 +168,27 @@
 
 .rating-buttons {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20rpx;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
   width: 100%;
-  max-width: 600rpx;
+  max-width: 500rpx;
 }
 
 .rating-btn {
-  padding: 30rpx 20rpx;
+  padding: 36rpx 20rpx;
   border-radius: 20rpx;
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: bold;
   color: #fff;
   border: none;
   box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
 
-.rating-btn-0 {
-  background-color: #ef4444;
+.rating-btn-no {
+  background-color: #f43f5e;
 }
 
-.rating-btn-3 {
-  background-color: #eab308;
-}
-
-.rating-btn-5 {
+.rating-btn-yes {
   background-color: #22c55e;
 }
 
