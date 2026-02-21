@@ -25,11 +25,12 @@
 
 ## Phase B — 需要外部依赖
 
-### B1: Stripe 订阅（解锁真实 MRR/NRR）
+### B1: 自建订阅管理（解锁真实 MRR/NRR）
 
 需要：
-- 接入 Stripe 或自建订阅管理（subscription 表：plan, status, current_period_start/end, cancel_at）
-- Webhook 处理续费、取消、升降级事件
+- 新增 `subscriptions` 表（plan, status, current_period_start/end, cancel_at）
+- 微信委托代扣 / 支付宝周期扣款，或到期提醒手动续费
+- 到期自动降级为 free
 - 真实 MRR = 活跃订阅数 × 月费
 
 ### B2: 前端埋点（解锁 Session 数据）
@@ -58,7 +59,7 @@ PostHog 免费版 100 万事件/月，一次性解决所有行为分析。
 1. ✅ Phase A — 已完成
 2. 🔜 Phase A2 — MRR/NRR/LTV 近似计算（纯 SQL，现在就能做）
 3. 🔜 NPS — 最简单，加个弹窗
-4. 📋 Stripe 订阅 — 解锁真实订阅指标
+4. 📋 自建订阅管理 — 解锁真实 MRR/NRR
 5. 📋 PostHog — 解锁 session 分析
 6. 📋 邀请功能 — 解锁 K-factor
 7. 📋 营销投放 — 解锁 CAC
