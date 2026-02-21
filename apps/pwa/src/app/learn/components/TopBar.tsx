@@ -24,6 +24,7 @@ import { t } from "@/lib/i18n";
 import { DAILY_DUE_LIMIT_PRESETS } from "@/lib/constants";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
 import { ProfileSwitcher } from "./ProfileSwitcher";
+import { CalendarReminder } from "./CalendarReminder";
 
 interface TopBarProps {
   onSignOut: () => void;
@@ -34,7 +35,7 @@ async function fetchMe() {
   const res = await fetch("/api/accounts/me");
   if (!res.ok) throw new Error(await parseApiErrorResponse(res, t().settings.loadFailed));
   const { data } = await res.json();
-  return data as { username: string | null; daily_due_limit: number };
+  return data as { username: string | null; daily_due_limit: number; calendar_token: string | null; calendar_remind_hour: number };
 }
 
 async function updateDailyDueLimit(value: number) {
@@ -252,6 +253,15 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Calendar Reminder */}
+            <div className="mb-6">
+              <CalendarReminder
+                calendarToken={me?.calendar_token ?? null}
+                calendarRemindHour={me?.calendar_remind_hour ?? 9}
+                isLoading={meLoading}
+              />
             </div>
           </div>
 
