@@ -153,7 +153,7 @@ sameAs: [
 sameAs: [
   "https://weibo.com/your-account", // If available
   "https://twitter.com/your-account", // If available
-  "https://github.com/miguoliang/be-it-forever", // GitHub repo
+  "https://github.com/miguoliang/i-am-smart", // GitHub repo
 ],
 ```
 

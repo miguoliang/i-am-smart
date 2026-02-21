@@ -1,6 +1,6 @@
 # Card Review Sequence Diagram
 
-This document describes the card review flow for the "背它一辈子" (Be It Forever) application.
+This document describes the card review flow for the "聪明的背单词工具" (聪明的背单词工具) application.
 
 ## Card Review Flow
 

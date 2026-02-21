@@ -129,7 +129,7 @@ https://your-domain.com
 2. 选择 **导入项目**
 3. 选择项目目录：`miniprogram/` 文件夹
 4. 填写 AppID：输入测试号的 AppID
-5. 项目名称：`be-it-forever-miniprogram`
+5. 项目名称：`i-am-smart-miniprogram`
 6. 点击 **导入**
 
 ### 2. 配置 AppID
@@ -139,7 +139,7 @@ https://your-domain.com
 ```json
 {
   "appid": "wx1234567890abcdef",
-  "projectname": "be-it-forever-miniprogram"
+  "projectname": "i-am-smart-miniprogram"
 }
 ```
 

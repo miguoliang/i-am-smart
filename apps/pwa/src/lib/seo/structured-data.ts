@@ -19,9 +19,9 @@ export function generateOrganizationStructuredData(): WithContext<Organization> 
     alternateName: "背单词",
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
-    description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识",
+    description: "基于间隔重复算法的英语学习应用，支持PWA和微信小程序",
     sameAs: [
-      "https://github.com/miguoliang/be-it-forever",
+      "https://github.com/miguoliang/i-am-smart",
       // Add other social media links when available
     ],
   };
@@ -45,7 +45,7 @@ export function generateWebsiteStructuredData(): WithContext<WebSite> {
     name: "聪明的背单词工具",
     alternateName: "背单词",
     url: siteUrl,
-    description: "一个基于间隔重复的英语学习应用，帮助您终身掌握知识",
+    description: "基于间隔重复算法的英语学习应用，支持PWA和微信小程序",
     potentialAction: searchAction as SearchAction,
   };
 }
