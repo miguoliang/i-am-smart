@@ -87,6 +87,5 @@ export async function createProfileService(reqOrClient?: NextRequest | SupabaseC
 export function createAccountService(): AccountService {
   const adminClient = createSupabaseAdmin();
   const accountRepo = new SupabaseAccountRepository(adminClient);
-  const knowledgeRepo = new SupabaseKnowledgeRepository(adminClient);
-  return new AccountService(accountRepo, knowledgeRepo);
+  return new AccountService(accountRepo);
 }

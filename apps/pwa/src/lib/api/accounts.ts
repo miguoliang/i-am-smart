@@ -38,21 +38,3 @@ export async function fetchAccounts(
   return json.data;
 }
 
-export async function distributeCards(accountId: string): Promise<{ count: number }> {
-  const res = await fetch(`/api/accounts/${accountId}/distribute-cards`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    const message = await parseApiErrorResponse(res, "Failed to distribute cards");
-    throw new Error(message);
-  }
-
-  const json = await res.json();
-  // API returns { data: {...} }, extract the data object
-  return json.data;
-}
-
