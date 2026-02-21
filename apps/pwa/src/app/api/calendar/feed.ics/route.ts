@@ -63,9 +63,9 @@ function generateICS(remindHour: number, dueToday: number): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Be It Forever//Review Reminder//CN",
+    "PRODID:-//聪明的背单词工具//Review Reminder//CN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:背它一辈子 - 复习提醒",
+    "X-WR-CALNAME:聪明的背单词工具 - 复习提醒",
     "X-WR-CALDESC:每日复习提醒",
     "CALSCALE:GREGORIAN",
   ];
@@ -84,14 +84,14 @@ function generateICS(remindHour: number, dueToday: number): string {
     const description =
       i === 0 && dueToday > 0
         ? `今天还有 ${dueToday} 个词待复习`
-        : "打开背它一辈子，开始今天的复习吧";
+        : "打开聪明的背单词工具，开始今天的复习吧";
 
     lines.push(
       "BEGIN:VEVENT",
       `UID:bif-review-${dateStr}@iamsmart.top`,
       `DTSTART:${dateStr}T${hourStr}0000`,
       `DTEND:${dateStr}T${hourStr}1500`,
-      `SUMMARY:📚 背它一辈子 - 今日复习`,
+      `SUMMARY:📚 聪明的背单词工具 - 今日复习`,
       `DESCRIPTION:${description}`,
       `URL:https://iamsmart.top/learn`,
       "BEGIN:VALARM",

@@ -1,6 +1,6 @@
 # Operator Import Knowledge Sequence Diagram
 
-This document describes the knowledge import flow for operators in the "背它一辈子" (Be It Forever) application.
+This document describes the knowledge import flow for operators in the "聪明的背单词工具" (聪明的背单词工具) application.
 
 ## Import Knowledge Flow
 

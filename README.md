@@ -1,7 +1,7 @@
-# Be It Forever (背它一辈子)
+# 聪明的背单词工具
 
-[![CI](https://github.com/miguoliang/be-it-forever/actions/workflows/deploy.yml/badge.svg)](https://github.com/miguoliang/be-it-forever/actions/workflows/deploy.yml)
-[![License](https://img.shields.io/github/license/miguoliang/be-it-forever)](LICENSE)
+[![CI](https://github.com/miguoliang/i-am-smart/actions/workflows/deploy.yml/badge.svg)](https://github.com/miguoliang/i-am-smart/actions/workflows/deploy.yml)
+[![License](https://img.shields.io/github/license/miguoliang/i-am-smart)](LICENSE)
 
 <br/>
 
@@ -16,7 +16,7 @@
 ![Husky](https://img.shields.io/badge/husky-42b883?style=for-the-badge&logo=husky&logoColor=white)
 ![Day.js](https://img.shields.io/badge/Day.js-FB6052?style=for-the-badge&logo=javascript&logoColor=white)
 
-**Be It Forever** is a modern, spaced-repetition learning application designed to help you master knowledge for a lifetime. Built with the latest web technologies, it offers a seamless learning experience with algorithm-based reviews, text-to-speech support, and comprehensive progress tracking.
+**聪明的背单词工具** is a SaaS to-C English vocabulary learning app for the China market. Available as PWA and WeChat miniprogram. Payments via WeChat Pay and Alipay. Built with spaced repetition (SM-2), it offers a zero-friction learning experience.
 
 ## 🚀 Key Features
 
@@ -40,8 +40,8 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/miguoliang/be-it-forever.git
-    cd be-it-forever
+    git clone https://github.com/miguoliang/i-am-smart.git
+    cd i-am-smart
     ```
 
 2.  **Install dependencies**

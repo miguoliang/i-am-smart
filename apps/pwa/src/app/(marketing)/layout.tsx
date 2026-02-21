@@ -13,7 +13,7 @@ import { Navigation } from "./components/Navigation";
 export const metadata: Metadata = generateSEOMetadata({
   title: "聪明的背单词工具",
   description:
-    "一个基于间隔重复的英语学习应用，帮助您终身掌握知识。使用SM-2算法优化学习，支持文本转语音，提供可视化统计和进度跟踪。",
+    "基于间隔重复算法的英语学习应用，支持PWA和微信小程序。科学复习，多端同步，支持微信支付和支付宝。",
   keywords: [
     "英语学习",
     "间隔重复",

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive review of the Be It Forever codebase covering architecture, TypeScript usage, code quality, testing, security, accessibility, and error handling.
+Comprehensive review of the 聪明的背单词工具 codebase covering architecture, TypeScript usage, code quality, testing, security, accessibility, and error handling.
 
 **Overall assessment:** Excellent (8.5/10). Production-ready with strong engineering practices.
 

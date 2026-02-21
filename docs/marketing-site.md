@@ -1,6 +1,6 @@
 # Marketing Site Setup
 
-This document describes the SEO-friendly, content-driven marketing site setup for Be It Forever.
+This document describes the SEO-friendly, content-driven marketing site setup for 聪明的背单词工具.
 
 ## Overview
 

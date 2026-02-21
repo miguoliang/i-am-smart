@@ -8,7 +8,7 @@ import { Card } from "@/components/container/Card";
 export const metadata: Metadata = generateSEOMetadata({
   title: "聪明的背单词工具 - 用碎片时间，提英语成绩",
   description:
-    "随时随地，科学复习，无需下载，多端同步。基于SM-2算法的英语学习应用，支持A1-C2全级别单词，帮助您终身掌握知识。免费版和Pro版可选，适合不同学习需求。",
+    "随时随地，科学复习，无需下载，多端同步。基于SM-2算法的英语学习应用，支持A1-C2全级别单词，支持微信支付和支付宝。PWA和微信小程序双端可用。",
   keywords: [
     "英语学习",
     "背单词",
@@ -242,10 +242,7 @@ export default function HomePage() {
 
           {/* 支付方式 */}
           <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-            <Link href="/pay" className="hover:underline">
-              微信支付
-            </Link>
-            {" · 支付宝 · 银行卡"}
+            微信支付 · 支付宝
           </div>
         </div>
       </section>

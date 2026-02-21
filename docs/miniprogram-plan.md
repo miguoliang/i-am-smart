@@ -7,7 +7,7 @@
 ## 🏗️ 项目结构
 
 ```
-be-it-forever/
+i-am-smart/
 ├── src/                    # Next.js Web 应用
 │   ├── app/
 │   ├── lib/
@@ -134,7 +134,7 @@ export const API_ENDPOINTS = {
 ```json
 // miniprogram/project.config.json
 {
-  "description": "背它一辈子小程序",
+  "description": "聪明的背单词工具小程序",
   "packOptions": {
     "ignore": [
       "node_modules",
@@ -152,7 +152,7 @@ export const API_ENDPOINTS = {
   "compileType": "miniprogram",
   "libVersion": "3.5.0",
   "appid": "your-miniprogram-appid",
-  "projectname": "be-it-forever-miniprogram",
+  "projectname": "i-am-smart-miniprogram",
   "condition": {}
 }
 ```
@@ -168,7 +168,7 @@ export const API_ENDPOINTS = {
     "pages/settings/settings"
   ],
   "window": {
-    "navigationBarTitleText": "背它一辈子",
+    "navigationBarTitleText": "聪明的背单词工具",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black"
   },
