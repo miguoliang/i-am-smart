@@ -45,6 +45,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_IN') {
         // Invalidate cards query cache to ensure fresh data after sign-in
         queryClient.invalidateQueries({ queryKey: ["cards"] });
+        // Submit referral code if present
+        const refCode = localStorage.getItem("ref_code");
+        if (refCode) {
+          localStorage.removeItem("ref_code");
+          fetch("/api/referral", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: refCode }),
+          }).catch(() => {});
+        }
         // Only refresh if we're on a valid page (not during navigation or 404)
         if (pathname && VALID_ROUTES.includes(pathname)) {
           router.refresh()

@@ -48,6 +48,23 @@ export interface SaasMetricsResponse {
     arppu: number;
     monthlyChurnRate: number;
   };
+  nps: {
+    nps: number;
+    total: number;
+    avgScore: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+  };
+  kfactor: {
+    kfactor: number;
+    totalUsers: number;
+    usersWhoInvited: number;
+    totalInvites: number;
+    convertedInvites: number;
+    inviteRate: number;
+    conversionRate: number;
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -57,7 +74,7 @@ export async function GET(req: NextRequest) {
     const offset = Number(req.nextUrl.searchParams.get("offset") ?? "0");
     const admin = createSupabaseAdmin();
 
-    const [activeUsersRes, cohortRes, churnRes, arppuRes, mrrRes, nrrRes, ltvRes] = await Promise.all([
+    const [activeUsersRes, cohortRes, churnRes, arppuRes, mrrRes, nrrRes, ltvRes, npsRes, kfactorRes] = await Promise.all([
       admin.rpc("get_dashboard_active_users", { p_tz_offset: offset }),
       admin.rpc("get_dashboard_cohort_retention", { p_tz_offset: offset, p_weeks: 8 }),
       admin.rpc("get_dashboard_churn", { p_tz_offset: offset }),
@@ -65,6 +82,8 @@ export async function GET(req: NextRequest) {
       admin.rpc("get_dashboard_mrr", { p_tz_offset: offset }),
       admin.rpc("get_dashboard_nrr", { p_tz_offset: offset }),
       admin.rpc("get_dashboard_ltv", { p_tz_offset: offset }),
+      admin.rpc("get_dashboard_nps"),
+      admin.rpc("get_dashboard_kfactor"),
     ]);
 
     const response: SaasMetricsResponse = {
@@ -82,6 +101,8 @@ export async function GET(req: NextRequest) {
       mrr: mrrRes.data ?? { currentMrr: 0, lastMrr: 0, momGrowth: 0 },
       nrr: nrrRes.data ?? { nrr: 0, cohortLastMonth: 0, cohortThisMonth: 0 },
       ltv: ltvRes.data ?? { ltv: 0, arppu: 0, monthlyChurnRate: 0 },
+      nps: npsRes.data ?? { nps: 0, total: 0, avgScore: 0, promoters: 0, passives: 0, detractors: 0 },
+      kfactor: kfactorRes.data ?? { kfactor: 0, totalUsers: 0, usersWhoInvited: 0, totalInvites: 0, convertedInvites: 0, inviteRate: 0, conversionRate: 0 },
     };
 
     return apiSuccess(response);

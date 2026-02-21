@@ -199,8 +199,37 @@ export default function SaasMetricsPage() {
 
       {/* Cohort Retention */}
       <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">队列留存</h2>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-8">
         <CohortTable data={data.cohortRetention} />
+      </div>
+
+      {/* NPS & Growth */}
+      <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">用户满意度 & 增长</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
+        <StatCard
+          label="NPS"
+          value={data.nps.nps}
+          sub={`${data.nps.total} 份评分`}
+          color={data.nps.nps >= 50 ? "bg-green-500" : data.nps.nps >= 0 ? "bg-yellow-500" : "bg-red-500"}
+        />
+        <StatCard
+          label="平均评分"
+          value={data.nps.avgScore}
+          sub={`推荐 ${data.nps.promoters} / 中立 ${data.nps.passives} / 贬损 ${data.nps.detractors}`}
+          color="bg-blue-500"
+        />
+        <StatCard
+          label="K-factor"
+          value={data.kfactor.kfactor}
+          sub={data.kfactor.kfactor >= 1 ? "病毒增长 🚀" : `${data.kfactor.convertedInvites}/${data.kfactor.totalInvites} 转化`}
+          color={data.kfactor.kfactor >= 1 ? "bg-green-500" : "bg-indigo-500"}
+        />
+        <StatCard
+          label="邀请转化率"
+          value={`${data.kfactor.conversionRate}%`}
+          sub={`${data.kfactor.usersWhoInvited} 人发起邀请`}
+          color="bg-purple-500"
+        />
       </div>
     </div>
   );

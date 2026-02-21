@@ -11,9 +11,20 @@ import { useLearnSession } from "./hooks/useLearnSession";
 import { useGuestLearnSession } from "./hooks/useGuestLearnSession";
 import { TopBar } from "./components/TopBar";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Learn() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+
+  // Capture referral code from URL
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("ref_code", ref);
+    }
+  }, [searchParams]);
 
   if (authLoading) return <LoadingState />;
 

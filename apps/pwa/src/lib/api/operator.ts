@@ -222,6 +222,23 @@ export interface SaasMetrics {
     arppu: number;
     monthlyChurnRate: number;
   };
+  nps: {
+    nps: number;
+    total: number;
+    avgScore: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+  };
+  kfactor: {
+    kfactor: number;
+    totalUsers: number;
+    usersWhoInvited: number;
+    totalInvites: number;
+    convertedInvites: number;
+    inviteRate: number;
+    conversionRate: number;
+  };
 }
 
 export async function fetchSaasMetrics(offset: number): Promise<SaasMetrics> {
