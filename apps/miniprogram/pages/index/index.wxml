@@ -13,8 +13,7 @@
 
   <!-- Empty State -->
   <view wx:elif="{{cards.length === 0 || (cards.length > 0 && currentIndex >= cards.length)}}" class="empty">
-    <text class="empty-title">今日复习完成！</text>
-    <text class="empty-subtitle">明天再来哦</text>
+    <text class="empty-title">今天够了，明天见 👋</text>
   </view>
 
   <!-- Card Flip View -->
@@ -32,10 +31,9 @@
           <view class="card-content">
             <text class="card-word">{{cards[currentIndex].knowledge.name}}</text>
             <view class="speech-buttons">
-              <button class="speech-btn" bindtap="onSpeakUS" catchtap="true">US</button>
-              <button class="speech-btn" bindtap="onSpeakUK" catchtap="true">UK</button>
+              <button class="speech-btn" bindtap="onSpeakUS" catchtap="true">🇺🇸</button>
+              <button class="speech-btn" bindtap="onSpeakUK" catchtap="true">🇬🇧</button>
             </view>
-            <text class="card-hint">点击卡片查看答案</text>
           </view>
         </view>
 

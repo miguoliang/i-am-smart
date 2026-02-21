@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
-import { ConditionalFooter } from "./components/ConditionalFooter";
+// ConditionalFooter removed — single-page minimal UI
 import { ConditionalNavigation } from "@/components/navigation/ConditionalNavigation";
 import { Toaster } from "sonner";
 import { PWAUpdater } from "./components/PWAUpdater";
@@ -64,7 +64,6 @@ export default function RootLayout({
             {children}
           </main>
         </Providers>
-        <ConditionalFooter />
         <Toaster position="top-center" />
         <PWAUpdater />
       </body>
