@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ProfileRepository, LearnerProfile } from '../profile.repository';
 import { handleRepositoryError } from '../utils/error-handling';
+import type { Level } from '@i-am-smart/shared/constants';
 
 export class SupabaseProfileRepository implements ProfileRepository {
   constructor(private client: SupabaseClient) {}
@@ -35,13 +36,14 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return data;
   }
 
-  async createProfile(accountId: string, name: string): Promise<LearnerProfile> {
+  async createProfile(accountId: string, name: string, level?: Level): Promise<LearnerProfile> {
     const { data, error } = await this.client
       .from('learner_profiles')
       .insert({
         account_id: accountId,
         name,
         is_default: false,
+        ...(level && { level }),
       })
       .select()
       .single();
@@ -53,10 +55,10 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return data!;
   }
 
-  async updateProfile(profileId: string, accountId: string, name: string): Promise<LearnerProfile> {
+  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level }): Promise<LearnerProfile> {
     const { data, error } = await this.client
       .from('learner_profiles')
-      .update({ name, updated_at: new Date().toISOString() })
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', profileId)
       .eq('account_id', accountId)
       .select()

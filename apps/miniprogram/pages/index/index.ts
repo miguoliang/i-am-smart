@@ -6,7 +6,8 @@ import { request } from '../../utils/api';
 import { API_ENDPOINTS } from '../../shared/constants/api';
 import type { DueCardsResult, Card } from '../../shared/types/card';
 import { storage } from '../../utils/storage';
-import { AVAILABLE_LEVELS, type Level } from '../../shared/constants/levels';
+import type { Level } from '../../shared/constants/levels';
+import type { LearnerProfile } from '../../shared/types/profile';
 import { isAuthenticated } from '../../utils/auth';
 
 console.log('Loading index page TypeScript file...');
@@ -16,8 +17,6 @@ Page({
     cards: [] as Card[],
     loading: false,
     level: 'A1' as Level,
-    levelIndex: 0,
-    availableLevels: [...AVAILABLE_LEVELS] as Level[],
     reviewedCount: 0,
     currentIndex: 0,
     flipped: false,
@@ -27,20 +26,7 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     console.log('=== index page onLoad START ===');
     console.log('onLoad options:', options);
-    try {
-      const level = storage.getLevel() as Level;
-      console.log('Got level from storage:', level);
-      const levelIndex = AVAILABLE_LEVELS.indexOf(level);
-      console.log('Setting level:', level, 'levelIndex:', levelIndex);
-      this.setData({
-        level,
-        levelIndex: levelIndex >= 0 ? levelIndex : 0,
-      });
-      // Don't load cards here - let onShow handle it to avoid duplicate calls
-      console.log('onLoad completed, will load cards in onShow');
-    } catch (error) {
-      console.error('Error in onLoad:', error);
-    }
+    // Don't load cards here - let onShow handle it after auth + profile resolution
     console.log('=== index page onLoad END ===');
   },
 
@@ -70,6 +56,9 @@ Page({
       console.log('=== index page onShow END ===');
       return;
     }
+
+    // Resolve active profile and level
+    await this.resolveProfileLevel();
     
     // Only reload if not already loading and (no cards or all reviewed)
     if (!this.data.isLoadingCards && (this.data.cards.length === 0 || this.isAllReviewed())) {
@@ -83,6 +72,27 @@ Page({
 
   onReady() {
     console.log('=== index page onReady ===');
+  },
+
+  async resolveProfileLevel() {
+    try {
+      const profiles = await request<LearnerProfile[]>(API_ENDPOINTS.PROFILES);
+      const activeProfileId = storage.getActiveProfileId();
+      const resolved = activeProfileId && profiles.find((p) => p.id === activeProfileId)
+        ? activeProfileId
+        : (profiles.find((p) => p.is_default)?.id ?? profiles[0]?.id ?? '');
+
+      if (resolved && resolved !== activeProfileId) {
+        storage.setActiveProfileId(resolved);
+      }
+
+      const activeProfile = profiles.find((p) => p.id === resolved);
+      const level = (activeProfile?.level ?? 'A1') as Level;
+
+      this.setData({ level });
+    } catch (error) {
+      console.error('Failed to resolve profile level:', error);
+    }
   },
 
   isAllReviewed(): boolean {

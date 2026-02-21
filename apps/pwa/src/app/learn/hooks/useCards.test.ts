@@ -3,21 +3,23 @@ import { useCards } from './useCards';
 import { Card } from '../types';
 import type { DueCardsResponse } from '@/lib/api/cards';
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { Level } from './useLevel';
+import type { Level } from '@i-am-smart/shared/constants';
 
 // Mock the dependencies with variables that can be updated
 let mockDueCardsQueryReturn: Partial<UseQueryResult<DueCardsResponse, Error>> = {
   data: undefined,
   isLoading: true,
 };
-let mockLevelReturn: { level: Level } = { level: 'A1' };
+let mockProfileReturn: { activeProfile: { id: string; level: Level } | null } = {
+  activeProfile: { id: 'profile-1', level: 'A1' },
+};
 
 jest.mock('./useDueCardsQuery', () => ({
   useDueCardsQuery: jest.fn(() => mockDueCardsQueryReturn),
 }));
 
-jest.mock('./useLevel', () => ({
-  useLevel: jest.fn(() => mockLevelReturn),
+jest.mock('@/hooks/useProfile', () => ({
+  useProfile: jest.fn(() => mockProfileReturn),
 }));
 
 describe('useCards', () => {
@@ -40,8 +42,7 @@ describe('useCards', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Default mocks - level must be set first
-    mockLevelReturn = { level: 'A1' };
+    mockProfileReturn = { activeProfile: { id: 'profile-1', level: 'A1' } };
     mockDueCardsQueryReturn = {
       data: undefined,
       isLoading: true,
@@ -62,7 +63,7 @@ describe('useCards', () => {
 
   describe('Level Changes', () => {
     it('should reset local cards when level changes', async () => {
-      mockLevelReturn = { level: 'A1' };
+      mockProfileReturn = { activeProfile: { id: 'profile-1', level: 'A1' } };
 
       const { result, rerender } = renderHook(() => useCards());
 
@@ -76,8 +77,8 @@ describe('useCards', () => {
 
       expect(result.current.cards).toHaveLength(2);
 
-      // Change level
-      mockLevelReturn = { level: 'A2' };
+      // Change level via profile
+      mockProfileReturn = { activeProfile: { id: 'profile-1', level: 'A2' } };
       rerender();
 
       // Wait for level change effect

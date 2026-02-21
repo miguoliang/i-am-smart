@@ -4,7 +4,6 @@ import type { DueCardsResponse } from "@/lib/api/cards";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { nowISO } from "@/lib/utils/dateUtils";
-import { useLevel } from "./useLevel";
 import { useProfile } from "@/hooks/useProfile";
 import type { Card } from "../types";
 
@@ -24,7 +23,6 @@ export function useCardReview({
   resetFlip,
 }: UseCardReviewParams) {
   const queryClient = useQueryClient();
-  const { level } = useLevel();
   const { activeProfile } = useProfile();
 
   const { mutate: reviewCard, isPending } = useMutation({
@@ -70,7 +68,7 @@ export function useCardReview({
     // Sync React Query cache so navigating away and back shows correct state
     // (reviewed cards are removed from cache; otherwise stale cache would show them again)
     onSuccess: (_data, { cardId }) => {
-      const queryKey = ["cards", "due", level, activeProfile?.id];
+      const queryKey = ["cards", "due", activeProfile?.level, activeProfile?.id];
       queryClient.setQueryData<DueCardsResponse>(queryKey, (old) => {
         if (!old) return old;
         return {

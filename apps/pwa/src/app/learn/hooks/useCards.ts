@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef, useReducer } from "react";
 import type { Card } from "../types";
 import { useDueCardsQuery } from "./useDueCardsQuery";
-import { useLevel } from "./useLevel";
+import { useProfile } from "@/hooks/useProfile";
 
 // State management with useReducer for complex logic
 interface CardsState {
@@ -58,7 +58,8 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
 }
 
 export function useCards() {
-  const { level } = useLevel();
+  const { activeProfile } = useProfile();
+  const level = activeProfile?.level ?? 'A1';
   const { data, isLoading: loading } = useDueCardsQuery();
   const prevLevelRef = useRef(level);
 

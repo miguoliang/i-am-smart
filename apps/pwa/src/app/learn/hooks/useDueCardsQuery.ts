@@ -3,24 +3,18 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { fetchDueCards } from "@/lib/api/cards";
 import { hasErrorMessage } from "@/lib/utils/errorUtils";
-import { useLevel } from "./useLevel";
 import { useProfile } from "@/hooks/useProfile";
 
-export interface UseDueCardsQueryParams {
-  level?: string;
-}
-
-export function useDueCardsQuery(params?: UseDueCardsQueryParams) {
+export function useDueCardsQuery() {
   const router = useRouter();
-  const { level: currentLevel } = useLevel();
   const { activeProfile } = useProfile();
 
   const profileId = activeProfile?.id;
-  const queryParams = { level: currentLevel, ...params, profileId };
+  const level = activeProfile?.level;
 
   const queryResult = useQuery({
-    queryKey: ["cards", "due", queryParams.level, profileId],
-    queryFn: () => fetchDueCards(queryParams),
+    queryKey: ["cards", "due", level, profileId],
+    queryFn: () => fetchDueCards({ level, profileId }),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnMount: true,

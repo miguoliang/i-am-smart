@@ -1,5 +1,6 @@
 import { ProfileRepository, LearnerProfile } from '@/lib/repositories/profile.repository';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
+import { AVAILABLE_LEVELS, type Level } from '@i-am-smart/shared/constants';
 
 const PROFILE_LIMITS: Record<string, number> = {
   free: 2,
@@ -42,10 +43,26 @@ export class ProfileService {
     return this.profileRepository.createProfile(accountId, trimmed);
   }
 
-  async updateProfile(profileId: string, accountId: string, name: string): Promise<LearnerProfile> {
-    const trimmed = name.trim();
-    if (!trimmed || trimmed.length > 20) {
-      throw ApiError.validationError('档案名称需要1-20个字符');
+  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level }): Promise<LearnerProfile> {
+    const patch: { name?: string; level?: Level } = {};
+
+    if (updates.name !== undefined) {
+      const trimmed = updates.name.trim();
+      if (!trimmed || trimmed.length > 20) {
+        throw ApiError.validationError('档案名称需要1-20个字符');
+      }
+      patch.name = trimmed;
+    }
+
+    if (updates.level !== undefined) {
+      if (!AVAILABLE_LEVELS.includes(updates.level)) {
+        throw ApiError.validationError('无效的级别');
+      }
+      patch.level = updates.level;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      throw ApiError.validationError('没有需要更新的字段');
     }
 
     const existing = await this.profileRepository.getProfileById(profileId, accountId);
@@ -53,7 +70,7 @@ export class ProfileService {
       throw ApiError.notFound('学习档案不存在');
     }
 
-    return this.profileRepository.updateProfile(profileId, accountId, trimmed);
+    return this.profileRepository.updateProfile(profileId, accountId, patch);
   }
 
   async deleteProfile(profileId: string, accountId: string): Promise<void> {
