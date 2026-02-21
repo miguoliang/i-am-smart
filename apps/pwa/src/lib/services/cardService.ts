@@ -1,9 +1,9 @@
 import { CardRepository } from '@/lib/repositories/card.repository';
 import { getTodayDateRange } from '@/lib/utils/dateUtils';
 import { Card } from '@/app/learn/types';
-import { DAILY_REVIEW_LIMIT, SM2_ALGORITHM } from '@/lib/constants';
+import { SM2_ALGORITHM } from '@/lib/constants';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
-import { t, translate } from '@/lib/i18n';
+import { t } from '@/lib/i18n';
 
 export interface DueCardsResult {
   reviewedCount: number;
@@ -35,26 +35,16 @@ export class CardService {
   }
 
   /**
-   * Returns due cards for the profile, respecting the daily review limit.
-   * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
+   * Returns due cards for the profile.
    */
   async getDueCards(
     profileId: string,
     level?: string,
     timezoneOffset?: number,
-    dailyLimit: number = DAILY_REVIEW_LIMIT
   ): Promise<DueCardsResult> {
     const currentReviewedCount = await this.getReviewedTodayCount(profileId, timezoneOffset);
 
-    if (currentReviewedCount >= dailyLimit) {
-      return {
-        reviewedCount: dailyLimit,
-        cards: [],
-      };
-    }
-
-    const remainingSlots = dailyLimit - currentReviewedCount;
-    const cards = await this.cardRepository.getDueCards(profileId, remainingSlots, level);
+    const cards = await this.cardRepository.getDueCards(profileId, 9999, level);
 
     return {
       reviewedCount: currentReviewedCount,
@@ -76,33 +66,16 @@ export class CardService {
    * @param cardId - Card ID
    * @param quality - User rating 0–5
    * @param timezoneOffset - Minutes offset from UTC
-   * @param dailyLimit - User's daily due limit (default DAILY_REVIEW_LIMIT)
    */
   async reviewCard(
     profileId: string,
     cardId: number,
     quality: number,
     timezoneOffset?: number,
-    dailyLimit: number = DAILY_REVIEW_LIMIT
   ): Promise<ReviewCardResult> {
     const card = await this.cardRepository.getCardById(cardId, profileId);
     if (!card) {
       throw ApiError.notFound(t().cards.cardNotFound);
-    }
-
-    const { startOfToday, endOfToday } = getTodayDateRange(timezoneOffset);
-    const isCardReviewedToday =
-      card.last_reviewed_at &&
-      new Date(card.last_reviewed_at) >= startOfToday &&
-      new Date(card.last_reviewed_at) <= endOfToday;
-
-    if (!isCardReviewedToday) {
-      const reviewedTodayCount = await this.getReviewedTodayCount(profileId, timezoneOffset);
-      if (reviewedTodayCount >= dailyLimit) {
-        throw ApiError.dailyLimitExceeded(
-          translate(t().cards.dailyLimitExceeded, { limit: dailyLimit })
-        );
-      }
     }
 
     /** SM-2: compute new ease factor, repetitions, and interval from quality (0–5). */
