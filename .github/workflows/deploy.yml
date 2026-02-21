@@ -77,10 +77,10 @@ jobs:
         run: pnpm --filter @i-am-smart/pwa run lint
 
       - name: Type check (pwa)
-        run: pnpm --filter @i-am-smart/pwa run typecheck
+        run: pnpm --filter @i-am-smart/pwa run type-check
 
       - name: Type check (miniprogram)
-        run: pnpm --filter @i-am-smart/miniprogram run typecheck
+        run: pnpm --filter @i-am-smart/miniprogram run type-check
 
       - name: Test
         run: pnpm --filter @i-am-smart/pwa run test -- --run
