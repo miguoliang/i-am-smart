@@ -83,7 +83,7 @@ jobs:
         run: pnpm --filter @i-am-smart/miniprogram run type-check
 
       - name: Test
-        run: pnpm --filter @i-am-smart/pwa run test -- --run
+        run: pnpm --filter @i-am-smart/pwa run test
 
       - name: Cache .next
         if: github.event_name != 'pull_request'
