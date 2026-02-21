@@ -147,10 +147,12 @@ describe("proxy", () => {
       expect(res.status).toBe(200);
     });
 
-    it("should allow access to / (home page)", async () => {
+    it("should redirect from / to /learn", async () => {
       const res = await proxy(buildRequest("/"));
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(307);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/learn");
     });
 
     it("should allow access to /operator", async () => {
