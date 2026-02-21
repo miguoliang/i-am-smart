@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProfiles, type LearnerProfile } from "@/lib/api/profiles";
+import { createClient } from "@/lib/supabaseClient";
 
 const ACTIVE_PROFILE_KEY = "activeProfileId";
 
@@ -30,11 +31,25 @@ function getStoredProfileId(): string | null {
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(getStoredProfileId);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAuthenticated(!!data.user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const { data: profiles = [], isLoading, refetch } = useQuery({
     queryKey: ["profiles"],
     queryFn: fetchProfiles,
     staleTime: 5 * 60 * 1000,
+    enabled: isAuthenticated === true,
+    retry: false,
   });
 
   // Resolve active profile — pure derivation, no effect needed
@@ -59,9 +74,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [queryClient]
   );
 
+  // Loading if auth check pending, or authenticated and profiles still loading
+  const loading = isAuthenticated === null || (isAuthenticated && isLoading);
+
   return (
     <ProfileContext.Provider
-      value={{ profiles, activeProfile, setActiveProfileId, isLoading, refetch }}
+      value={{ profiles, activeProfile, setActiveProfileId, isLoading: loading, refetch }}
     >
       {children}
     </ProfileContext.Provider>
