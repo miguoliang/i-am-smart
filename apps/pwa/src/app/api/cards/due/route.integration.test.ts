@@ -22,15 +22,7 @@ const mockCreateProfileService = createProfileService as jest.MockedFunction<
 describe("GET /api/cards/due (integration)", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
   const mockDefaultProfile = { id: "profile-default", account_id: "user-123", name: "我", is_default: true };
-  const mockSupabase = {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn().mockResolvedValue({ data: { daily_due_limit: 10 }, error: null }),
-        })),
-      })),
-    })),
-  };
+  const mockSupabase = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -83,14 +75,13 @@ describe("GET /api/cards/due (integration)", () => {
       "profile-default",
       "A1",
       -480,
-      10
     );
   });
 
-  it("returns 200 and empty cards when daily limit reached", async () => {
+  it("returns 200 with all due cards (no daily limit)", async () => {
     const mockGetDueCards = jest.fn().mockResolvedValue({
-      reviewedCount: 10,
-      cards: [],
+      reviewedCount: 50,
+      cards: [{ id: 1 }],
     });
     mockCreateCardService.mockResolvedValue({
       getDueCards: mockGetDueCards,
@@ -103,13 +94,12 @@ describe("GET /api/cards/due (integration)", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.data.reviewedCount).toBe(10);
-    expect(body.data.cards).toEqual([]);
+    expect(body.data.reviewedCount).toBe(50);
+    expect(body.data.cards).toHaveLength(1);
     expect(mockGetDueCards).toHaveBeenCalledWith(
       "profile-default",
       undefined,
       undefined,
-      10
     );
   });
 

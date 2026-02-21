@@ -176,3 +176,45 @@ export async function broadcastPush(params: {
   const json = await res.json();
   return json.data;
 }
+
+export interface SaasMetrics {
+  activeUsers: {
+    dau: number;
+    wau: number;
+    mau: number;
+    dauMauRatio: number;
+  };
+  cohortRetention: {
+    cohort_week: string;
+    cohort_size: number;
+    d1_retention: number;
+    d7_retention: number;
+    d30_retention: number;
+  }[];
+  churn: {
+    weeklyChurnRate: number;
+    monthlyChurnRate: number;
+    weeklyActiveBase: number;
+    weeklyChurned: number;
+    monthlyActiveBase: number;
+    monthlyChurned: number;
+  };
+  arppu: {
+    totalRevenue: number;
+    payingUsers: number;
+    arppu: number;
+    monthlyRevenue: number;
+    monthlyPayingUsers: number;
+    monthlyArppu: number;
+  };
+}
+
+export async function fetchSaasMetrics(offset: number): Promise<SaasMetrics> {
+  const res = await fetch(`/api/operator/dashboard/saas?offset=${offset}`);
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "获取SaaS指标失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}

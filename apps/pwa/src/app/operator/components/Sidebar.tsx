@@ -11,6 +11,7 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   { href: "/operator", label: "仪表盘", icon: "📊" },
+  { href: "/operator/saas", label: "SaaS 指标", icon: "📈" },
   { href: "/operator/orders", label: "订单管理", icon: "💰" },
   { href: "/operator/knowledges", label: "单词列表", icon: "📚" },
   { href: "/operator/import", label: "导入词库", icon: "📥" },

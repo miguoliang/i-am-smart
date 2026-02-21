@@ -22,15 +22,7 @@ const mockCreateProfileService = createProfileService as jest.MockedFunction<
 describe("POST /api/cards/[id]/review (integration)", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
   const mockDefaultProfile = { id: "profile-default", account_id: "user-123", name: "我", is_default: true };
-  const mockSupabase = {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn().mockResolvedValue({ data: { daily_due_limit: 10 }, error: null }),
-        })),
-      })),
-    })),
-  };
+  const mockSupabase = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -73,7 +65,6 @@ describe("POST /api/cards/[id]/review (integration)", () => {
       1,
       5,
       -480,
-      10
     );
   });
 

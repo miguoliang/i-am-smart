@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { createCardService, createProfileService } from '@/lib/services/factory'
 import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireAuth } from '@/lib/middleware/auth'
-import { MAX_QUALITY, MIN_QUALITY, DAILY_REVIEW_LIMIT } from '@/lib/constants'
+import { MAX_QUALITY, MIN_QUALITY } from '@/lib/constants'
 import { t, translate } from '@/lib/i18n'
 
 export async function POST(
@@ -20,14 +20,6 @@ export async function POST(
 
     const { user, supabase } = await requireAuth(request);
     const { id } = await params;
-
-    const { data: account } = await supabase
-      .from('accounts')
-      .select('daily_due_limit')
-      .eq('id', user.id)
-      .single();
-
-    const dailyLimit = account?.daily_due_limit ?? DAILY_REVIEW_LIMIT;
 
     const cardId = parseInt(id, 10);
     if (isNaN(cardId)) {
@@ -50,7 +42,7 @@ export async function POST(
     }
 
     const cardService = await createCardService(supabase);
-    const result = await cardService.reviewCard(resolvedProfileId, cardId, quality, timezoneOffset, dailyLimit);
+    const result = await cardService.reviewCard(resolvedProfileId, cardId, quality, timezoneOffset);
 
     return apiSuccess(result);
   } catch (error) {

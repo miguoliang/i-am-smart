@@ -22,7 +22,6 @@ import { parseApiErrorResponse } from "@/lib/utils/apiError";
 import { t } from "@/lib/i18n";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { CalendarReminder } from "./CalendarReminder";
-import { DAILY_DUE_LIMIT_PRESETS } from "@/lib/constants";
 import { useStats } from "@/app/stats/hooks/useStats";
 
 interface TopBarProps {
@@ -59,18 +58,6 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
     queryKey: ["accounts", "me"],
     queryFn: fetchMe,
     enabled: open && showMore,
-  });
-
-  const updateLimitMutation = useMutation({
-    mutationFn: async (value: number) => {
-      const res = await fetch("/api/accounts/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daily_due_limit: value }),
-      });
-      if (!res.ok) throw new Error("更新失败");
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts", "me"] }),
   });
 
   const handleSignOut = () => {
@@ -156,24 +143,6 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
 
             {showMore && (
               <div className="space-y-6 animate-in slide-in-from-top-2 duration-200">
-                {/* Daily limit */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">每日上限</h3>
-                  <div className="flex gap-2">
-                    {DAILY_DUE_LIMIT_PRESETS.map((value) => (
-                      <Button
-                        key={value}
-                        variant={me?.daily_due_limit === value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateLimitMutation.mutate(value)}
-                        disabled={updateLimitMutation.isPending || meLoading}
-                      >
-                        {value}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Calendar Reminder */}
                 <CalendarReminder
                   calendarToken={me?.calendar_token ?? null}
