@@ -1,5 +1,5 @@
 /**
- * Integration tests for the learn flow: load due cards → display card → flip → rate.
+ * Integration tests for the learn flow: load due cards → display card → reveal answer → rate.
  * Tests the full flow with mocked API client (avoids loading next/server in jsdom).
  */
 import { render, screen, waitFor } from "@testing-library/react";
@@ -115,7 +115,7 @@ describe("Learn flow (integration)", () => {
     expect(screen.getByText(/A greeting/)).toBeInTheDocument();
   });
 
-  it("flips card and shows rating buttons", async () => {
+  it("reveals answer and shows rating buttons", async () => {
     render(
       <TestWrapper>
         <Learn />
@@ -126,10 +126,10 @@ describe("Learn flow (integration)", () => {
       expect(screen.getByText("Hello")).toBeInTheDocument();
     });
 
-    const flipButton = screen.getByRole("button", {
-      name: /翻转查看答案/,
+    const revealButton = screen.getByRole("button", {
+      name: /显示答案/,
     });
-    await userEvent.click(flipButton);
+    await userEvent.click(revealButton);
 
     await waitFor(() => {
       const perfectButton = screen.getByRole("button", { name: /会了/ });
@@ -148,10 +148,10 @@ describe("Learn flow (integration)", () => {
       expect(screen.getByText("Hello")).toBeInTheDocument();
     });
 
-    const flipButton = screen.getByRole("button", {
-      name: /翻转查看答案/,
+    const revealButton = screen.getByRole("button", {
+      name: /显示答案/,
     });
-    await userEvent.click(flipButton);
+    await userEvent.click(revealButton);
 
     const perfectButton = await screen.findByRole("button", { name: /会了/ });
 

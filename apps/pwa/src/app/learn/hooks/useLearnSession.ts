@@ -1,7 +1,6 @@
 import { useCards } from "./useCards";
-import { useCardFlip } from "./useCardFlip";
+import { useAnswerReveal } from "./useAnswerReveal";
 import { useSpeech } from "./useSpeech";
-import { useTouchSwipe } from "./useTouchSwipe";
 import { useCardReview } from "./useCardReview";
 import { useCardNavigation } from "./useCardNavigation";
 import { useSignOut } from "@/hooks/useSignOut";
@@ -14,9 +13,8 @@ export function useLearnSession() {
   const { cards, setCards, reviewedCount: apiReviewedCount, loading } = useCards();
   const { currentIndex, setCurrentIndex, currentCard } = useCardNavigation(cards);
   
-  const { flipped, toggleFlip, resetFlip, getResponseTimeMs } = useCardFlip();
+  const { answerRevealed, revealAnswer, resetReveal, getResponseTimeMs } = useAnswerReveal();
   const { speak } = useSpeech();
-  const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
 
   // 2. Progress Calculation
   const locallyReviewedCount = cards.filter((card: Card & { reviewed?: boolean }) => card.reviewed).length;
@@ -29,7 +27,7 @@ export function useLearnSession() {
     currentIndex,
     setCurrentIndex,
     setCards,
-    resetFlip,
+    resetFlip: resetReveal,
   });
 
   // Adjust quality based on response time:
@@ -43,28 +41,21 @@ export function useLearnSession() {
     rawHandleRate(adjustedQuality);
   };
 
-  // 4. Auth Handler
-  // Handled by useSignOut hook
-
   return {
     loading,
-    cards, // Needed for empty check
+    cards,
     currentCard,
     progress: {
       reviewed: reviewedCount,
       total: totalCount,
     },
-    flip: {
-      isFlipped: flipped,
-      toggle: toggleFlip,
-      reset: resetFlip,
+    answer: {
+      isRevealed: answerRevealed,
+      reveal: revealAnswer,
+      reset: resetReveal,
     },
     speech: {
       speak,
-    },
-    touch: {
-      handleTouchStart,
-      handleTouchEnd,
     },
     review: {
       handleRate,

@@ -1,7 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { useCardFlip } from "./useCardFlip";
+import { useState, useCallback, useMemo } from "react";
+import { useAnswerReveal } from "./useAnswerReveal";
 import { useSpeech } from "./useSpeech";
-import { useTouchSwipe } from "./useTouchSwipe";
 import {
   getGuestCards,
   markGuestCardReviewed,
@@ -20,9 +19,8 @@ export function useGuestLearnSession() {
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(() => getGuestReviewedCount());
 
-  const { flipped, toggleFlip, resetFlip, getResponseTimeMs } = useCardFlip();
+  const { answerRevealed, revealAnswer, resetReveal, getResponseTimeMs } = useAnswerReveal();
   const { speak } = useSpeech();
-  const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
 
   const currentCard = cards[currentIndex] ?? null;
   const totalCount = reviewedCount + cards.length;
@@ -58,14 +56,14 @@ export function useGuestLearnSession() {
       if (nextIdx !== -1) {
         setCurrentIndex(nextIdx);
       }
-      resetFlip();
+      resetReveal();
 
       // Check if we should prompt signup
       if (shouldPromptSignup()) {
         setShowSignupPrompt(true);
       }
     },
-    [cards, currentIndex, getResponseTimeMs, resetFlip]
+    [cards, currentIndex, getResponseTimeMs, resetReveal]
   );
 
   const isSessionComplete = useMemo(
@@ -81,13 +79,12 @@ export function useGuestLearnSession() {
       reviewed: reviewedCount,
       total: totalCount,
     },
-    flip: {
-      isFlipped: flipped,
-      toggle: toggleFlip,
-      reset: resetFlip,
+    answer: {
+      isRevealed: answerRevealed,
+      reveal: revealAnswer,
+      reset: resetReveal,
     },
     speech: { speak },
-    touch: { handleTouchStart, handleTouchEnd },
     review: { handleRate },
     auth: {
       handleSignOut: () => {},

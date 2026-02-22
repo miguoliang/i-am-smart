@@ -3,8 +3,7 @@
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 import { GuestEmptyState } from "./components/GuestEmptyState";
-import { FlipCard } from "@/components/container/FlipCard";
-import { CardContent } from "./components/CardContent";
+import { WordCard } from "./components/WordCard";
 import { RatingButtons } from "./components/RatingButtons";
 import { SignupPrompt } from "./components/SignupPrompt";
 import { useLearnSession } from "./hooks/useLearnSession";
@@ -37,9 +36,8 @@ function AuthenticatedLearn() {
     cards,
     currentCard,
     progress,
-    flip,
+    answer,
     speech,
-    touch,
     review,
     auth,
   } = useLearnSession();
@@ -52,16 +50,14 @@ function AuthenticatedLearn() {
   return (
     <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
       <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
-      <FlipCard
+      <WordCard
         key={currentCard.id}
-        front={<CardContent side="front" knowledge={currentCard.knowledge} className="h-full w-full" onSpeak={speech.speak} />}
-        back={<CardContent side="back" knowledge={currentCard.knowledge} className="h-full w-full" onSpeak={speech.speak} />}
-        flipped={flip.isFlipped}
-        onFlip={flip.toggle}
-        onTouchStart={touch.handleTouchStart}
-        onTouchEnd={touch.handleTouchEnd}
+        knowledge={currentCard.knowledge}
+        answerRevealed={answer.isRevealed}
+        onRevealAnswer={answer.reveal}
+        onSpeak={speech.speak}
       />
-      {flip.isFlipped && <RatingButtons onRate={review.handleRate} />}
+      {answer.isRevealed && <RatingButtons onRate={review.handleRate} />}
     </div>
   );
 }
@@ -71,9 +67,8 @@ function GuestLearn() {
     cards,
     currentCard,
     progress,
-    flip,
+    answer,
     speech,
-    touch,
     review,
     showSignupPrompt,
     dismissSignupPrompt,
@@ -85,16 +80,14 @@ function GuestLearn() {
 
   return (
     <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      <FlipCard
+      <WordCard
         key={currentCard.id}
-        front={<CardContent side="front" knowledge={currentCard.knowledge} className="h-full w-full" onSpeak={speech.speak} />}
-        back={<CardContent side="back" knowledge={currentCard.knowledge} className="h-full w-full" onSpeak={speech.speak} />}
-        flipped={flip.isFlipped}
-        onFlip={flip.toggle}
-        onTouchStart={touch.handleTouchStart}
-        onTouchEnd={touch.handleTouchEnd}
+        knowledge={currentCard.knowledge}
+        answerRevealed={answer.isRevealed}
+        onRevealAnswer={answer.reveal}
+        onSpeak={speech.speak}
       />
-      {flip.isFlipped && <RatingButtons onRate={review.handleRate} />}
+      {answer.isRevealed && <RatingButtons onRate={review.handleRate} />}
       {showSignupPrompt && (
         <SignupPrompt onDismiss={dismissSignupPrompt} reviewedCount={progress.reviewed} />
       )}
