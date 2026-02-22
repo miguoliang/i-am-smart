@@ -12,20 +12,13 @@ function getAccentPreference(): "en-US" | "en-GB" {
   return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
 }
 
-export function CardContent({ knowledge, side, className, onSpeak }: CardContentProps) {
+export function CardContent({ knowledge, side, className }: CardContentProps) {
   if (side === 'front') {
     return (
       <div className={`flex flex-col items-center justify-center h-full ${className || ''}`}>
-        <h2 className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 md:mb-10 text-center break-words max-w-full">
+        <h2 className="text-4xl md:text-6xl lg:text-8xl font-bold text-center break-words max-w-full">
           {knowledge.name}
         </h2>
-        <button
-          className="text-lg text-muted-foreground hover:text-foreground transition px-4 py-2 rounded-full bg-muted/50 active:scale-95"
-          onClick={(e) => { e.stopPropagation(); onSpeak?.(knowledge.name, getAccentPreference()); }}
-          aria-label="播放发音"
-        >
-          🔊
-        </button>
       </div>
     );
   }

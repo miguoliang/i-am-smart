@@ -63,12 +63,17 @@ function AuthenticatedLearn() {
         key={currentCard.id}
         knowledge={currentCard.knowledge}
         answerRevealed={answer.isRevealed}
-        onSpeak={speech.speak}
       />
       {answer.isRevealed ? (
-        <RatingButtons onRate={review.handleRate} />
+        <ActionRow>
+          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
+          <RatingButtons onRate={review.handleRate} />
+        </ActionRow>
       ) : (
-        <RevealButton onReveal={answer.reveal} />
+        <ActionRow>
+          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
+          <RevealButton onReveal={answer.reveal} />
+        </ActionRow>
       )}
     </div>
   );
@@ -96,12 +101,17 @@ function GuestLearn() {
         key={currentCard.id}
         knowledge={currentCard.knowledge}
         answerRevealed={answer.isRevealed}
-        onSpeak={speech.speak}
       />
       {answer.isRevealed ? (
-        <RatingButtons onRate={review.handleRate} />
+        <ActionRow>
+          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
+          <RatingButtons onRate={review.handleRate} />
+        </ActionRow>
       ) : (
-        <RevealButton onReveal={answer.reveal} />
+        <ActionRow>
+          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
+          <RevealButton onReveal={answer.reveal} />
+        </ActionRow>
       )}
       {showSignupPrompt && (
         <SignupPrompt onDismiss={dismissSignupPrompt} reviewedCount={progress.reviewed} />
@@ -112,14 +122,37 @@ function GuestLearn() {
 
 function RevealButton({ onReveal }: { onReveal: () => void }) {
   return (
-    <div className="mt-6 md:mt-12 w-full max-w-md">
-      <button
-        onClick={onReveal}
-        className="w-full py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl"
-        aria-label="显示答案"
-      >
-        显示答案
-      </button>
+    <button
+      onClick={onReveal}
+      className="flex-1 py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl"
+      aria-label="显示答案"
+    >
+      显示答案
+    </button>
+  );
+}
+
+function SpeakButton({ onSpeak }: { onSpeak: () => void }) {
+  return (
+    <button
+      onClick={onSpeak}
+      className="py-5 md:py-8 px-6 md:px-8 text-xl md:text-3xl rounded-2xl transition transform active:scale-95 hover:scale-105 bg-card hover:bg-muted text-foreground shadow-xl border"
+      aria-label="播放发音"
+    >
+      🔊
+    </button>
+  );
+}
+
+function ActionRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-6 md:mt-12 w-full max-w-md flex gap-4 md:gap-6">
+      {children}
     </div>
   );
+}
+
+function getAccentPreference(): "en-US" | "en-GB" {
+  if (typeof window === "undefined") return "en-US";
+  return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
 }
