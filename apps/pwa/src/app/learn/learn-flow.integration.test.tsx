@@ -112,7 +112,8 @@ describe("Learn flow (integration)", () => {
       expect(screen.getByText("Hello")).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/A greeting/)).toBeInTheDocument();
+    // Answer should not be visible until revealed
+    expect(screen.queryByText(/A greeting/)).not.toBeInTheDocument();
   });
 
   it("reveals answer and shows rating buttons", async () => {
