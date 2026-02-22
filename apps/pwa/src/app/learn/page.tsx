@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 import { GuestEmptyState } from "./components/GuestEmptyState";
@@ -14,6 +15,14 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Learn() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <LearnInner />
+    </Suspense>
+  );
+}
+
+function LearnInner() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
 
