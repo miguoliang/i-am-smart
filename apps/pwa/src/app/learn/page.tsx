@@ -63,10 +63,13 @@ function AuthenticatedLearn() {
         key={currentCard.id}
         knowledge={currentCard.knowledge}
         answerRevealed={answer.isRevealed}
-        onRevealAnswer={answer.reveal}
         onSpeak={speech.speak}
       />
-      {answer.isRevealed && <RatingButtons onRate={review.handleRate} />}
+      {answer.isRevealed ? (
+        <RatingButtons onRate={review.handleRate} />
+      ) : (
+        <RevealButton onReveal={answer.reveal} />
+      )}
     </div>
   );
 }
@@ -93,13 +96,30 @@ function GuestLearn() {
         key={currentCard.id}
         knowledge={currentCard.knowledge}
         answerRevealed={answer.isRevealed}
-        onRevealAnswer={answer.reveal}
         onSpeak={speech.speak}
       />
-      {answer.isRevealed && <RatingButtons onRate={review.handleRate} />}
+      {answer.isRevealed ? (
+        <RatingButtons onRate={review.handleRate} />
+      ) : (
+        <RevealButton onReveal={answer.reveal} />
+      )}
       {showSignupPrompt && (
         <SignupPrompt onDismiss={dismissSignupPrompt} reviewedCount={progress.reviewed} />
       )}
+    </div>
+  );
+}
+
+function RevealButton({ onReveal }: { onReveal: () => void }) {
+  return (
+    <div className="mt-6 md:mt-12 w-full max-w-md">
+      <button
+        onClick={onReveal}
+        className="w-full py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl"
+        aria-label="显示答案"
+      >
+        显示答案
+      </button>
     </div>
   );
 }
