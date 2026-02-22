@@ -7,6 +7,11 @@ interface CardContentProps {
   onSpeak?: (text: string, lang: "en-US" | "en-GB") => void;
 }
 
+function getAccentPreference(): "en-US" | "en-GB" {
+  if (typeof window === "undefined") return "en-US";
+  return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
+}
+
 export function CardContent({ knowledge, side, className, onSpeak }: CardContentProps) {
   if (side === 'front') {
     return (
@@ -14,20 +19,13 @@ export function CardContent({ knowledge, side, className, onSpeak }: CardContent
         <h2 className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 md:mb-10 text-center break-words max-w-full">
           {knowledge.name}
         </h2>
-        <div className="flex gap-3">
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground transition px-3 py-1.5 rounded-full bg-muted/50"
-            onClick={(e) => { e.stopPropagation(); onSpeak?.(knowledge.name, 'en-US'); }}
-          >
-            🇺🇸
-          </button>
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground transition px-3 py-1.5 rounded-full bg-muted/50"
-            onClick={(e) => { e.stopPropagation(); onSpeak?.(knowledge.name, 'en-GB'); }}
-          >
-            🇬🇧
-          </button>
-        </div>
+        <button
+          className="text-lg text-muted-foreground hover:text-foreground transition px-4 py-2 rounded-full bg-muted/50 active:scale-95"
+          onClick={(e) => { e.stopPropagation(); onSpeak?.(knowledge.name, getAccentPreference()); }}
+          aria-label="播放发音"
+        >
+          🔊
+        </button>
       </div>
     );
   }
