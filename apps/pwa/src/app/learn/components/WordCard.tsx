@@ -14,18 +14,14 @@ export function WordCard({ knowledge, answerRevealed, onSpeak }: WordCardProps) 
         {/* Word + pronunciation (always visible) */}
         <CardContent side="front" knowledge={knowledge} className="w-full" onSpeak={onSpeak} />
 
-        {/* Answer with fade-in */}
-        <div
-          className={`w-full transition-all duration-300 ${
-            answerRevealed
-              ? 'opacity-100 translate-y-0 mt-8'
-              : 'opacity-0 translate-y-2 pointer-events-none h-0 mt-0 overflow-hidden'
-          }`}
-        >
-          <div className="border-t border-muted-foreground/15 pt-6">
-            <CardContent side="back" knowledge={knowledge} className="w-full" onSpeak={onSpeak} />
+        {/* Answer */}
+        {answerRevealed && (
+          <div className="w-full mt-8">
+            <div className="border-t border-muted-foreground/15 pt-6">
+              <CardContent side="back" knowledge={knowledge} className="w-full" onSpeak={onSpeak} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
