@@ -48,6 +48,24 @@ export default function Stats() {
           ))}
         </div>
 
+        {/* 考试目标完成进度 */}
+        {stats.total > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 mb-12">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">考试目标完成进度</h2>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                <div
+                  className="bg-green-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((stats.mastered / stats.total) * 100))}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                已掌握 {stats.mastered} / 总共 {stats.total} 词（{Math.round((stats.mastered / stats.total) * 100)}%）
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* 热力图 */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8">
           <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">过去 30 天学习热力</h2>
