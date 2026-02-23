@@ -6,7 +6,7 @@ import { Button } from "@/components/form/Button";
 export const metadata: Metadata = generateSEOMetadata({
   title: "每天5分钟记住20个单词 - 聪明的背单词工具",
   description:
-    "背了就忘？科学算法在你快忘的时候提醒复习。3000+词汇，A1-C2全级别，无需下载，多端同步。免费开始。",
+    "背了就忘？科学算法在你快忘的时候提醒复习。3000+词汇，覆盖KET·PET·四六级·雅思·托福，无需下载，多端同步。免费开始。",
   keywords: [
     "英语学习",
     "背单词",
@@ -91,7 +91,7 @@ export default function HomePage() {
         <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-sm text-gray-500 dark:text-gray-400">
           <span>3000+ 词汇</span>
           <span className="hidden sm:inline">·</span>
-          <span>A1-C2 全级别</span>
+          <span>KET · PET · 四六级 · 雅思 · 托福</span>
           <span className="hidden sm:inline">·</span>
           <span>手机/平板/电脑多端同步</span>
         </div>
