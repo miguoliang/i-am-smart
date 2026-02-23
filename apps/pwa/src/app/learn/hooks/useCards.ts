@@ -60,9 +60,13 @@ function cardsReducer(state: CardsState, action: CardsAction): CardsState {
 export function useCards() {
   const { activeProfile, isLoading: profileLoading } = useProfile();
   const level = activeProfile?.level ?? 'A1';
+  const profileId = activeProfile?.id;
+  const examTarget = activeProfile?.exam_target;
   const { data, isLoading: queryLoading } = useDueCardsQuery();
   const loading = profileLoading || queryLoading;
   const prevLevelRef = useRef(level);
+  const prevProfileIdRef = useRef(profileId);
+  const prevExamTargetRef = useRef(examTarget);
 
   const [{ localCards, lastValidLevel, initialReviewedCount, initialTotalCount }, dispatch] = useReducer(cardsReducer, {
     localCards: null,
@@ -71,13 +75,15 @@ export function useCards() {
     initialTotalCount: 0,
   });
 
-  // Handle level changes
+  // Handle level, profile, or exam target changes
   useEffect(() => {
-    if (prevLevelRef.current !== level) {
+    if (prevLevelRef.current !== level || prevProfileIdRef.current !== profileId || prevExamTargetRef.current !== examTarget) {
       prevLevelRef.current = level;
+      prevProfileIdRef.current = profileId;
+      prevExamTargetRef.current = examTarget;
       dispatch({ type: 'SET_LEVEL', level });
     }
-  }, [level]);
+  }, [level, profileId, examTarget]);
 
   // Initialize cards when data loads for current level
   // Only set localCards from API data when localCards is null (initial load or after level change).
