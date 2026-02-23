@@ -241,6 +241,31 @@ export interface SaasMetrics {
   };
 }
 
+export interface CompletionMetrics {
+  overall: {
+    totalProfiles: number;
+    completedProfiles: number;
+    avgMasteredPct: number;
+  };
+  byExam: {
+    exam_target: string;
+    profiles: number;
+    avg_mastered_pct: number;
+    total_mastered: number;
+    total_cards: number;
+  }[];
+}
+
+export async function fetchCompletionMetrics(): Promise<CompletionMetrics> {
+  const res = await fetch("/api/operator/dashboard/completion");
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "获取完成率指标失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
 export async function fetchSaasMetrics(offset: number): Promise<SaasMetrics> {
   const res = await fetch(`/api/operator/dashboard/saas?offset=${offset}`);
   if (!res.ok) {
