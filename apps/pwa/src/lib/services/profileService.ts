@@ -1,6 +1,6 @@
 import { ProfileRepository, LearnerProfile } from '@/lib/repositories/profile.repository';
 import { ApiError } from '@/lib/utils/apiErrorClasses';
-import { AVAILABLE_LEVELS, type Level } from '@i-am-smart/shared/constants';
+import { AVAILABLE_LEVELS, type Level, getExamTarget, getExamPrimaryLevel } from '@i-am-smart/shared/constants';
 
 const PROFILE_LIMITS: Record<string, number> = {
   free: 2,
@@ -43,8 +43,8 @@ export class ProfileService {
     return this.profileRepository.createProfile(accountId, trimmed);
   }
 
-  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level }): Promise<LearnerProfile> {
-    const patch: { name?: string; level?: Level } = {};
+  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level; exam_target?: string }): Promise<LearnerProfile> {
+    const patch: { name?: string; level?: Level; exam_target?: string } = {};
 
     if (updates.name !== undefined) {
       const trimmed = updates.name.trim();
@@ -54,7 +54,15 @@ export class ProfileService {
       patch.name = trimmed;
     }
 
-    if (updates.level !== undefined) {
+    if (updates.exam_target !== undefined) {
+      const exam = getExamTarget(updates.exam_target);
+      if (!exam) {
+        throw ApiError.validationError('无效的考试目标');
+      }
+      patch.exam_target = updates.exam_target;
+      // Also update level to the exam's primary (highest) CEFR level
+      patch.level = getExamPrimaryLevel(updates.exam_target);
+    } else if (updates.level !== undefined) {
       if (!AVAILABLE_LEVELS.includes(updates.level)) {
         throw ApiError.validationError('无效的级别');
       }

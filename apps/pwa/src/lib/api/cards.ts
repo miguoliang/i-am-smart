@@ -11,12 +11,15 @@ export interface DueCardsResponse {
 
 export interface FetchDueCardsParams {
   level?: string;
+  examTarget?: string;
   profileId?: string;
 }
 
 export async function fetchDueCards(params?: FetchDueCardsParams): Promise<DueCardsResponse> {
   const searchParams = new URLSearchParams();
-  if (params?.level) {
+  if (params?.examTarget) {
+    searchParams.set('examTarget', params.examTarget);
+  } else if (params?.level) {
     searchParams.set('level', params.level);
   }
   if (params?.profileId) {

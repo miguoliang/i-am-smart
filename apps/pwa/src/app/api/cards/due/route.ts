@@ -3,6 +3,7 @@ import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 import { requireAuth } from '@/lib/middleware/auth'
 import { t } from '@/lib/i18n'
 import { NextRequest } from 'next/server'
+import { getExamLevels } from '@i-am-smart/shared/constants'
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +11,7 @@ export async function GET(req: NextRequest) {
 
     const searchParams = req.nextUrl.searchParams;
     const level = searchParams.get('level') || undefined;
+    const examTarget = searchParams.get('examTarget') || undefined;
     const timezoneOffset = searchParams.get('timezoneOffset')
       ? parseInt(searchParams.get('timezoneOffset')!, 10)
       : undefined;
@@ -34,8 +36,16 @@ export async function GET(req: NextRequest) {
       resolvedProfileId = defaultProfile.id;
     }
 
+    // Determine levels to query
+    let levels: string[] | undefined;
+    if (examTarget) {
+      levels = getExamLevels(examTarget);
+    } else if (level) {
+      levels = [level];
+    }
+
     const cardService = await createCardService(supabase);
-    const result = await cardService.getDueCards(resolvedProfileId, level, timezoneOffset);
+    const result = await cardService.getDueCards(resolvedProfileId, levels, timezoneOffset);
 
     return apiSuccess(result);
   } catch (error) {

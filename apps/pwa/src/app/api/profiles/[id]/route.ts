@@ -13,13 +13,16 @@ export async function PATCH(
     const { id } = await params;
 
     const body = await req.json();
-    const updates: { name?: string; level?: Level } = {};
+    const updates: { name?: string; level?: Level; exam_target?: string } = {};
 
     if (typeof body.name === 'string') {
       updates.name = body.name;
     }
     if (typeof body.level === 'string') {
       updates.level = body.level as Level;
+    }
+    if (typeof body.exam_target === 'string') {
+      updates.exam_target = body.exam_target;
     }
 
     const profileService = await createProfileService(supabase);

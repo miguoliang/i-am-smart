@@ -9,6 +9,7 @@ export interface LearnerProfile {
   name: string;
   avatar_index: number;
   level: Level;
+  exam_target?: string;
   is_default: boolean;
   created_at: string;
   updated_at: string;
@@ -38,7 +39,7 @@ export async function createProfile(name: string): Promise<LearnerProfile> {
   return json.data!;
 }
 
-export async function updateProfile(profileId: string, updates: { name?: string; level?: Level }): Promise<LearnerProfile> {
+export async function updateProfile(profileId: string, updates: { name?: string; level?: Level; exam_target?: string }): Promise<LearnerProfile> {
   const res = await fetch(`/api/profiles/${profileId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
