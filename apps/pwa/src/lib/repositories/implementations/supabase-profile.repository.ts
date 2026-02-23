@@ -55,7 +55,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return data!;
   }
 
-  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level }): Promise<LearnerProfile> {
+  async updateProfile(profileId: string, accountId: string, updates: { name?: string; level?: Level; exam_target?: string }): Promise<LearnerProfile> {
     const { data, error } = await this.client
       .from('learner_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })

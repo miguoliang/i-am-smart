@@ -50,7 +50,7 @@ export default function PricingPage() {
                 <span className="mr-2 text-green-600 dark:text-green-400 font-bold">
                   ✓
                 </span>
-                <span>A1-A2单词</span>
+                <span>KET 考试词汇</span>
               </li>
               <li className="flex items-start text-gray-700 dark:text-gray-300">
                 <span className="mr-2 text-green-600 dark:text-green-400 font-bold">
@@ -67,7 +67,7 @@ export default function PricingPage() {
             </ul>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              适合人群：零成本体验，慢节奏学习，准备低级别考试的学生
+              适合人群：零成本体验，慢节奏学习，准备 KET 考试的学生
             </p>
 
             <Link href="/signin" className="block">
@@ -130,7 +130,7 @@ export default function PricingPage() {
                   ✓
                 </span>
                 <span>
-                  <strong>全级别单词</strong>（A1-C2，KET到雅思）
+                  <strong>全部考试词汇</strong>（KET · PET · 四六级 · 雅思 · 托福）
                 </span>
               </li>
               <li className="flex items-start text-gray-700 dark:text-gray-300">
@@ -153,7 +153,7 @@ export default function PricingPage() {
             </ul>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              适合人群：追求极致效率，快节奏学习，准备高级别考试的学生
+              适合人群：追求极致效率，快节奏学习，备考 PET · 四六级 · 雅思 · 托福的学生
             </p>
 
             <Link href="/signin?next=/pay" className="block">

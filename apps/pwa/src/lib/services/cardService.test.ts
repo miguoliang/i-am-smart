@@ -95,16 +95,32 @@ describe('CardService', () => {
           expect(cardRepository.getDueCards).toHaveBeenCalledWith('profile-123', 9999, undefined);
       });
 
-      it('should fetch due cards with level filter', async () => {
+      it('should fetch due cards with single level filter', async () => {
           const mockCard = createMockCard();
           cardRepository.getReviewedTodayCount.mockResolvedValue(5);
           cardRepository.getDueCards.mockResolvedValue([mockCard]);
 
-          const result = await cardService.getDueCards('profile-123', 'A1');
+          const result = await cardService.getDueCards('profile-123', ['A1']);
 
           expect(result.reviewedCount).toBe(5);
           expect(result.cards).toHaveLength(1);
           expect(cardRepository.getDueCards).toHaveBeenCalledWith('profile-123', 9999, 'A1');
+      });
+
+      it('should fetch due cards with multiple levels and deduplicate', async () => {
+          const card1 = createMockCard({ id: 1 });
+          const card2 = createMockCard({ id: 2 });
+          const card1Dup = createMockCard({ id: 1 }); // duplicate
+          cardRepository.getReviewedTodayCount.mockResolvedValue(3);
+          cardRepository.getDueCards
+            .mockResolvedValueOnce([card1, card2])
+            .mockResolvedValueOnce([card1Dup]);
+
+          const result = await cardService.getDueCards('profile-123', ['A1', 'A2']);
+
+          expect(result.reviewedCount).toBe(3);
+          expect(result.cards).toHaveLength(2);
+          expect(cardRepository.getDueCards).toHaveBeenCalledTimes(2);
       });
   });
 });

@@ -7,8 +7,7 @@ import { LogOut, Settings, Check, Lock, ChevronDown, ChevronUp } from "lucide-re
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
-import { AVAILABLE_LEVELS } from "@i-am-smart/shared/constants";
-import type { Level } from "@i-am-smart/shared/constants";
+import { EXAM_TARGETS } from "@i-am-smart/shared/constants";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -42,11 +41,11 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeProfile, refetch: refetchProfiles } = useProfile();
-  const level = activeProfile?.level ?? 'A1';
+  const currentExamTarget = activeProfile?.exam_target ?? "ket";
   const stats = useStats();
 
-  const updateLevelMutation = useMutation({
-    mutationFn: (newLevel: Level) => updateProfileApi(activeProfile!.id, { level: newLevel }),
+  const updateExamMutation = useMutation({
+    mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
     onSuccess: () => {
       refetchProfiles();
       queryClient.invalidateQueries({ queryKey: ["cards"] });
@@ -90,36 +89,34 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               <ProfileSwitcher />
             </div>
 
-            {/* Level Selector */}
+            {/* Exam Target Selector */}
             <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">选择等级</h3>
-              {AVAILABLE_LEVELS.map((levelOption) => {
-                const isComingSoon = ["C1", "C2"].includes(levelOption);
-                const isPro = ["B1", "B2"].includes(levelOption);
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">选择考试目标</h3>
+              {EXAM_TARGETS.map((exam) => {
+                const isSelected = currentExamTarget === exam.id;
                 return (
                   <button
-                    key={levelOption}
-                    disabled={isComingSoon || updateLevelMutation.isPending}
+                    key={exam.id}
+                    disabled={updateExamMutation.isPending}
                     onClick={() => {
-                      if (isPro) { setOpen(false); router.push("/pay"); return; }
-                      if (!isComingSoon && activeProfile) {
-                        updateLevelMutation.mutate(levelOption);
+                      if (!exam.isFree) { setOpen(false); router.push("/pay"); return; }
+                      if (activeProfile) {
+                        updateExamMutation.mutate(exam.id);
                         setOpen(false);
                       }
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
-                      isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-accent",
-                      level === levelOption && !isComingSoon && !isPro && "bg-accent text-accent-foreground"
+                      "hover:bg-accent",
+                      isSelected && "bg-accent text-accent-foreground"
                     )}
                   >
                     <div className="w-5 h-5 flex items-center justify-center">
-                      {level === levelOption && <Check className="h-4 w-4" />}
-                      {isPro && <Lock className="h-4 w-4 text-amber-500" />}
+                      {isSelected && <Check className="h-4 w-4" />}
+                      {!exam.isFree && !isSelected && <Lock className="h-4 w-4 text-amber-500" />}
                     </div>
-                    <span className="flex-1">{levelOption}</span>
-                    {isPro && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
-                    {isComingSoon && <span className="text-xs text-muted-foreground">敬请期待</span>}
+                    <span className="flex-1">{exam.name}</span>
+                    {!exam.isFree && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
                   </button>
                 );
               })}

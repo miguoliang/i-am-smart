@@ -73,7 +73,7 @@ describe("GET /api/cards/due (integration)", () => {
     expect(mockRequireAuth).toHaveBeenCalledTimes(1);
     expect(mockGetDueCards).toHaveBeenCalledWith(
       "profile-default",
-      "A1",
+      ["A1"],
       -480,
     );
   });

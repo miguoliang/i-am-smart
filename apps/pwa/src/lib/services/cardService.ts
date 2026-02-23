@@ -36,15 +36,35 @@ export class CardService {
 
   /**
    * Returns due cards for the profile.
+   * Accepts an optional array of levels (for exam targets that span multiple CEFR levels).
    */
   async getDueCards(
     profileId: string,
-    level?: string,
+    levels?: string[],
     timezoneOffset?: number,
   ): Promise<DueCardsResult> {
     const currentReviewedCount = await this.getReviewedTodayCount(profileId, timezoneOffset);
 
-    const cards = await this.cardRepository.getDueCards(profileId, 9999, level);
+    let cards: Card[];
+    if (levels && levels.length > 1) {
+      // RPC only accepts a single level, so call per level and merge
+      const results = await Promise.all(
+        levels.map(l => this.cardRepository.getDueCards(profileId, 9999, l))
+      );
+      // Merge and deduplicate by card id
+      const seen = new Set<number>();
+      cards = [];
+      for (const batch of results) {
+        for (const card of batch) {
+          if (!seen.has(card.id)) {
+            seen.add(card.id);
+            cards.push(card);
+          }
+        }
+      }
+    } else {
+      cards = await this.cardRepository.getDueCards(profileId, 9999, levels?.[0]);
+    }
 
     return {
       reviewedCount: currentReviewedCount,

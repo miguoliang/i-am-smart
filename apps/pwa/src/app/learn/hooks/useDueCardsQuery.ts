@@ -10,11 +10,15 @@ export function useDueCardsQuery() {
   const { activeProfile } = useProfile();
 
   const profileId = activeProfile?.id;
+  const examTarget = activeProfile?.exam_target;
   const level = activeProfile?.level;
 
   const queryResult = useQuery({
-    queryKey: ["cards", "due", level, profileId],
-    queryFn: () => fetchDueCards({ level, profileId }),
+    queryKey: ["cards", "due", examTarget ?? level, profileId],
+    queryFn: () => fetchDueCards({
+      ...(examTarget ? { examTarget } : { level }),
+      profileId,
+    }),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
