@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
     const profileService = await createProfileService(supabase);
     const profile = await profileService.createProfile(user.id, name, plan);
 
+    // Distribute all knowledge cards to the new profile
+    await supabase.rpc('distribute_all_cards_to_profile', {
+      p_profile_id: profile.id,
+      p_account_id: user.id,
+      p_card_type_code: 'basic-front-back',
+    });
+
     return apiSuccess(profile);
   } catch (error) {
     return handleApiError(error);
