@@ -142,3 +142,17 @@ jobs:
               pm2 restart "$PM2_NAME" 2>/dev/null || PORT="$APP_PORT" pm2 start server.js --name "$PM2_NAME" || true
             fi
             echo "Deploy done."
+
+  auto-merge:
+    name: Auto Merge PR
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Squash merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --squash --delete-branch
