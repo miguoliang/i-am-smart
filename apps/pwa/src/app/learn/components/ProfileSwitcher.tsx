@@ -101,7 +101,7 @@ export function ProfileSwitcher() {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="flex-1 bg-transparent border-b border-primary text-sm outline-none"
+                  className="flex-1 bg-transparent border-b border-primary text-base outline-none"
                   maxLength={20}
                   autoFocus
                   onKeyDown={(e) => {
@@ -170,7 +170,7 @@ export function ProfileSwitcher() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="输入名称"
-              className="flex-1 bg-transparent border-b border-primary text-sm outline-none"
+              className="flex-1 bg-transparent border-b border-primary text-base outline-none"
               maxLength={20}
               autoFocus
               onKeyDown={(e) => {
