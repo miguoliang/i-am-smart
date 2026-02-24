@@ -78,7 +78,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
           </div>
         </SheetTrigger>
 
-        <SheetContent side="left" className="flex flex-col h-full p-0 gap-0 w-[280px] sm:w-[280px]">
+        <SheetContent side="bottom" className="flex flex-col p-0 gap-0 max-h-[85dvh] rounded-t-2xl">
           <SheetHeader className="border-b p-6 text-left">
             <SheetTitle>设置</SheetTitle>
           </SheetHeader>

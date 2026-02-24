@@ -62,7 +62,7 @@ export function EmptyState() {
               <Settings className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[280px] p-0 gap-0">
+          <SheetContent side="bottom" className="p-0 gap-0 max-h-[85dvh] rounded-t-2xl">
             <SheetHeader className="border-b p-6 text-left">
               <SheetTitle>设置</SheetTitle>
             </SheetHeader>
