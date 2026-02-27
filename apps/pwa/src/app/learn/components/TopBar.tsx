@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
-import { LogOut, Settings, Check, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, Settings, Check, Lock, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { toast } from "sonner";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
@@ -38,7 +39,19 @@ async function fetchMe() {
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const [open, setOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [sheetMaxH, setSheetMaxH] = useState("85dvh");
   const router = useRouter();
+
+  // Track iOS visual viewport to avoid keyboard obscuring the sheet
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setSheetMaxH(`${vv.height * 0.85}px`);
+    };
+    vv.addEventListener("resize", update);
+    return () => vv.removeEventListener("resize", update);
+  }, []);
   const queryClient = useQueryClient();
   const { activeProfile, refetch: refetchProfiles } = useProfile();
   const currentExamTarget = activeProfile?.exam_target ?? "ket";
@@ -78,7 +91,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
           </div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="flex flex-col p-0 gap-0 max-h-[85dvh] rounded-t-2xl">
+        <SheetContent side="bottom" className="flex flex-col p-0 gap-0 rounded-t-2xl" style={{ maxHeight: sheetMaxH }}>
           <SheetHeader className="border-b p-6 text-left">
             <SheetTitle>设置</SheetTitle>
           </SheetHeader>
@@ -125,7 +138,16 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
             {/* Mastered count */}
             {stats.total > 0 && (
               <div className="mb-6 px-4 py-3 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">已掌握 <span className="font-medium text-foreground">{stats.mastered}</span> / {stats.total} 词</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">已掌握 <span className="font-medium text-foreground">{stats.mastered}</span> / {stats.total} 词</p>
+                  <button
+                    type="button"
+                    onClick={() => toast("「已掌握」= 复习 ≥7 次且间隔 ≥30 天的单词", { duration: 4000 })}
+                    className="text-muted-foreground/60 hover:text-muted-foreground"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             )}
 
