@@ -11,7 +11,7 @@
 ### 2. 配置检查
 - [ ] 确认 `app.json` 中的页面路径正确
 - [ ] 确认 `project.config.json` 中的 `appid` 正确：`wxe3af85edd5fae27f`
-- [ ] 确认 `miniprogram/config.ts` 已正确生成（包含 `API_BASE_URL` 和 `APP_ID`）
+- [ ] 确认 `apps/miniprogram/config.ts` 已正确生成（包含 `API_BASE_URL` 和 `APP_ID`）
 - [ ] 确认服务器域名已在微信公众平台配置
 
 ### 3. 服务器域名配置
@@ -33,7 +33,7 @@
 ### 步骤 1：在微信开发者工具中上传代码
 
 1. 打开微信开发者工具
-2. 确保项目已正确打开（`miniprogram` 目录）
+2. 确保项目已正确打开（`apps/miniprogram` 目录）
 3. 点击工具栏的 **"上传"** 按钮
 4. 填写版本号和项目备注：
    - **版本号**：如 `1.0.0`
@@ -73,7 +73,7 @@
 确保生产环境的服务器已配置以下环境变量：
 - `WECHAT_MINIPROGRAM_APP_ID`：小程序 AppID
 - `WECHAT_MINIPROGRAM_APP_SECRET`：小程序 AppSecret
-- `NEXT_PUBLIC_APP_ORIGIN`：API 基础地址（用于生成 `miniprogram/config.ts`）
+- `NEXT_PUBLIC_APP_ORIGIN`：API 基础地址（用于生成 `apps/miniprogram/config.ts`）
 
 ### 域名配置
 

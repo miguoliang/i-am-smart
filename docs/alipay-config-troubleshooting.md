@@ -40,7 +40,7 @@ node -e "console.log('ALIPAY_APP_ID:', process.env.ALIPAY_APP_ID)"
 
 #### 生产/部署环境
 
-**Vercel：**
+**Vercel：**（若使用 Vercel 部署；本项目使用自有服务器 + PM2，见 [deploy.md](deploy.md)）
 1. 进入项目设置 → Environment Variables
 2. 检查是否配置了以下变量：
    - `ALIPAY_APP_ID`
@@ -125,7 +125,7 @@ export async function GET() {
 
 ### 7. 检查部署环境
 
-**如果是在 Vercel 等平台部署：**
+**如果是在 Vercel 等平台部署：**（本项目使用自有服务器 + PM2，见 [deploy.md](deploy.md)）
 
 1. **检查环境变量作用域：**
    - Production
@@ -157,7 +157,7 @@ ALIPAY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A.
 NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 ```
 
-### Vercel 环境变量配置
+### Vercel 环境变量配置（若使用 Vercel）
 
 在 Vercel Dashboard → Settings → Environment Variables 中添加：
 
@@ -181,7 +181,7 @@ NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 
 1. **检查代码逻辑：**
    ```typescript
-   // 在 src/app/api/pay/alipay/page/route.ts 中添加调试日志
+   // 在 apps/pwa/src/app/api/pay/alipay/page/route.ts 中添加调试日志
    console.log("ALIPAY_APP_ID:", process.env.ALIPAY_APP_ID);
    console.log("All ALIPAY env vars:", {
      APP_ID: !!process.env.ALIPAY_APP_ID,
@@ -201,7 +201,7 @@ NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 
 ## 相关文件
 
-- `src/app/api/pay/alipay/page/route.ts` - PC 网站支付 API
-- `src/app/api/pay/alipay/wap/route.ts` - 手机网站支付 API
-- `src/lib/alipay.ts` - 支付宝支付库
+- `apps/pwa/src/app/api/pay/alipay/page/route.ts` - PC 网站支付 API
+- `apps/pwa/src/app/api/pay/alipay/wap/route.ts` - 手机网站支付 API
+- `apps/pwa/src/lib/alipay.ts` - 支付宝支付库
 - `.env.supabase.example` - 环境变量示例文件

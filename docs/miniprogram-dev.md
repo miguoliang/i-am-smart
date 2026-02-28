@@ -19,7 +19,7 @@ npm run watch:miniprogram
 ```
 
 这个命令会：
-- 监听 `miniprogram/` 目录下所有 `.ts` 文件的变化
+- 监听 `apps/miniprogram/` 目录下所有 `.ts` 文件的变化
 - 自动编译修改的文件为对应的 `.js` 文件
 - 保持运行状态，直到手动停止（Ctrl+C）
 

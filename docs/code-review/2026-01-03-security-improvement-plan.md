@@ -3,11 +3,13 @@
 **Date:** 2026-01-03  
 **Status:** Completed  
 **Priority:** High  
-**Estimated Effort:** 0.5 day
+**Estimated Effort:** 0.5 day  
+
+> **Note:** Deployment has since changed to own server + PM2 (see [deploy.md](../../deploy.md)). CORS and rate limiting are configured per environment.
 
 ## Executive Summary
 
-This plan leverages Netlify and Supabase platform features to address security vulnerabilities with minimal complexity:
+This plan leverages platform features to address security vulnerabilities with minimal complexity:
 1. **Input Sanitization** - Use existing `dompurify` library
 
 **Key Simplifications:**

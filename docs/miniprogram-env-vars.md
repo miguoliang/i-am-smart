@@ -48,14 +48,14 @@ WECHAT_MINIPROGRAM_APP_SECRET=你的小程序AppSecret
 
 小程序端不需要环境变量，但需要在代码中配置：
 
-**`miniprogram/app.ts`**：
+**`apps/miniprogram/app.ts`**：
 ```typescript
 const APP_CONFIG = {
   API_BASE_URL: 'https://your-domain.com', // 替换为实际后端域名
 };
 ```
 
-**`miniprogram/project.config.json`**：
+**`apps/miniprogram/project.config.json`**：
 ```json
 {
   "appid": "你的小程序AppID"

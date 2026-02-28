@@ -125,9 +125,9 @@ https://your-domain.com
 
 ### 1. 导入项目
 
-1. 打开 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+1. 打开 [微信开发者工具](https://developers.weixin.qq.com/apps/miniprogram/dev/devtools/download.html)
 2. 选择 **导入项目**
-3. 选择项目目录：`miniprogram/` 文件夹
+3. 选择项目目录：`apps/miniprogram/` 文件夹
 4. 填写 AppID：输入测试号的 AppID
 5. 项目名称：`i-am-smart-miniprogram`
 6. 点击 **导入**
@@ -193,7 +193,7 @@ ngrok http 3000
 
 ### 2. 配置 API 地址
 
-在 `miniprogram/app.ts` 中：
+在 `apps/miniprogram/app.ts` 中：
 
 ```typescript
 const APP_CONFIG = {
@@ -226,15 +226,15 @@ WECHAT_MINIPROGRAM_APP_SECRET=your_test_app_secret  # 测试号 AppSecret（如�
 - [ ] 配置 uploadFile 合法域名（如果上传文件）
 
 ### 微信开发者工具
-- [ ] 导入项目（选择 `miniprogram/` 目录）
+- [ ] 导入项目（选择 `apps/miniprogram/` 目录）
 - [ ] 配置 AppID（测试号 AppID）
 - [ ] 启用 TypeScript 编译
 - [ ] 勾选"不校验合法域名"（开发时）
 
 ### 本地开发环境
 - [ ] 配置 `.env.local`（AppID 和 AppSecret）
-- [ ] 配置 `miniprogram/app.ts`（API 地址）
-- [ ] 配置 `miniprogram/project.config.json`（AppID）
+- [ ] 配置 `apps/miniprogram/app.ts`（API 地址）
+- [ ] 配置 `apps/miniprogram/project.config.json`（AppID）
 - [ ] 启动内网穿透（如果需要本地开发）
 
 ### 后端配置
@@ -263,7 +263,7 @@ WECHAT_MINIPROGRAM_APP_SECRET=your_test_app_secret  # 测试号 AppSecret（如�
 ### Q4: AppSecret 是必需的吗？
 
 **A**: 
-- 如果使用后端登录 API（`/api/auth/miniprogram/login`），需要 AppSecret
+- 如果使用后端登录 API（`/api/auth/apps/miniprogram/login`），需要 AppSecret
 - 如果只用前端功能，不需要 AppSecret
 
 ### Q5: 如何测试小程序登录？
@@ -271,12 +271,12 @@ WECHAT_MINIPROGRAM_APP_SECRET=your_test_app_secret  # 测试号 AppSecret（如�
 **A**: 
 1. 确保后端 API 已配置 AppID 和 AppSecret
 2. 在小程序中调用 `wx.login()` 获取 code
-3. 调用 `/api/auth/miniprogram/login` 接口
+3. 调用 `/api/auth/apps/miniprogram/login` 接口
 4. 检查返回的 access_token
 
 ## 📚 相关文档
 
-- [微信小程序开发文档](https://developers.weixin.qq.com/miniprogram/dev/framework/)
-- [小程序登录文档](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html)
-- [服务器域名配置](https://developers.weixin.qq.com/miniprogram/dev/framework/ability/network.html)
-- [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/devtools.html)
+- [微信小程序开发文档](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/)
+- [小程序登录文档](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/open-ability/login.html)
+- [服务器域名配置](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/ability/network.html)
+- [微信开发者工具](https://developers.weixin.qq.com/apps/miniprogram/dev/devtools/devtools.html)

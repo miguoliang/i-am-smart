@@ -84,12 +84,13 @@ async function sendAliyunSmsVerifyCode(
 ): Promise<SendSmsVerifyCodeResponse> {
   const accessKeyId = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_ID");
   const accessKeySecret = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_SECRET");
-  const signName = Deno.env.get("ALIYUN_SMS_SIGN_NAME");
-  const templateCode = Deno.env.get("ALIYUN_SMS_TEMPLATE_CODE");
+  // Hardcode sign name to avoid UTF-8 encoding issues with Supabase secrets
+  const signName = Deno.env.get("ALIYUN_SMS_SIGN_NAME") ?? "速通互联验证码";
+  const templateCode = Deno.env.get("ALIYUN_SMS_TEMPLATE_CODE") ?? "100001";
 
-  if (!accessKeyId || !accessKeySecret || !signName || !templateCode) {
+  if (!accessKeyId || !accessKeySecret) {
     throw new Error(
-      "Missing Alibaba Cloud SMS configuration. Required: ALIYUN_SMS_ACCESS_KEY_ID, ALIYUN_SMS_ACCESS_KEY_SECRET, ALIYUN_SMS_SIGN_NAME, ALIYUN_SMS_TEMPLATE_CODE"
+      "Missing Alibaba Cloud SMS configuration. Required: ALIYUN_SMS_ACCESS_KEY_ID, ALIYUN_SMS_ACCESS_KEY_SECRET"
     );
   }
 
@@ -136,11 +137,28 @@ async function sendAliyunSmsVerifyCode(
     body,
   });
 
-  const result: SendSmsVerifyCodeResponse = await response.json();
+  const responseText = await response.text();
+  console.log("Alibaba Cloud raw response:", responseText);
+  
+  let result: SendSmsVerifyCodeResponse;
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    throw new Error(`Failed to parse response: ${responseText}`);
+  }
 
   if (result.Code !== "OK") {
-    console.error("Alibaba Cloud SMS Verify error:", JSON.stringify(result));
-    throw new Error(`SMS send failed: ${result.Code} - ${result.Message}`);
+    const debugInfo = {
+      error: result.Code,
+      message: result.Message,
+      requestId: result.RequestId,
+      phoneUsed: cleanPhone,
+      signName: signName,
+      templateCode: templateCode,
+      templateParam: params.TemplateParam,
+    };
+    console.error("Alibaba Cloud SMS Verify error:", JSON.stringify(debugInfo));
+    throw new Error(JSON.stringify(debugInfo));
   }
 
   console.log("SMS sent successfully via SMS Verify Service:", {

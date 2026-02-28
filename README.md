@@ -46,11 +46,11 @@
 
 2.  **Install dependencies**
     ```bash
-    npm install
+    pnpm install
     ```
 
 3.  **Environment Setup**
-    Create a `.env.local` file with your Supabase credentials:
+    Create `apps/pwa/.env.local` with your Supabase credentials:
     ```env
     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key

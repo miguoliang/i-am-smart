@@ -14,8 +14,8 @@
 
 检查以下配置：
 
-- ✅ `miniprogram/config.ts` - API 地址和 AppID 已配置
-- ✅ `miniprogram/project.config.json` - AppID 已配置
+- ✅ `apps/miniprogram/config.ts` - API 地址和 AppID 已配置
+- ✅ `apps/miniprogram/project.config.json` - AppID 已配置
 - ✅ 后端 API 正常运行（`https://preview.iamsmart.top`）
 - ✅ 微信公众平台已配置 request 合法域名
 
@@ -43,7 +43,7 @@ npm run type-check:miniprogram
 #### 2.1 打开项目
 
 1. 打开微信开发者工具
-2. 导入项目：选择 `miniprogram/` 目录
+2. 导入项目：选择 `apps/miniprogram/` 目录
 3. 确认 AppID：`wxe3af85edd5fae27f`
 
 #### 2.2 预览测试
@@ -118,7 +118,7 @@ npm run type-check:miniprogram
 ## 📝 部署检查清单
 
 ### 代码准备
-- [ ] 配置文件已生成（`miniprogram/config.ts`）
+- [ ] 配置文件已生成（`apps/miniprogram/config.ts`）
 - [ ] AppID 已配置（`project.config.json`）
 - [ ] API 地址已配置（`config.ts`）
 - [ ] TypeScript 类型检查通过（可选）
@@ -159,21 +159,21 @@ npm run type-check:miniprogram
 ### 开发环境（本地）
 
 ```typescript
-// miniprogram/config.ts
+// apps/miniprogram/config.ts
 API_BASE_URL: 'https://preview.iamsmart.top'
 ```
 
 ### 测试环境（体验版）
 
 ```typescript
-// miniprogram/config.ts
+// apps/miniprogram/config.ts
 API_BASE_URL: 'https://preview.iamsmart.top'
 ```
 
 ### 生产环境（正式版）
 
 ```typescript
-// miniprogram/config.ts
+// apps/miniprogram/config.ts
 API_BASE_URL: 'https://www.iamsmart.top'
 ```
 
@@ -206,6 +206,6 @@ API_BASE_URL: 'https://www.iamsmart.top'
 
 ## 📚 相关文档
 
-- [微信小程序发布流程](https://developers.weixin.qq.com/miniprogram/dev/framework/release.html)
-- [小程序版本管理](https://developers.weixin.qq.com/miniprogram/dev/framework/release/version.html)
-- [小程序审核指南](https://developers.weixin.qq.com/miniprogram/dev/framework/release/audit.html)
+- [微信小程序发布流程](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/release.html)
+- [小程序版本管理](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/release/version.html)
+- [小程序审核指南](https://developers.weixin.qq.com/apps/miniprogram/dev/framework/release/audit.html)

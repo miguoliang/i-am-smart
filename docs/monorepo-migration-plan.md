@@ -1,11 +1,11 @@
 # Monorepo 迁移方案
 
-## 现状分析
+## 现状分析（已迁移）
 
-- Next.js PWA：根目录 `src/`, `public/`, `next.config.ts` 等
-- 微信小程序：`miniprogram/`（独立 tsconfig，无 package.json）
-- 共享代码：`shared/`（types + constants），在 miniprogram 里有一份完全相同的拷贝
-- 构建：npm + husky pre-commit hooks
+- Next.js PWA：`apps/pwa/`（含 `src/`, `public/`, `next.config.ts` 等）
+- 微信小程序：`apps/miniprogram/`
+- 共享代码：`packages/shared/`（types + constants）
+- 构建：pnpm + turbo + husky pre-commit hooks
 - 部署：GitHub Actions → SSH/SCP + PM2（自有服务器）
 
 ## 目标结构
@@ -142,9 +142,6 @@ i-am-smart/
 
 11. **更新 `.husky/` pre-commit hooks**
     - 改为 `pnpm turbo run lint test --filter=...[HEAD]`
-
-12. **更新 Docker 配置**
-    - `docker/` 里的 Dockerfile 需要适配 monorepo 上下文
 
 ## 关键注意事项
 

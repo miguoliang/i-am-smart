@@ -13,6 +13,8 @@ The marketing site is built using Next.js 16 App Router with:
 
 ## Structure
 
+Paths below are relative to `apps/pwa/`:
+
 ```
 src/app/
   (marketing)/          # Marketing site routes (doesn't affect URL)
@@ -207,7 +209,7 @@ To add new content types (e.g., docs, guides):
 
 ## Deployment
 
-The marketing site works seamlessly with your existing Netlify deployment. All routes are automatically included in the build.
+The marketing site is included in the standard build. Deploy via GitHub Actions (see [deploy.md](deploy.md)). All routes are automatically included in the build.
 
 ## Future Enhancements
 

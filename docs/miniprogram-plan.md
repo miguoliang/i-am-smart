@@ -1,18 +1,20 @@
 # 小程序集成计划
 
+> **说明**：本计划已实施完成。当前结构为 monorepo：`apps/pwa/`（Next.js）、`apps/miniprogram/`（小程序）、`packages/shared/`。
+
 ## 📋 概述
 
 在现有 Next.js 项目中集成微信小程序，采用 monorepo 结构，共享 API 和业务逻辑。
 
-## 🏗️ 项目结构
+## 🏗️ 项目结构（计划时）
 
 ```
 i-am-smart/
-├── src/                    # Next.js Web 应用
-│   ├── app/
-│   ├── lib/
+├── apps/pwa/               # Next.js Web 应用
+│   ├── src/app/
+│   ├── src/lib/
 │   └── ...
-├── miniprogram/            # 微信小程序（新增）
+├── apps/miniprogram/       # 微信小程序
 │   ├── app.json           # 小程序配置
 │   ├── app.ts             # 小程序入口
 │   ├── pages/             # 页面
@@ -27,7 +29,7 @@ i-am-smart/
 │   │   └── storage.ts     # 本地存储
 │   ├── types/             # TypeScript 类型定义
 │   └── project.config.json # 小程序项目配置
-├── shared/                 # 共享代码（新增）
+├── packages/shared/        # 共享代码
 │   ├── types/             # 共享类型定义
 │   │   ├── api.ts         # API 响应类型
 │   │   ├── card.ts        # 卡片类型
@@ -352,7 +354,7 @@ npm run dev
 ## 📝 实施步骤
 
 ### Phase 1: 项目结构搭建
-- [ ] 创建 `miniprogram/` 目录
+- [x] 创建 `apps/miniprogram/` 目录（已完成）
 - [ ] 创建 `shared/` 目录
 - [ ] 配置 TypeScript
 - [ ] 配置小程序项目文件（`app.json`, `project.config.json`）

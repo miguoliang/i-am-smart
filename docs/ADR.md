@@ -139,13 +139,13 @@ The backend follows a strict layered architecture to separate concerns and ensur
     *   **Mechanism**: Server-side HTML sanitization using `dompurify` (`src/lib/utils/sanitize.ts`).
     *   **Scope**: All user-generated content (e.g., feedback) is sanitized before storage to prevent XSS.
 *   **Platform Security**:
-    *   **CORS**: Managed by Netlify platform headers.
-    *   **Rate Limiting**: Managed by Netlify edge protection.
+    *   **CORS**: Configured per deployment environment.
+    *   **Rate Limiting**: Configured per deployment environment.
 
 ---
 
 ## 6\. Deployment & Operations
 
-*   **Platform**: Vercel (recommended for Next.js) or any Node.js/Docker environment.
-*   **Database**: Supabase (Cloud or Self-hosted).
+*   **Platform**: GitHub Actions → SSH/SCP + PM2 on own server. See [deploy.md](deploy.md).
+*   **Database**: Supabase Cloud.
 *   **Configuration**: Environment variables (`NEXT_PUBLIC_SUPABASE_URL`, etc.).

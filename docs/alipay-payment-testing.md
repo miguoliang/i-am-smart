@@ -182,7 +182,7 @@ curl -X POST http://localhost:3000/api/pay/alipay/notify \
   -d "notify_time=2026-02-19 10:30:00&notify_type=trade_status_sync&notify_id=test123&app_id=你的APPID&charset=utf-8&version=1.0&sign_type=RSA2&sign=测试签名&trade_no=2026021922001234567890123456&out_trade_no=AP1234567890&trade_status=TRADE_SUCCESS&total_amount=0.01&buyer_id=2088123456789012&seller_id=2088765432109876&gmt_payment=2026-02-19 10:30:00"
 ```
 
-**注意：** 实际测试时需要使用真实的签名。签名验证逻辑在 `src/lib/alipay.ts` 的 `verifyNotify` 函数中。
+**注意：** 实际测试时需要使用真实的签名。签名验证逻辑在 `apps/pwa/src/lib/alipay.ts` 的 `verifyNotify` 函数中。
 
 #### 2. 检查数据库订单状态
 

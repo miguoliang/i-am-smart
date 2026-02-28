@@ -6,7 +6,7 @@
 
 ### 1. TypeScript 配置文件
 
-`miniprogram/tsconfig.json` 已配置：
+`apps/miniprogram/tsconfig.json` 已配置：
 - ✅ 目标版本：ES2017
 - ✅ 模块系统：CommonJS（小程序标准）
 - ✅ 严格模式：启用
@@ -93,7 +93,7 @@ npm run type-check:miniprogram
 
 ### 项目自定义类型
 - `shared/types/` - 共享类型定义
-- `miniprogram/utils/*.ts` - 工具函数类型
+- `apps/miniprogram/utils/*.ts` - 工具函数类型
 
 ## ⚠️ 注意事项
 
