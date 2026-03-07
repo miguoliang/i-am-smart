@@ -3,19 +3,46 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
 import { Label } from "@/components/form/Label";
 import { Card } from "@/components/container/Card";
 import { logger } from "@/lib/utils/logger";
+import { useAuth } from "@/app/(marketing)/hooks/useAuth";
 
 const POLL_INTERVAL_MS = 2000;
 
 type PaymentMethod = "wechat" | "alipay_page" | "alipay_wap";
 
 export default function PayPage() {
-  const [amount, setAmount] = useState("0.01");
-  const [description, setDescription] = useState("测试商品");
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/signin");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-gray-500">加载中…</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <PayPageInner />;
+}
+
+function PayPageInner() {
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wechat");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +60,12 @@ export default function PayPage() {
     setQrDataUrl(null);
     setFormHtml(null);
     const yuan = parseFloat(amount);
-    if (Number.isNaN(yuan) || yuan < 0.01) {
-      setError("请输入有效金额（至少 0.01 元）");
+    if (Number.isNaN(yuan) || yuan <= 0) {
+      setError("请输入有效金额");
+      return;
+    }
+    if (!description.trim()) {
+      setError("请输入商品描述");
       return;
     }
     setLoading(true);
@@ -46,19 +77,19 @@ export default function PayPage() {
         apiUrl = "/api/pay/wechat/native";
         requestBody = {
           amount: Math.round(yuan * 100), // 微信支付使用分
-          description: description.trim() || "商品",
+          description: description.trim(),
         };
       } else if (paymentMethod === "alipay_page") {
         apiUrl = "/api/pay/alipay/page";
         requestBody = {
           amount: yuan, // 支付宝使用元
-          subject: description.trim() || "商品",
+          subject: description.trim(),
         };
       } else if (paymentMethod === "alipay_wap") {
         apiUrl = "/api/pay/alipay/wap";
         requestBody = {
           amount: yuan, // 支付宝使用元
-          subject: description.trim() || "商品",
+          subject: description.trim(),
         };
       }
 
