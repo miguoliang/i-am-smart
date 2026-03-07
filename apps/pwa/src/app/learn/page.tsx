@@ -3,15 +3,12 @@
 import { Suspense } from "react";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
-import { GuestEmptyState } from "./components/GuestEmptyState";
 import { WordCard } from "./components/WordCard";
 import { RatingButtons } from "./components/RatingButtons";
-import { SignupPrompt } from "./components/SignupPrompt";
 import { useLearnSession } from "./hooks/useLearnSession";
-import { useGuestLearnSession } from "./hooks/useGuestLearnSession";
 import { TopBar } from "./components/TopBar";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Learn() {
@@ -25,6 +22,7 @@ export default function Learn() {
 function LearnInner() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Capture referral code from URL
   useEffect(() => {
@@ -34,9 +32,17 @@ function LearnInner() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/signin");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
   if (authLoading) return <LoadingState />;
 
-  return isAuthenticated ? <AuthenticatedLearn /> : <GuestLearn />;
+  if (!isAuthenticated) return null;
+
+  return <AuthenticatedLearn />;
 }
 
 function AuthenticatedLearn() {
@@ -74,47 +80,6 @@ function AuthenticatedLearn() {
           <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
           <RevealButton onReveal={answer.reveal} />
         </ActionRow>
-      )}
-    </div>
-  );
-}
-
-function GuestLearn() {
-  const {
-    cards,
-    currentCard,
-    progress,
-    answer,
-    speech,
-    review,
-    showSignupPrompt,
-    dismissSignupPrompt,
-  } = useGuestLearnSession();
-
-  const isSessionComplete = progress.total > 0 && progress.reviewed >= progress.total;
-
-  if (cards.length === 0 || !currentCard || isSessionComplete) return <GuestEmptyState />;
-
-  return (
-    <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      <WordCard
-        key={currentCard.id}
-        knowledge={currentCard.knowledge}
-        answerRevealed={answer.isRevealed}
-      />
-      {answer.isRevealed ? (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RatingButtons onRate={review.handleRate} />
-        </ActionRow>
-      ) : (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RevealButton onReveal={answer.reveal} />
-        </ActionRow>
-      )}
-      {showSignupPrompt && (
-        <SignupPrompt onDismiss={dismissSignupPrompt} reviewedCount={progress.reviewed} />
       )}
     </div>
   );
