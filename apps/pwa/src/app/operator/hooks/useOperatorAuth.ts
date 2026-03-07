@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
-import type { User } from "@supabase/supabase-js";
+import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { logger } from "@/lib/utils/logger";
 
 export function useOperatorAuth() {
@@ -40,7 +40,7 @@ export function useOperatorAuth() {
     checkOperator();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event: AuthChangeEvent, session: Session | null) => {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           const user = session?.user;
           if (!user) {

@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, t
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProfiles, type LearnerProfile } from "@/lib/api/profiles";
 import { createClient } from "@/lib/supabaseClient";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 const ACTIVE_PROFILE_KEY = "activeProfileId";
 
@@ -35,10 +36,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
       setIsAuthenticated(!!data.user);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    };
+    checkAuth();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setIsAuthenticated(!!session?.user);
     });
     return () => subscription.unsubscribe();

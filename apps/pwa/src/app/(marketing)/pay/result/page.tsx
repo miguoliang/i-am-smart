@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/container/Card";
@@ -8,7 +8,7 @@ import { Button } from "@/components/form/Button";
 
 type OrderStatus = "loading" | "success" | "failed" | "unknown";
 
-export default function PayResultPage() {
+function PayResultContent() {
   const searchParams = useSearchParams();
   const outTradeNo = searchParams.get("out_trade_no");
   const tradeNo = searchParams.get("trade_no");
@@ -118,5 +118,26 @@ export default function PayResultPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function PayResultFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4">
+      <Card className="w-full max-w-md p-8 text-center">
+        <div className="text-4xl mb-4">⏳</div>
+        <h1 className="text-xl font-semibold text-gray-800 mb-2">
+          加载中...
+        </h1>
+      </Card>
+    </div>
+  );
+}
+
+export default function PayResultPage() {
+  return (
+    <Suspense fallback={<PayResultFallback />}>
+      <PayResultContent />
+    </Suspense>
   );
 }
