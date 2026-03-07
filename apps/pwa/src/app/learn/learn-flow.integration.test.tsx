@@ -9,7 +9,7 @@ import { ThemeProvider } from "next-themes";
 import Learn from "./page";
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
   useSearchParams: () => ({ get: jest.fn(() => null) }),
 }));
 
