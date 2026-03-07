@@ -68,3 +68,4 @@ apps/miniprogram/miniprogram_npm
 # Compiled JavaScript files (generated from TypeScript)
 apps/miniprogram/**/*.js
 !apps/miniprogram/node_modules/**/*.js
+e2e-test-results/
