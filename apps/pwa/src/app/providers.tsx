@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { ThemeProvider } from 'next-themes'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProfileProvider } from '@/hooks/useProfile'
+import type { AuthChangeEvent } from '@supabase/supabase-js'
 
 // Valid routes that should handle auth state changes
 const VALID_ROUTES = ["/", "/learn", "/stats", "/operator"];
@@ -39,7 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (!isMounted) return;
 
       if (event === 'SIGNED_IN') {
