@@ -1,29 +1,50 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/form/Button";
-import { Input } from "@/components/form/Input";
-import { Label } from "@/components/form/Label";
 import { Card } from "@/components/container/Card";
 import { logger } from "@/lib/utils/logger";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+type PlanType = "monthly" | "yearly";
+
+const PLANS: Record<PlanType, { price: number; label: string; period: string }> = {
+  monthly: { price: 29, label: "月付", period: "/月" },
+  yearly: { price: 199, label: "年付", period: "/年" },
+};
 
 const POLL_INTERVAL_MS = 2000;
 
-type PaymentMethod = "wechat" | "alipay_page" | "alipay_wap";
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
 
-export default function PayPage() {
+function PayPageContent() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const planFromUrl = searchParams.get("plan");
+  const initialPlan: PlanType =
+    planFromUrl === "monthly" ? "monthly" : "yearly";
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace("/signin");
+      const currentPlan = searchParams.get("plan") || "yearly";
+      router.replace(`/signin?next=/pay?plan=${currentPlan}`);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, searchParams]);
 
   if (authLoading) {
     return (
@@ -37,139 +58,84 @@ export default function PayPage() {
     return null;
   }
 
-  return <PayPageInner />;
+  return <PayPageInner defaultPlan={initialPlan} />;
 }
 
-function PayPageInner() {
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wechat");
+function PayPageInner({ defaultPlan }: { defaultPlan: PlanType }) {
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>(defaultPlan);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [codeUrl, setCodeUrl] = useState<string | null>(null);
   const [outTradeNo, setOutTradeNo] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [formHtml, setFormHtml] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+
+  const plan = PLANS[selectedPlan];
 
   const createOrder = useCallback(async () => {
     setError(null);
-    setCodeUrl(null);
+    setFormHtml(null);
     setOutTradeNo(null);
     setStatus(null);
-    setQrDataUrl(null);
-    setFormHtml(null);
-    const yuan = parseFloat(amount);
-    if (Number.isNaN(yuan) || yuan <= 0) {
-      setError("请输入有效金额");
-      return;
-    }
-    if (!description.trim()) {
-      setError("请输入商品描述");
-      return;
-    }
     setLoading(true);
+
+    const apiUrl = isMobile
+      ? "/api/pay/alipay/wap"
+      : "/api/pay/alipay/page";
+
     try {
-      let apiUrl = "";
-      let requestBody: Record<string, unknown> = {};
-
-      if (paymentMethod === "wechat") {
-        apiUrl = "/api/pay/wechat/native";
-        requestBody = {
-          amount: Math.round(yuan * 100), // 微信支付使用分
-          description: description.trim(),
-        };
-      } else if (paymentMethod === "alipay_page") {
-        apiUrl = "/api/pay/alipay/page";
-        requestBody = {
-          amount: yuan, // 支付宝使用元
-          subject: description.trim(),
-        };
-      } else if (paymentMethod === "alipay_wap") {
-        apiUrl = "/api/pay/alipay/wap";
-        requestBody = {
-          amount: yuan, // 支付宝使用元
-          subject: description.trim(),
-        };
-      }
-
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ plan_type: selectedPlan }),
       });
       const data = await res.json();
       if (!res.ok) {
-        const errorCode =
-          typeof data?.error === "object" && typeof data?.error?.code === "string"
-            ? data.error.code
-            : undefined;
         const errorMessage =
           typeof data?.error === "object" && typeof data?.error?.message === "string"
             ? data.error.message
             : (typeof data?.message === "string" ? data.message : null) ?? "创建订单失败";
         logger.error("Pay create order failed", {
           status: res.status,
-          statusText: res.statusText,
-          errorCode,
-          errorMessage,
           body: data,
         });
-        const displayMsg =
-          errorCode ? `[${errorCode}] ${errorMessage}` : errorMessage;
-        setError(displayMsg);
+        setError(errorMessage);
         return;
       }
 
-      // 微信支付返回二维码 URL
-      if (paymentMethod === "wechat" && data.data?.code_url) {
-        setCodeUrl(data.data.code_url);
-        setOutTradeNo(data.data.out_trade_no ?? null);
-        setStatus("pending");
-      }
-      // 支付宝支付返回表单 HTML
-      else if (
-        (paymentMethod === "alipay_page" || paymentMethod === "alipay_wap") &&
-        data.data?.form_html
-      ) {
+      if (data.data?.form_html) {
         setFormHtml(data.data.form_html);
         setOutTradeNo(data.data.out_trade_no ?? null);
         setStatus("pending");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "网络错误";
-      logger.error("Pay create order exception", {
-        error: e,
-        message: msg,
-        stack: e instanceof Error ? e.stack : undefined,
-      });
+      logger.error("Pay create order exception", { error: e });
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [amount, description, paymentMethod]);
+  }, [selectedPlan, isMobile]);
 
+  // 支付宝表单提交：打开新窗口
   useEffect(() => {
-    if (!codeUrl) {
-      setQrDataUrl(null);
-      return;
+    if (formHtml) {
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(formHtml);
+        newWindow.document.close();
+      }
     }
-    let cancelled = false;
-    import("qrcode").then((QRCode) => {
-      QRCode.toDataURL(codeUrl, { width: 260, margin: 2 }).then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [codeUrl]);
+  }, [formHtml]);
 
+  // 轮询订单状态
   useEffect(() => {
     if (!outTradeNo || status !== "pending") return;
     const t = setInterval(async () => {
       try {
-        const res = await fetch(`/api/pay/orders/${encodeURIComponent(outTradeNo)}`);
+        const res = await fetch(
+          `/api/pay/orders/${encodeURIComponent(outTradeNo)}`
+        );
         const data = await res.json();
         const s = data?.data?.status;
         if (s === "paid") setStatus("paid");
@@ -181,169 +147,188 @@ function PayPageInner() {
     return () => clearInterval(t);
   }, [outTradeNo, status]);
 
-  // 支付宝支付：渲染表单 HTML
-  useEffect(() => {
-    if (formHtml) {
-      const newWindow = window.open("", "_blank");
-      if (newWindow) {
-        newWindow.document.write(formHtml);
-        newWindow.document.close();
-      }
-    }
-  }, [formHtml]);
-
-  const isOrderCreated = !!(codeUrl || formHtml);
-  const isWechatPay = paymentMethod === "wechat";
-  const isAlipayPay = paymentMethod === "alipay_page" || paymentMethod === "alipay_wap";
+  const isOrderCreated = !!formHtml;
 
   return (
     <div className="min-h-screen py-12 md:py-20 px-4">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-8">
-          支付
+      <div className="max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+          升级 Pro
         </h1>
-        <Card className="p-6 space-y-4">
-          <div>
-            <Label htmlFor="pay-amount">金额（元）</Label>
-            <Input
-              id="pay-amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={isOrderCreated}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="pay-desc">商品描述</Label>
-            <Input
-              id="pay-desc"
-              type="text"
-              maxLength={127}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isOrderCreated}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>支付方式</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("wechat")}
-                disabled={isOrderCreated}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  paymentMethod === "wechat"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                微信
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("alipay_page")}
-                disabled={isOrderCreated}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  paymentMethod === "alipay_page"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                支付宝PC
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("alipay_wap")}
-                disabled={isOrderCreated}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  paymentMethod === "alipay_wap"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                支付宝手机
-              </button>
+        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
+          选择适合你的套餐
+        </p>
+
+        {/* 套餐选择 */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* 月付 */}
+          <button
+            type="button"
+            onClick={() => !isOrderCreated && setSelectedPlan("monthly")}
+            disabled={isOrderCreated}
+            className={cn(
+              "relative rounded-xl border-2 p-5 text-left transition-all",
+              selectedPlan === "monthly"
+                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-md"
+                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+              isOrderCreated && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              月付
             </div>
-          </div>
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-              {error}
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              ¥{PLANS.monthly.price}
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                /月
+              </span>
+            </div>
+          </button>
+
+          {/* 年付 */}
+          <button
+            type="button"
+            onClick={() => !isOrderCreated && setSelectedPlan("yearly")}
+            disabled={isOrderCreated}
+            className={cn(
+              "relative rounded-xl border-2 p-5 text-left transition-all",
+              selectedPlan === "yearly"
+                ? "border-amber-500 bg-amber-50/50 dark:bg-amber-900/20 shadow-md"
+                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+              isOrderCreated && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            <div className="absolute -top-3 right-3 flex gap-1">
+              <span className="bg-amber-400 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                推荐
+              </span>
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                省¥149
+              </span>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              年付
+            </div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              ¥{PLANS.yearly.price}
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                /年
+              </span>
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <span className="line-through">原价 ¥348</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">≈ ¥16.6/月</span>
+            </div>
+          </button>
+        </div>
+
+        {/* 错误提示 */}
+        {error && (
+          <p className="text-sm text-red-600 dark:text-red-400 mb-4 text-center" role="alert">
+            {error}
+          </p>
+        )}
+
+        {/* 支付状态 */}
+        {status === "paid" && (
+          <Card className="p-6 mb-4 text-center">
+            <div className="text-4xl mb-2">✅</div>
+            <p className="text-green-600 dark:text-green-400 font-semibold text-lg">
+              支付成功！
             </p>
-          )}
-          {!isOrderCreated ? (
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              Pro 会员已生效
+            </p>
+            <Link href="/learn" className="block mt-4">
+              <Button className="w-full">开始学习</Button>
+            </Link>
+          </Card>
+        )}
+
+        {status === "closed" && (
+          <Card className="p-6 mb-4 text-center">
+            <p className="text-amber-600 dark:text-amber-400 font-medium">
+              订单已关闭
+            </p>
+          </Card>
+        )}
+
+        {/* 支付按钮区域 */}
+        {!isOrderCreated ? (
+          <div className="space-y-3">
+            {/* 支付宝按钮 */}
             <Button
               onClick={createOrder}
-              disabled={loading}
+              loading={loading}
+              className="w-full h-12 text-base bg-[#1677FF] hover:bg-[#0958d9] text-white font-semibold"
+              size="lg"
+            >
+              支付宝支付（¥{plan.price}）
+            </Button>
+
+            {/* 微信支付灰显 */}
+            <button
+              type="button"
+              className="w-full h-12 text-base rounded-md border border-input bg-background opacity-50 cursor-not-allowed font-medium text-gray-400 dark:text-gray-500"
+              onClick={() =>
+                toast("微信支付正在审核中，预计很快开通，目前请使用支付宝支付", {
+                  duration: 4000,
+                })
+              }
+            >
+              微信支付（即将开通）
+            </button>
+          </div>
+        ) : status !== "paid" ? (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              正在跳转到支付宝支付页面…
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFormHtml(null);
+                setOutTradeNo(null);
+                setStatus(null);
+                setError(null);
+              }}
               className="w-full"
             >
-              {loading
-                ? "创建中…"
-                : isWechatPay
-                  ? "生成支付二维码"
-                  : "跳转支付"}
+              重新选择
             </Button>
-          ) : (
-            <div className="space-y-4 pt-2">
-              {isWechatPay && (
-                <>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                    请使用微信扫描下方二维码完成支付
-                  </p>
-                  <div className="flex justify-center bg-white p-4 rounded-lg">
-                    {qrDataUrl ? (
-                      <Image
-                        src={qrDataUrl}
-                        alt="支付二维码"
-                        width={260}
-                        height={260}
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-[260px] h-[260px] bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
-                    )}
-                  </div>
-                </>
-              )}
-              {isAlipayPay && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                  正在跳转到支付宝支付页面...
-                </p>
-              )}
-              {status === "paid" && (
-                <p className="text-center text-green-600 dark:text-green-400 font-medium">
-                  支付成功
-                </p>
-              )}
-              {status === "closed" && (
-                <p className="text-center text-amber-600 dark:text-amber-400">
-                  订单已关闭
-                </p>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setCodeUrl(null);
-                  setFormHtml(null);
-                  setOutTradeNo(null);
-                  setStatus(null);
-                }}
-                className="w-full"
-              >
-                重新创建
-              </Button>
-            </div>
-          )}
-        </Card>
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          </div>
+        ) : null}
+
+        {/* 底部信任信息 */}
+        <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
+          7天无理由退款 · 支付即同意
+          <Link href="/terms" className="underline hover:no-underline ml-0.5">
+            服务条款
+          </Link>
+        </p>
+
+        <p className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
           <Link href="/" className="underline hover:no-underline">
             返回首页
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+function PayPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="text-gray-500">加载中…</span>
+    </div>
+  );
+}
+
+export default function PayPage() {
+  return (
+    <Suspense fallback={<PayPageFallback />}>
+      <PayPageContent />
+    </Suspense>
   );
 }
