@@ -7,11 +7,6 @@ interface CardContentProps {
   onSpeak?: (text: string, lang: "en-US" | "en-GB") => void;
 }
 
-function getAccentPreference(): "en-US" | "en-GB" {
-  if (typeof window === "undefined") return "en-US";
-  return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
-}
-
 export function CardContent({ knowledge, side, className }: CardContentProps) {
   if (side === 'front') {
     return (

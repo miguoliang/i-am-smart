@@ -85,13 +85,13 @@ export class CardService {
    * @param profileId - Learner profile ID
    * @param cardId - Card ID
    * @param quality - User rating 0–5
-   * @param timezoneOffset - Minutes offset from UTC
+   * @param timezoneOffset - Minutes offset from UTC (reserved for future use)
    */
   async reviewCard(
     profileId: string,
     cardId: number,
     quality: number,
-    timezoneOffset?: number,
+    timezoneOffset?: number, // eslint-disable-line @typescript-eslint/no-unused-vars -- reserved for future use
   ): Promise<ReviewCardResult> {
     const card = await this.cardRepository.getCardById(cardId, profileId);
     if (!card) {

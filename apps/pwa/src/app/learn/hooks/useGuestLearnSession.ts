@@ -19,23 +19,17 @@ export function useGuestLearnSession() {
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(() => getGuestReviewedCount());
 
-  const { answerRevealed, revealAnswer, resetReveal, getResponseTimeMs } = useAnswerReveal();
+  const { answerRevealed, revealAnswer, resetReveal } = useAnswerReveal();
   const { speak } = useSpeech();
 
   const currentCard = cards[currentIndex] ?? null;
   const totalCount = reviewedCount + cards.length;
 
   const handleRate = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- quality required by rate callback API
     (quality: number) => {
       const card = cards[currentIndex];
       if (!card) return;
-
-      // Adjust quality based on response time
-      let adjustedQuality = quality;
-      const responseTime = getResponseTimeMs();
-      if (quality >= 4 && responseTime > 5000) {
-        adjustedQuality = 3;
-      }
 
       // Mark reviewed in localStorage
       markGuestCardReviewed(card.knowledge.code);
@@ -63,7 +57,7 @@ export function useGuestLearnSession() {
         setShowSignupPrompt(true);
       }
     },
-    [cards, currentIndex, getResponseTimeMs, resetReveal]
+    [cards, currentIndex, resetReveal]
   );
 
   const isSessionComplete = useMemo(

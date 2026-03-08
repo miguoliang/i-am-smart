@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 // POST: register a referral (called during signup with ?ref=CODE)
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth(req);
+    const { user } = await requireAuth(req);
     const { code } = await req.json();
 
     if (!code || typeof code !== "string") {
