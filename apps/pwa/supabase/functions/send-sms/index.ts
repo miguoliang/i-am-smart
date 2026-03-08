@@ -173,20 +173,37 @@ async function sendAliyunSmsVerifyCode(
 
 function verifyWebhookSignature(
   payload: string,
-  signature: string | null,
+  signatureHeader: string | null,
   secret: string
 ): boolean {
-  if (!signature) return false;
+  if (!signatureHeader) return false;
 
-  const hmac = createHmac("sha256", secret);
-  hmac.update(payload);
-  const expected = hmac.digest("hex");
+  // Parse header: "t=<timestamp>,v1=<base64_signature>"
+  const parts = Object.fromEntries(
+    signatureHeader.split(",").map((p) => {
+      const [k, ...v] = p.split("=");
+      return [k, v.join("=")];
+    })
+  );
+
+  const timestamp = parts["t"];
+  const receivedSig = parts["v1"];
+  if (!timestamp || !receivedSig) return false;
+
+  // Extract signing key from secret format "v1,whsec_<base64_key>"
+  const keyPart = secret.replace(/^v1,whsec_/, "");
+  const key = Uint8Array.from(atob(keyPart), (c) => c.charCodeAt(0));
+
+  // Sign: HMAC-SHA256(key, "<timestamp>.<body>")
+  const hmac = createHmac("sha256", key);
+  hmac.update(`${timestamp}.${payload}`);
+  const expected = hmac.digest("base64");
 
   // Constant-time comparison
-  if (expected.length !== signature.length) return false;
+  if (expected.length !== receivedSig.length) return false;
   let diff = 0;
   for (let i = 0; i < expected.length; i++) {
-    diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
+    diff |= expected.charCodeAt(i) ^ receivedSig.charCodeAt(i);
   }
   return diff === 0;
 }
