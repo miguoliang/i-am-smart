@@ -84,8 +84,10 @@ async function sendAliyunSmsVerifyCode(
 ): Promise<SendSmsVerifyCodeResponse> {
   const accessKeyId = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_ID");
   const accessKeySecret = Deno.env.get("ALIYUN_SMS_ACCESS_KEY_SECRET");
-  // Hardcode sign name to avoid UTF-8 encoding issues with Supabase secrets
-  const signName = Deno.env.get("ALIYUN_SMS_SIGN_NAME") ?? "速通互联验证码";
+  // Chinese sign name stored as base64 to avoid UTF-8 encoding issues with Supabase secrets
+  const signName = new TextDecoder().decode(
+    Uint8Array.from(atob("6YCf6YCa5LqS6IGU6aqM6K+B56CB"), (c) => c.charCodeAt(0))
+  );
   const templateCode = Deno.env.get("ALIYUN_SMS_TEMPLATE_CODE") ?? "100001";
 
   if (!accessKeyId || !accessKeySecret) {
