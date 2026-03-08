@@ -12,7 +12,7 @@
  *   ALIYUN_SMS_ACCESS_KEY_SECRET - Alibaba Cloud AccessKey Secret
  *   ALIYUN_SMS_SIGN_NAME         - SMS signature name (系统赠送签名)
  *   ALIYUN_SMS_TEMPLATE_CODE     - SMS template code (系统赠送模板CODE)
- *   SUPABASE_AUTH_HOOK_SECRET    - Shared secret for webhook verification (optional)
+ *   AUTH_HOOK_SECRET             - Shared secret for webhook verification (optional)
  *
  * Reference:
  *   - Supabase SMS Hook: https://supabase.com/docs/guides/auth/phone-login/phone-hook
@@ -206,7 +206,7 @@ Deno.serve(async (req: Request) => {
     const rawBody = await req.text();
 
     // Optional: verify webhook signature if secret is configured
-    const hookSecret = Deno.env.get("SUPABASE_AUTH_HOOK_SECRET");
+    const hookSecret = Deno.env.get("AUTH_HOOK_SECRET");
     if (hookSecret) {
       const signature = req.headers.get("x-supabase-signature");
       if (!verifyWebhookSignature(rawBody, signature, hookSecret)) {

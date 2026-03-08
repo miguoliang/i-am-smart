@@ -277,7 +277,7 @@ max_frequency = "60s"
 # [auth.hook.send_sms]
 # enabled = true
 # uri = "https://<project-ref>.supabase.co/functions/v1/send-sms"
-# secrets = "env(SUPABASE_AUTH_HOOK_SECRET)"
+# secrets = "env(AUTH_HOOK_SECRET)"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 # Note: When using the send_sms hook above, you can leave this disabled — the hook bypasses built-in providers.
