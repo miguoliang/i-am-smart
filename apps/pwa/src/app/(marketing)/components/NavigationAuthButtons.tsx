@@ -24,7 +24,7 @@ export function NavigationAuthButtons() {
 
   return (
     <Button size="sm" className="text-xs md:text-sm" asChild>
-      <Link href={isPayPage ? "/signin?next=/pay?plan=yearly" : "/signin"}>立即使用</Link>
+      <Link href={isPayPage ? `/signin?next=${encodeURIComponent("/pay?plan=yearly")}` : "/signin"}>立即使用</Link>
     </Button>
   );
 }

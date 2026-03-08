@@ -57,7 +57,10 @@ export async function proxy(req: NextRequest) {
     const signinUrl = req.nextUrl.clone();
     signinUrl.pathname = "/signin";
     // Preserve the intended destination so we can redirect back after login
-    signinUrl.searchParams.set("next", pathname);
+    const destination = req.nextUrl.search
+      ? `${pathname}${req.nextUrl.search}`
+      : pathname;
+    signinUrl.searchParams.set("next", destination);
     return redirectWithCookies(signinUrl, res);
   }
 

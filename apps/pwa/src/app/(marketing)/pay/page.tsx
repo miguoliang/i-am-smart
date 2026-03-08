@@ -42,7 +42,7 @@ function PayPageContent() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       const currentPlan = searchParams.get("plan") || "yearly";
-      router.replace(`/signin?next=/pay?plan=${currentPlan}`);
+      router.replace(`/signin?next=${encodeURIComponent(`/pay?plan=${currentPlan}`)}`);
     }
   }, [authLoading, isAuthenticated, router, searchParams]);
 
