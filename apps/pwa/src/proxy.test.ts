@@ -93,6 +93,17 @@ describe("proxy", () => {
       expect(location.searchParams.get("next")).toBe("/operator/accounts");
     });
 
+    it("should preserve query string in next param when redirecting to /signin", async () => {
+      const res = await proxy(
+        new NextRequest(new URL("/stats?tab=weekly", "http://localhost:3000"))
+      );
+
+      expect(res.status).toBe(307);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/signin");
+      expect(location.searchParams.get("next")).toBe("/stats?tab=weekly");
+    });
+
     it("should allow access to /signin", async () => {
       const res = await proxy(buildRequest("/signin"));
 
