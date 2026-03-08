@@ -2,11 +2,10 @@ import { test, expect } from "@playwright/test";
 
 /**
  * Auth guard tests — unauthenticated users must be redirected to /signin
- * for all protected routes.
+ * for protected routes.
  *
- * Note: /learn and /pay use client-side auth guards (useEffect).
- * They are expected to redirect after React hydration completes.
- * Failures here indicate a real auth-guard regression.
+ * Note: /learn is accessible in guest mode (no redirect).
+ * /pay, /stats, and /operator still require authentication.
  */
 
 const SIGNIN_RE = /\/signin/;
@@ -26,8 +25,12 @@ async function expectRedirectToSignin(
 }
 
 test.describe("Auth guard — protected routes redirect to /signin", () => {
-  test("/learn redirects unauthenticated users", async ({ page }) => {
-    await expectRedirectToSignin(page, "/learn");
+  test("/learn allows unauthenticated users (guest mode)", async ({ page }) => {
+    await page.goto("/learn", { waitUntil: "networkidle" });
+    // Guest mode: should stay on /learn, not redirect to /signin
+    await page.waitForTimeout(3000);
+    expect(page.url()).toMatch(/\/learn/);
+    expect(page.url()).not.toMatch(SIGNIN_RE);
   });
 
   test("/stats redirects unauthenticated users", async ({ page }) => {
