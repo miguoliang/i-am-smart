@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { WordCard } from "./WordCard";
 import { RatingButtons } from "./RatingButtons";
 import { GuestEmptyState } from "./GuestEmptyState";
@@ -62,11 +64,18 @@ export function GuestLearn() {
 
   return (
     <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      {/* Progress indicator for guest */}
+      {/* Progress indicator with back button for guest */}
       <div
-        className="absolute left-4 z-50"
+        className="absolute left-4 z-50 flex items-center gap-2"
         style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
       >
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          aria-label="返回首页"
+        >
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+        </Link>
         <span className="text-sm text-muted-foreground">
           试学模式 · {progress.reviewed}/{progress.total}
         </span>
