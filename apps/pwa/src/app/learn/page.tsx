@@ -8,8 +8,9 @@ import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";
 import { TopBar } from "./components/TopBar";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { GuestLearn } from "./components/GuestLearn";
 
 export default function Learn() {
   return (
@@ -22,7 +23,6 @@ export default function Learn() {
 function LearnInner() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // Capture referral code from URL
   useEffect(() => {
@@ -32,15 +32,10 @@ function LearnInner() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace("/signin");
-    }
-  }, [authLoading, isAuthenticated, router]);
-
   if (authLoading) return <LoadingState />;
 
-  if (!isAuthenticated) return null;
+  // Guest mode: unauthenticated users can try learning with built-in words
+  if (!isAuthenticated) return <GuestLearn />;
 
   return <AuthenticatedLearn />;
 }
