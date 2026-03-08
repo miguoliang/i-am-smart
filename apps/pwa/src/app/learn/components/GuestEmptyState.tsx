@@ -37,6 +37,25 @@ export function GuestEmptyState() {
         >
           开始记住它们
         </button>
+        <br />
+        <button
+          onClick={() => {
+            // Clear guest learn data and restart
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith("guest")) {
+                keysToRemove.push(key);
+              }
+            }
+            keysToRemove.forEach((k) => localStorage.removeItem(k));
+            router.push("/learn");
+            router.refresh();
+          }}
+          className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          再试一次
+        </button>
       </div>
     </div>
   );

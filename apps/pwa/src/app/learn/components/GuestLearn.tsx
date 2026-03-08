@@ -64,21 +64,33 @@ export function GuestLearn() {
 
   return (
     <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      {/* Progress indicator with back button for guest */}
+      {/* Top bar: back | progress | sign-in */}
       <div
-        className="absolute left-4 z-50 flex items-center gap-2"
+        className="absolute left-0 right-0 z-50 flex items-center justify-between px-4"
         style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
       >
+        {/* Left: back to home */}
         <Link
           href="/"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          className="inline-flex items-center gap-1.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
           aria-label="返回首页"
         >
           <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">首页</span>
         </Link>
+
+        {/* Center: progress */}
         <span className="text-sm text-muted-foreground">
-          试学模式 · {progress.reviewed}/{progress.total}
+          试学 {progress.reviewed}/{progress.total}
         </span>
+
+        {/* Right: sign-in link */}
+        <Link
+          href="/signin?next=/learn"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          注册/登录
+        </Link>
       </div>
 
       <WordCard
