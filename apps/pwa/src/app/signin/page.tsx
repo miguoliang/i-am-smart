@@ -304,6 +304,13 @@ function SignInContent() {
             <Label
               htmlFor="agree-terms"
               className="text-sm text-gray-600 dark:text-gray-400 font-normal cursor-pointer leading-snug"
+              onClick={(e) => {
+                // When clicking a link inside the label, prevent the label from
+                // also toggling the checkbox — let the link navigate normally.
+                if ((e.target as HTMLElement).closest("a")) {
+                  e.preventDefault();
+                }
+              }}
             >
               <span id="agree-terms-desc">使用即表示同意</span>{" "}
               <Link
