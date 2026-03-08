@@ -4,7 +4,8 @@ import { FeedbackContent } from '@/lib/types/feedback';
 
 // Create DOMPurify instance for server-side use
 const window = new JSDOM('').window;
-const purify = DOMPurify(window);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const purify = DOMPurify(window as any);
 
 /**
  * Sanitize plain text (removes HTML and normalizes whitespace)
