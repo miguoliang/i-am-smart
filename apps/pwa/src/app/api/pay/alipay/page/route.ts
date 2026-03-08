@@ -5,8 +5,10 @@ import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { logger } from "@/lib/utils/logger";
 
-const MIN_AMOUNT = 0.01;
-const MAX_AMOUNT = 999999.99;
+const PLANS: Record<string, { amount: number; description: string }> = {
+  monthly: { amount: 29, description: "i am smart Pro 月付" },
+  yearly: { amount: 199, description: "i am smart Pro 年付" },
+};
 
 function getAppOrigin(): string {
   const origin = process.env.NEXT_PUBLIC_APP_ORIGIN;
@@ -23,18 +25,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const amount =
-      typeof body.amount === "number"
-        ? body.amount
-        : parseFloat(String(body.amount ?? 0));
-    const subject = typeof body.subject === "string" ? body.subject.trim() : "";
+    const planType = typeof body.plan_type === "string" ? body.plan_type : "";
 
-    if (isNaN(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
-      throw ApiError.validationError("金额无效，需在 0.01～999999.99 元之间");
+    const plan = PLANS[planType];
+    if (!plan) {
+      throw ApiError.validationError(
+        "无效的套餐类型，请选择 monthly 或 yearly"
+      );
     }
-    if (!subject || subject.length > 256) {
-      throw ApiError.validationError("商品标题必填且不超过 256 字");
-    }
+
+    const { amount, description: subject } = plan;
 
     let accountId: string | null = null;
     const supabase = await createRouteHandlerClient();
@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
       subject,
       returnUrl,
       notifyUrl,
-      body: typeof body.body === "string" ? body.body.slice(0, 128) : undefined,
     });
 
     const admin = createSupabaseAdmin();
@@ -65,6 +64,7 @@ export async function POST(req: NextRequest) {
       description: subject,
       status: "pending",
       pay_channel: "alipay_page",
+      plan_type: planType,
     });
     if (error) {
       logger.error("pay_orders insert failed", { error: error.message });
