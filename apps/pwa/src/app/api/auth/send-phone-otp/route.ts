@@ -6,6 +6,7 @@ import {
 } from "@/lib/utils/errorHandling";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidPhone, sanitizePhone, formatPhoneForSupabase } from "@/lib/utils/phoneValidation";
+import { logger } from "@/lib/utils/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,6 +45,18 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+
+      // Supabase Auth Hook misconfiguration — the send_sms hook is enabled
+      // but its authorization secret is missing or invalid on the GoTrue side.
+      // Log the real error for operators; show a generic message to users.
+      if (error.message.toLowerCase().includes("hook requires authorization")) {
+        logger.error("[send-phone-otp] Auth hook misconfigured", {
+          message: error.message,
+          hint: "check Supabase Dashboard > Auth > Hooks > Send SMS secret",
+        });
+        throw ApiError.internal("短信服务暂时不可用，请稍后重试");
+      }
+
       throw ApiError.validationError(error.message);
     }
 
