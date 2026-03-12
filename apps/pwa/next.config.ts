@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
   // Required for monorepo: trace files up to the repo root
   outputFileTracingRoot: path.join(__dirname, "../../"),
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
+  async redirects() {
+    return [
+      {
+        source: "/login",
+        destination: "/signin",
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
