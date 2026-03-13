@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { fetchDueCards } from "@/lib/api/cards";
@@ -24,6 +24,7 @@ export function useDueCardsQuery() {
     refetchOnMount: true,
     refetchOnReconnect: false,
     enabled: !!profileId,
+    placeholderData: keepPreviousData,
   });
 
   const { error } = queryResult;
