@@ -69,13 +69,13 @@ export async function POST(req: NextRequest) {
         type: "magiclink",
         email,
       });
-      if (linkError || !linkData?.properties?.hashed_token) {
+      if (linkError || !linkData?.properties?.email_otp) {
         throw ApiError.internal("生成登录凭证失败");
       }
 
       const { data: sessionData, error: sessionError } = await admin.auth.verifyOtp({
         email,
-        token: linkData.properties.hashed_token,
+        token: linkData.properties.email_otp,
         type: "magiclink",
       });
       if (sessionError || !sessionData?.session) {
