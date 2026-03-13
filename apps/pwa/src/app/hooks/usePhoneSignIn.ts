@@ -2,15 +2,10 @@ import { useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  isRateLimitError,
-  getRateLimitErrorMessage,
-} from "@/lib/utils/errorHandling";
 import { logger } from "@/lib/utils/logger";
 import {
   isValidPhone,
   sanitizePhone,
-  formatPhoneForSupabase,
 } from "@/lib/utils/phoneValidation";
 
 interface UsePhoneSignInReturn {
@@ -118,43 +113,46 @@ export function usePhoneSignIn(): UsePhoneSignInReturn {
 
     setLoading(true);
     const sanitized = sanitizePhone(phone);
-    const phoneWithCode = formatPhoneForSupabase(sanitized);
 
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: phoneWithCode,
-      token: otp,
-      type: "sms",
-    });
+    try {
+      const res = await fetch("/api/auth/verify-phone-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: sanitized, token: otp }),
+      });
 
-    if (error) {
-      if (isRateLimitError(error.message)) {
-        toast.error(getRateLimitErrorMessage(error.message, "重试"));
-      } else if (
-        error.message.includes("token") ||
-        error.message.includes("expired")
-      ) {
-        toast.error("验证码无效或已过期，请重新获取验证码");
-      } else if (error.message.includes("phone")) {
-        toast.error("手机号验证失败，请检查手机号是否正确");
-      } else {
-        toast.error(`${error.message}。如果问题持续，请重新获取验证码。`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data?.error?.message || "验证码无效或已过期，请重新获取验证码";
+        toast.error(msg);
+        setLoading(false);
+        return;
       }
+
+      // Set session from API response
+      const { access_token, refresh_token } = data.data;
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      if (sessionError) {
+        toast.error("登录失败，请重试");
+        setLoading(false);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const role = userData?.user?.app_metadata?.role;
+      const defaultPath = role === "operator" ? "/operator" : "/learn";
+      const nextPath = resolveSafeNextPath(searchParams.get("next"), defaultPath);
+      router.push(nextPath);
+    } catch (err) {
+      logger.error("Phone OTP verify exception", { error: err });
+      toast.error("验证失败，请检查网络连接后重试");
       setLoading(false);
-      return;
     }
-
-    const user = data.user;
-    const role = user?.app_metadata?.role;
-
-    logger.debug("User role check", {
-      userId: user?.id,
-      app_metadata: user?.app_metadata,
-      role,
-    });
-
-    const defaultPath = role === "operator" ? "/operator" : "/learn";
-    const nextPath = resolveSafeNextPath(searchParams.get("next"), defaultPath);
-    router.push(nextPath);
   }, [otp, phone, supabase, router, searchParams]);
 
   const handleResendOtp = useCallback(() => {

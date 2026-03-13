@@ -22,6 +22,16 @@ export async function POST(req: NextRequest) {
       throw ApiError.validationError("手机号格式不正确");
     }
 
+    // Whitelist check: skip real SMS for test phones (e.g. WeChat Pay review)
+    const whitelist = (process.env.TEST_PHONE_WHITELIST ?? "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (whitelist.includes(sanitized)) {
+      logger.info("[send-phone-otp] Whitelist phone, skipping SMS", { phone: sanitized });
+      return apiSuccess({ success: true, message: "验证码已发送到您的手机" });
+    }
+
     const supabase = await createRouteHandlerClient();
 
     const phoneWithCode = formatPhoneForSupabase(sanitized);
