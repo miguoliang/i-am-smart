@@ -106,7 +106,7 @@ function SpeakButton({ onSpeak }: { onSpeak: () => void }) {
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 md:mt-12 w-full max-w-md flex gap-4 md:gap-6">
+    <div className="mt-6 md:mt-12 w-full max-w-2xl flex gap-4 md:gap-6">
       {children}
     </div>
   );
