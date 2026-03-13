@@ -30,6 +30,8 @@ interface TopBarProps {
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const [open, setOpen] = useState(false);
   const [sheetMaxH, setSheetMaxH] = useState("85dvh");
+  const [pendingExamId, setPendingExamId] = useState<string | null>(null);
+  const [successExamId, setSuccessExamId] = useState<string | null>(null);
   const router = useRouter();
 
   // Track iOS visual viewport to avoid keyboard obscuring the sheet
@@ -51,13 +53,18 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const updateExamMutation = useMutation({
     mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
     onSuccess: (updatedProfile) => {
-      // Optimistically update the profiles cache instead of re-fetching
       queryClient.setQueryData<import("@/lib/api/profiles").LearnerProfile[]>(
         ["profiles"],
         (old) => old?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) ?? old
       );
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      setSuccessExamId(updatedProfile.exam_target ?? null);
+      setPendingExamId(null);
+      setTimeout(() => setSuccessExamId(null), 1500);
+    },
+    onError: () => {
+      setPendingExamId(null);
     },
   });
 
@@ -102,9 +109,9 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                     disabled={updateExamMutation.isPending}
                     onClick={() => {
                       if (!exam.isFree && !isPro) { setOpen(false); router.push("/pay"); return; }
-                      if (activeProfile) {
+                      if (activeProfile && !isSelected) {
+                        setPendingExamId(exam.id);
                         updateExamMutation.mutate(exam.id);
-                        setOpen(false);
                       }
                     }}
                     className={cn(
@@ -114,8 +121,21 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                     )}
                   >
                     <div className="w-5 h-5 flex items-center justify-center">
-                      {isSelected && <Check className="h-4 w-4" />}
-                      {!exam.isFree && !isPro && !isSelected && <Lock className="h-4 w-4 text-amber-500" />}
+                      {pendingExamId === exam.id && (
+                        <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                      )}
+                      {pendingExamId !== exam.id && successExamId === exam.id && (
+                        <Check className="h-4 w-4 text-emerald-500" />
+                      )}
+                      {pendingExamId !== exam.id && successExamId !== exam.id && isSelected && (
+                        <Check className="h-4 w-4" />
+                      )}
+                      {pendingExamId !== exam.id && successExamId !== exam.id && !isSelected && !exam.isFree && !isPro && (
+                        <Lock className="h-4 w-4 text-amber-500" />
+                      )}
                     </div>
                     <span className="flex-1">{exam.name}</span>
                     {!exam.isFree && !isPro && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
