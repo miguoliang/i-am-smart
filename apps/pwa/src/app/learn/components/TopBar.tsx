@@ -128,10 +128,10 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                   >
                     <div className="w-5 h-5 flex items-center justify-center">
                       {isSelected && <Check className="h-4 w-4" />}
-                      {!exam.isFree && !isSelected && <Lock className="h-4 w-4 text-amber-500" />}
+                      {!exam.isFree && !isPro && !isSelected && <Lock className="h-4 w-4 text-amber-500" />}
                     </div>
                     <span className="flex-1">{exam.name}</span>
-                    {!exam.isFree && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
+                    {!exam.isFree && !isPro && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
                   </button>
                 );
               })}
