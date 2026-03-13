@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
