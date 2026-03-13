@@ -76,6 +76,12 @@ function AuthenticatedLearn() {
           <RevealButton onReveal={answer.reveal} />
         </ActionRow>
       )}
+      <p
+        className="absolute text-xs text-muted-foreground/50"
+        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))", right: "1rem" }}
+      >
+        v{process.env.NEXT_PUBLIC_APP_VERSION}
+      </p>
     </div>
   );
 }

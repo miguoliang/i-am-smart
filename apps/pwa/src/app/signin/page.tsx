@@ -502,6 +502,9 @@ function SignInContent() {
           )}
         </div>
       </div>
+      <p className="text-center text-xs text-muted-foreground pb-4">
+        v{process.env.NEXT_PUBLIC_APP_VERSION}
+      </p>
     </div>
   );
 }
