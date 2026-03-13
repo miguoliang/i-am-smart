@@ -54,15 +54,19 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
     return () => vv.removeEventListener("resize", update);
   }, []);
   const queryClient = useQueryClient();
-  const { activeProfile, refetch: refetchProfiles } = useProfile();
+  const { activeProfile } = useProfile();
   const currentExamTarget = activeProfile?.exam_target ?? "ket";
   const stats = useStats();
   const { isPro } = useSubscription();
 
   const updateExamMutation = useMutation({
     mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
-    onSuccess: () => {
-      refetchProfiles();
+    onSuccess: (updatedProfile) => {
+      // Optimistically update the profiles cache instead of re-fetching
+      queryClient.setQueryData<import("@/lib/api/profiles").LearnerProfile[]>(
+        ["profiles"],
+        (old) => old?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) ?? old
+      );
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
