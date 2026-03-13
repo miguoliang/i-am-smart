@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
-import { LogOut, Settings, Check, Lock, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { LogOut, Settings, Check, Lock, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
 import { EXAM_TARGETS } from "@i-am-smart/shared/constants";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
   SheetContent,
@@ -18,10 +18,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/overlay/Sheet";
-import { parseApiErrorResponse } from "@/lib/utils/apiError";
-import { t } from "@/lib/i18n";
 import { ProfileSwitcher } from "./ProfileSwitcher";
-import { CalendarReminder } from "./CalendarReminder";
 import { useStats } from "@/app/stats/hooks/useStats";
 import { useSubscription } from "@/hooks/useSubscription";
 
@@ -30,16 +27,8 @@ interface TopBarProps {
   isSigningOut: boolean;
 }
 
-async function fetchMe() {
-  const res = await fetch("/api/accounts/me");
-  if (!res.ok) throw new Error(await parseApiErrorResponse(res, t().settings.loadFailed));
-  const { data } = await res.json();
-  return data as { username: string | null; daily_due_limit: number; calendar_token: string | null; calendar_remind_hour: number };
-}
-
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const [open, setOpen] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   const [sheetMaxH, setSheetMaxH] = useState("85dvh");
   const router = useRouter();
 
@@ -66,12 +55,6 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
-  });
-
-  const { data: me, isLoading: meLoading } = useQuery({
-    queryKey: ["accounts", "me"],
-    queryFn: fetchMe,
-    enabled: open && showMore,
   });
 
   const handleSignOut = () => {
@@ -150,26 +133,6 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                     <HelpCircle className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </div>
-            )}
-
-            {/* More settings (collapsed by default) */}
-            <button
-              onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
-            >
-              {showMore ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              更多设置
-            </button>
-
-            {showMore && (
-              <div className="space-y-6 animate-in slide-in-from-top-2 duration-200">
-                {/* Calendar Reminder */}
-                <CalendarReminder
-                  calendarToken={me?.calendar_token ?? null}
-                  calendarRemindHour={me?.calendar_remind_hour ?? 9}
-                  isLoading={meLoading}
-                />
               </div>
             )}
           </div>
