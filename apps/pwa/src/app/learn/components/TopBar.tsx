@@ -23,6 +23,7 @@ import { t } from "@/lib/i18n";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { CalendarReminder } from "./CalendarReminder";
 import { useStats } from "@/app/stats/hooks/useStats";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface TopBarProps {
   onSignOut: () => void;
@@ -56,6 +57,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const { activeProfile, refetch: refetchProfiles } = useProfile();
   const currentExamTarget = activeProfile?.exam_target ?? "ket";
   const stats = useStats();
+  const { isPro } = useSubscription();
 
   const updateExamMutation = useMutation({
     mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
@@ -112,7 +114,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                     key={exam.id}
                     disabled={updateExamMutation.isPending}
                     onClick={() => {
-                      if (!exam.isFree) { setOpen(false); router.push("/pay"); return; }
+                      if (!exam.isFree && !isPro) { setOpen(false); router.push("/pay"); return; }
                       if (activeProfile) {
                         updateExamMutation.mutate(exam.id);
                         setOpen(false);
