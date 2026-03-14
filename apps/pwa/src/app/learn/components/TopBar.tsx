@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
 import { LogOut, Settings, Check, Lock, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
-import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
 import { EXAM_TARGETS } from "@i-am-smart/shared/constants";
@@ -174,14 +173,6 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Top Right Install Button */}
-      <div
-        className="absolute right-4 z-50"
-        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
-      >
-        <InstallPrompt />
-      </div>
     </>
   );
 }

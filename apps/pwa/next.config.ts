@@ -5,6 +5,15 @@ import path from "path";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
+
+// Load .env.local from monorepo root so local dev reads the same env as the root
+try {
+  const rootEnv = path.join(__dirname, "../../.env.local");
+  require("dotenv").config({ path: rootEnv });
+} catch {
+  // dotenv optional; apps/pwa/.env* are still loaded by Next.js
+}
+
 const { version } = require("./package.json") as { version: string };
 
 // Use string references for plugins to ensure serializable options

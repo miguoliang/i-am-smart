@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallPrompt } from "@/app/components/InstallPrompt";
 import { NavigationAuthButtons } from "./NavigationAuthButtons";
 
 export function Navigation() {
@@ -22,8 +23,9 @@ export function Navigation() {
             )}
           </Link>
 
-          {/* Right side - Auth buttons (Client Component) */}
+          {/* Right side - Install (PWA) + Auth buttons */}
           <div className="flex items-center gap-2 md:gap-3">
+            <InstallPrompt />
             <NavigationAuthButtons />
           </div>
         </div>
