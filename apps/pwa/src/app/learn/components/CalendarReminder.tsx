@@ -68,7 +68,7 @@ export function CalendarReminder({ calendarToken, calendarRemindHour, isLoading 
         日历提醒
       </h3>
       <p className="text-xs text-muted-foreground">
-        添加到手机日历，每天自动提醒你复习
+        添加到手机日历，设置复习提醒，按你的节奏来
       </p>
 
       {/* Remind hour presets */}
