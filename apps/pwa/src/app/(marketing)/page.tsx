@@ -81,7 +81,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              无需注册，打开就学
+              打开就能学，注册解锁更多
             </p>
           </div>
         </div>

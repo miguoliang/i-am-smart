@@ -8,7 +8,6 @@ export interface StatsData {
   mastered: number;
   learning: number;
   dueToday: number;
-  streak: number;
   heatMap: { date: string; count: number }[];
 }
 
@@ -29,7 +28,6 @@ export function useStats() {
     mastered: 0,
     learning: 0,
     dueToday: 0,
-    streak: 0,
     heatMap: []
   })
   
@@ -66,7 +64,6 @@ export function useStats() {
           mastered: data.stats.mastered,
           learning: data.stats.learning,
           dueToday: data.stats.dueToday,
-          streak: 0, // Streak calculation can be added later
           heatMap: fullHeatMap
         });
       } catch {
