@@ -8,7 +8,9 @@ import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";
 import { TopBar } from "./components/TopBar";
 import { LearnPageBackground } from "./components/LearnPageBackground";
+import { getLevelLabelAndPalette } from "./lib/learnBackground";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { GuestLearn } from "./components/GuestLearn";
@@ -42,6 +44,7 @@ function LearnInner() {
 }
 
 function AuthenticatedLearn() {
+  const { activeProfile } = useProfile();
   const {
     loading,
     cards,
@@ -52,6 +55,10 @@ function AuthenticatedLearn() {
     review,
     auth,
   } = useLearnSession();
+  const { levelLabel, paletteKey } = getLevelLabelAndPalette(
+    activeProfile?.exam_target,
+    activeProfile?.level
+  );
 
   const isSessionComplete = progress.total > 0 && progress.reviewed >= progress.total;
 
@@ -59,7 +66,7 @@ function AuthenticatedLearn() {
   if (cards.length === 0 || !currentCard || isSessionComplete) return <EmptyState />;
 
   return (
-    <LearnPageBackground>
+    <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
       <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
       <WordCard
         key={currentCard.id}

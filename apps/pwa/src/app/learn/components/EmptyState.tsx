@@ -10,18 +10,25 @@ import {
   SheetTrigger,
 } from "@/components/overlay/Sheet";
 import { Button } from "@/components/form/Button";
+import { useProfile } from "@/hooks/useProfile";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { NpsRating } from "./NpsRating";
 import { InviteCard } from "./InviteCard";
 import { LearnPageBackground } from "./LearnPageBackground";
+import { getLevelLabelAndPalette } from "../lib/learnBackground";
 
 const NPS_DISMISSED_KEY = "nps_dismissed_at";
 
 export function EmptyState() {
+  const { activeProfile } = useProfile();
   const { signOut, isSigningOut } = useSignOut();
   const stats = useStats();
   const [open, setOpen] = useState(false);
   const [showNps, setShowNps] = useState(false);
+  const { levelLabel, paletteKey } = getLevelLabelAndPalette(
+    activeProfile?.exam_target,
+    activeProfile?.level
+  );
 
   useEffect(() => {
     // Show NPS if not dismissed in last 30 days
@@ -51,7 +58,7 @@ export function EmptyState() {
   }, []);
 
   return (
-    <LearnPageBackground>
+    <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
       <div className="relative w-full flex flex-col items-center justify-center">
       {/* Settings */}
       <div

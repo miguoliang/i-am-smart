@@ -1,34 +1,59 @@
 "use client";
 
-/**
- * Full-viewport background for the learn page: solid comfortable color + KET/PET text texture.
- * No gradient; texture uses very low opacity for a subtle, eye-friendly look.
- */
-const TEXTURE_WORDS = ["KET", "PET"] as const;
-const COLS = 10;
-const ROWS = 8;
+import {
+  LEVEL_PALETTES,
+  getTextureCells,
+  TEXTURE_GRID,
+  type PaletteKey,
+} from "../lib/learnBackground";
 
-export function LearnPageBackground({ children }: { children: React.ReactNode }) {
+interface LearnPageBackgroundProps {
+  children: React.ReactNode;
+  /** Label shown in texture (e.g. "KET", "PET", "四级"). Default "KET". */
+  levelLabel?: string;
+  /** Palette key for background and texture colors. Default "default". */
+  paletteKey?: PaletteKey;
+}
+
+export function LearnPageBackground({
+  children,
+  levelLabel = "KET",
+  paletteKey = "default",
+}: LearnPageBackgroundProps) {
+  const palette = LEVEL_PALETTES[paletteKey] ?? LEVEL_PALETTES.default;
+  const cells = getTextureCells(levelLabel);
+
   return (
-    <div className="min-h-dvh w-full overscroll-y-none relative flex flex-col items-center justify-center p-4 bg-[#f5f2ee] dark:bg-[#1c1917]">
-      {/* Texture layer: repeated KET / PET at very low opacity, spread across viewport */}
+    <div className="learn-page-bg-root min-h-dvh w-full overscroll-y-none relative flex flex-col items-center justify-center p-4">
+      <style>{`
+        .learn-page-bg-root { --learn-bg: ${palette.bgLight}; --learn-texture: ${palette.textureLight}; --learn-texture-opacity: ${palette.textureOpacityLight}; }
+        .dark .learn-page-bg-root { --learn-bg: ${palette.bgDark}; --learn-texture: ${palette.textureDark}; --learn-texture-opacity: ${palette.textureOpacityDark}; }
+      `}</style>
       <div
-        className="absolute inset-0 overflow-hidden pointer-events-none select-none grid place-items-center"
+        className="absolute inset-0 min-h-dvh w-full"
+        style={{ backgroundColor: "var(--learn-bg)" }}
+      />
+
+      {/* Texture layer: grid with formula-based rotation and scale (regular + varied) */}
+      <div
+        className="absolute inset-0 h-full w-full overflow-hidden pointer-events-none select-none grid place-items-center"
         style={{
-          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+          gridTemplateColumns: `repeat(${TEXTURE_GRID.COLS}, 1fr)`,
+          gridTemplateRows: `repeat(${TEXTURE_GRID.ROWS}, 1fr)`,
         }}
         aria-hidden
       >
-        {Array.from({ length: COLS * ROWS }, (_, i) => (
+        {cells.map((cell, i) => (
           <span
             key={i}
-            className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-[#2d2a26] dark:text-stone-500 opacity-[0.04] dark:opacity-[0.045]"
+            className="flex items-center justify-center text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
             style={{
-              transform: `rotate(${(i % 5) * 4 - 8}deg)`,
+              color: "var(--learn-texture)",
+              opacity: "var(--learn-texture-opacity)",
+              transform: `rotate(${cell.rotationDeg}deg) scale(${cell.scale})`,
             }}
           >
-            {TEXTURE_WORDS[i % TEXTURE_WORDS.length]}
+            {cell.label}
           </span>
         ))}
       </div>
