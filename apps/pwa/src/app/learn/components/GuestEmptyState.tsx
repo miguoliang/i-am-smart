@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { LearnPageBackground } from "./LearnPageBackground";
 
 export function GuestEmptyState() {
   const router = useRouter();
 
   return (
-    <div className="min-h-dvh w-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+    <LearnPageBackground>
       {/* Back to home */}
       <div
         className="absolute left-4 z-50"
@@ -57,6 +58,6 @@ export function GuestEmptyState() {
           再试一次
         </button>
       </div>
-    </div>
+    </LearnPageBackground>
   );
 }

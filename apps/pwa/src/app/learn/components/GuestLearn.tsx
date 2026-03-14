@@ -6,6 +6,7 @@ import { WordCard } from "./WordCard";
 import { RatingButtons } from "./RatingButtons";
 import { GuestEmptyState } from "./GuestEmptyState";
 import { SignupPrompt } from "./SignupPrompt";
+import { LearnPageBackground } from "./LearnPageBackground";
 import { useGuestLearnSession } from "../hooks/useGuestLearnSession";
 
 function ActionRow({ children }: { children: React.ReactNode }) {
@@ -63,7 +64,7 @@ export function GuestLearn() {
   }
 
   return (
-    <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+    <LearnPageBackground>
       {/* Top bar: back | progress | sign-in */}
       <div
         className="absolute left-0 right-0 z-50 flex items-center justify-between px-4"
@@ -117,6 +118,6 @@ export function GuestLearn() {
           reviewedCount={progress.reviewed}
         />
       )}
-    </div>
+    </LearnPageBackground>
   );
 }

@@ -13,6 +13,7 @@ import { Button } from "@/components/form/Button";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { NpsRating } from "./NpsRating";
 import { InviteCard } from "./InviteCard";
+import { LearnPageBackground } from "./LearnPageBackground";
 
 const NPS_DISMISSED_KEY = "nps_dismissed_at";
 
@@ -50,7 +51,8 @@ export function EmptyState() {
   }, []);
 
   return (
-    <div className="min-h-dvh w-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4 relative">
+    <LearnPageBackground>
+      <div className="relative w-full flex flex-col items-center justify-center">
       {/* Settings */}
       <div
         className="absolute left-4 z-50"
@@ -107,6 +109,7 @@ export function EmptyState() {
           <InviteCard />
         </div>
       )}
-    </div>
+      </div>
+    </LearnPageBackground>
   );
 }

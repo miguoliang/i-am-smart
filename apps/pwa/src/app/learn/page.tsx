@@ -7,6 +7,7 @@ import { WordCard } from "./components/WordCard";
 import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";
 import { TopBar } from "./components/TopBar";
+import { LearnPageBackground } from "./components/LearnPageBackground";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -58,7 +59,7 @@ function AuthenticatedLearn() {
   if (cards.length === 0 || !currentCard || isSessionComplete) return <EmptyState />;
 
   return (
-    <div className="min-h-dvh w-full overscroll-y-none bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+    <LearnPageBackground>
       <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
       <WordCard
         key={currentCard.id}
@@ -82,7 +83,7 @@ function AuthenticatedLearn() {
       >
         v{process.env.NEXT_PUBLIC_APP_VERSION}
       </p>
-    </div>
+    </LearnPageBackground>
   );
 }
 

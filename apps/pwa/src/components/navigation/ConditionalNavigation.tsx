@@ -7,12 +7,11 @@ import { Navigation } from "./Navigation";
 // (they have their own navigation systems)
 const NO_NAV_ROUTES = ["/operator"];
 
-// Marketing routes - navigation is handled by MarketingLayout
+// Marketing routes - navigation is handled by MarketingLayout (single-page: / has #pricing, #features)
 const MARKETING_ROUTES = [
   "/",
   "/terms",
   "/privacy",
-  "/pricing",
   "/features",
   "/pay",
 ];

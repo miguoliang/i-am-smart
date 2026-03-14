@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { Button } from "@/components/form/Button";
+import { PricingSection } from "./components/PricingSection";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "每天5分钟记住20个单词 - 聪明的背单词工具",
@@ -131,23 +132,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Lightweight Pricing Mention */}
-      <section className="max-w-7xl mx-auto px-4 py-16 md:py-20">
-        <div className="text-center space-y-3">
-          <p className="text-lg text-gray-700 dark:text-gray-300">
-            免费开始，随时升级 Pro 解锁全部功能
-          </p>
-          <Link
-            href="/pricing"
-            className="inline-block text-amber-600 dark:text-amber-400 font-medium hover:underline"
-          >
-            查看定价 →
-          </Link>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            7天无理由退款 · 微信支付 · 支付宝
-          </p>
-        </div>
-      </section>
+      {/* Pricing Section */}
+      <PricingSection showTitle={true} id="pricing" titleTag="h2" />
     </div>
   );
 }

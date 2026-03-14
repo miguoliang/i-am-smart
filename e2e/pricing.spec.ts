@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Pricing page — plan cards, prices, and CTA buttons render correctly.
+ * Pricing section on marketing homepage — plan cards, prices, and CTA buttons render correctly.
  */
-test.describe("Pricing page", () => {
+test.describe("Pricing section (homepage)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/pricing");
+    await page.goto("/#pricing");
   });
 
   test("has correct page title", async ({ page }) => {

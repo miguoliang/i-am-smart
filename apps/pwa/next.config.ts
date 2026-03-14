@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
         destination: "/signin",
         permanent: true,
       },
+      {
+        source: "/pricing",
+        destination: "/#pricing",
+        permanent: false,
+      },
     ];
   },
   webpack: (config) => {
