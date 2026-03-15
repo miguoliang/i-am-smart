@@ -66,22 +66,27 @@ export default function Stats() {
           </div>
         )}
 
-        {/* 热力图 */}
+        {/* 学习趋势 */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">过去 30 天学习热力</h2>
-          <div className="grid grid-cols-15 gap-2">
-            {stats.heatMap.map((day, i) => (
-              <div
-                key={i}
-                className={`aspect-square rounded-lg transition-all ${
-                  day.count === 0 ? 'bg-gray-200 dark:bg-gray-700' :
-                  day.count < 5 ? 'bg-green-300 dark:bg-green-800' :
-                  day.count < 10 ? 'bg-green-500 dark:bg-green-600' :
-                  'bg-green-700 dark:bg-green-500'
-                }`}
-                title={`${day.date}: ${day.count} 次`}
-              />
+          <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">过去 30 天学习趋势</h2>
+          <div className="space-y-2">
+            {stats.heatMap.filter(day => day.count > 0).slice(-10).map((day, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400 w-24">{day.date}</span>
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                  <div
+                    className="bg-green-500 h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (day.count / 20) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-16 text-right">
+                  {day.count} 词
+                </span>
+              </div>
             ))}
+            {stats.heatMap.filter(day => day.count > 0).length === 0 && (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">还没有学习记录，开始学习吧！</p>
+            )}
           </div>
         </div>
       </div>

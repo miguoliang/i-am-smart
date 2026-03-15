@@ -51,7 +51,7 @@ export function PricingSection({
           <ul className="space-y-3 mb-6">
             <li className="flex items-start text-gray-700 dark:text-gray-300">
               <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>
-              <span>每天免费学习</span>
+              <span>免费学习</span>
             </li>
             <li className="flex items-start text-gray-700 dark:text-gray-300">
               <span className="mr-2 text-green-600 dark:text-green-400 font-bold">✓</span>

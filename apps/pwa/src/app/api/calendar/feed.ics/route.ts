@@ -66,7 +66,7 @@ function generateICS(remindHour: number, dueToday: number): string {
     "PRODID:-//聪明的背单词工具//Review Reminder//CN",
     "METHOD:PUBLISH",
     "X-WR-CALNAME:聪明的背单词工具 - 复习提醒",
-    "X-WR-CALDESC:每日复习提醒",
+    "X-WR-CALDESC:复习提醒",
     "CALSCALE:GREGORIAN",
   ];
 

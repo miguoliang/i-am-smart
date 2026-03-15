@@ -5,7 +5,7 @@ import { Button } from "@/components/form/Button";
 import { PricingSection } from "./components/PricingSection";
 
 export const metadata: Metadata = generateSEOMetadata({
-  title: "每天5分钟记住20个单词 - 聪明的背单词工具",
+  title: "5分钟记住20个单词 - 聪明的背单词工具",
   description:
     "背了就忘？科学算法在你快忘的时候提醒复习。3000+词汇，覆盖KET·PET·四六级·雅思·托福，无需下载，多端同步。免费开始。",
   keywords: [
@@ -29,7 +29,7 @@ export const metadata: Metadata = generateSEOMetadata({
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "每天5分钟记住20个单词 - 聪明的背单词工具",
+        alt: "5分钟记住20个单词 - 聪明的背单词工具",
       },
     ],
   },
@@ -66,7 +66,7 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 pt-16 md:pt-24 pb-8 md:pb-12">
         <div className="text-center space-y-4">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-medium text-gray-900 dark:text-white">
-            每天 5 分钟，记住 20 个英语单词
+            5 分钟，记住 20 个英语单词
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
             背了就忘？科学算法在你快忘的时候提醒复习
