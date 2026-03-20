@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useState } from "react";
+import { Button } from "@/components/form/Button";
+import { cn } from "@/lib/utils";
 import { WordCard } from "./WordCard";
+import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
 import { RatingButtons } from "./RatingButtons";
 import { NextCardButton } from "./NextCardButton";
 import { MisrememberButton } from "./MisrememberButton";
@@ -42,6 +45,8 @@ function getAccentPreference(): "en-US" | "en-GB" {
 
 interface GuestLearnActiveProps {
   isPointerFine: boolean;
+  /** False while signup modal is open — do not handle A/S/D/W (or Enter/N in review step). */
+  keyboardShortcutsEnabled: boolean;
   currentCard: NonNullable<ReturnType<typeof useGuestLearnSession>["currentCard"]>;
   answer: ReturnType<typeof useGuestLearnSession>["answer"];
   speech: ReturnType<typeof useGuestLearnSession>["speech"];
@@ -50,6 +55,7 @@ interface GuestLearnActiveProps {
 
 function GuestLearnActive({
   isPointerFine,
+  keyboardShortcutsEnabled,
   currentCard,
   answer,
   speech,
@@ -84,7 +90,7 @@ function GuestLearnActive({
   }, []);
 
   useLearnKeyboardShortcuts({
-    enabled: isPointerFine,
+    enabled: keyboardShortcutsEnabled,
     waitingForNext,
     chooseForgot: () => chooseQuality(1),
     chooseKnown: () => chooseQuality(4),
@@ -148,38 +154,40 @@ export function GuestLearn() {
 
   return (
     <LearnPageBackground>
-      {/* Top bar: back | progress | sign-in */}
+      {/* Top bar: aligned with authenticated TopBar (settings) chrome */}
       <div
-        className="absolute left-0 right-0 z-50 flex items-center justify-between px-4"
-        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+        className="fixed left-0 right-0 z-50 flex items-center justify-between gap-2 px-3 sm:px-4"
+        style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
       >
-        {/* Left: back to home */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          aria-label="返回首页"
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={learnTopChromeButtonClassName}
+          asChild
         >
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">首页</span>
-        </Link>
-
-        {/* Center: progress */}
-        <span className="text-sm text-muted-foreground">
-          试学 {progress.reviewed}/{progress.total}
-        </span>
-
-        {/* Right: sign-in link */}
-        <Link
-          href="/signin?next=/learn"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          <Link href="/" aria-label="返回首页">
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">首页</span>
+          </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn(learnTopChromeButtonClassName, "max-sm:px-2.5")}
+          asChild
         >
-          注册/登录
-        </Link>
+          <Link href="/signin?next=/learn">
+            <span className="truncate">注册/登录</span>
+          </Link>
+        </Button>
       </div>
 
       <GuestLearnActive
         key={currentCard.id}
         isPointerFine={isPointerFine}
+        keyboardShortcutsEnabled={isPointerFine && !showSignupPrompt}
         currentCard={currentCard}
         answer={answer}
         speech={speech}

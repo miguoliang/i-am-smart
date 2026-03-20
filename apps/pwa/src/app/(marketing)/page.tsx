@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import type { LucideIcon } from "lucide-react";
+import { Brain, Gift, Globe, MonitorSmartphone } from "lucide-react";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo/metadata";
 import { Button } from "@/components/form/Button";
 import { PricingSection } from "./components/PricingSection";
@@ -36,26 +38,36 @@ export const metadata: Metadata = generateSEOMetadata({
   canonical: "/",
 });
 
-const features = [
+interface FeatureItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const features: FeatureItem[] = [
   {
-    emoji: "📱",
+    icon: Globe,
     title: "打开就用，不用下载",
-    description: "浏览器直接用，不占手机内存",
+    description:
+      "不用装 App，Safari、Chrome 打开就能背。不占手机存储、也不被更新弹窗打断，通勤路上点开链接即学。",
   },
   {
-    emoji: "🧠",
+    icon: Brain,
     title: "科学算法，不白背",
-    description: "SM-2 间隔重复，在你快忘的时候提醒复习",
+    description:
+      "基于 SM-2 间隔重复，在快要忘的时候提醒你复习，把力气花在「快忘的词」上。比死磕硬背更省时间，记得更牢。",
   },
   {
-    emoji: "🔄",
+    icon: MonitorSmartphone,
     title: "多端同步，进度不丢",
-    description: "手机、平板、电脑无缝切换",
+    description:
+      "同一账号在手机、平板、电脑之间切换，词卡与学习进度云端同步。换设备也不用从零开始，碎片时间都能接上。",
   },
   {
-    emoji: "🆓",
+    icon: Gift,
     title: "免费开始",
-    description: "零成本体验，随时升级",
+    description:
+      "先零成本体验核心学习与 KET 考试词汇，觉得合适再考虑升级。没有套路付费墙，随时可以从免费版平滑过渡到 Pro。",
   },
 ];
 
@@ -98,21 +110,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section — surfaces use theme tokens so dark mode matches body (no cool gray-800 cast) */}
       <section className="max-w-4xl mx-auto px-4 py-16 md:py-24">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-          {features.map((feature) => (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8">
+          {features.map(({ icon: Icon, title, description }) => (
             <div
-              key={feature.title}
-              className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+              key={title}
+              className="rounded-xl border border-border bg-muted/55 p-6 shadow-sm dark:bg-muted/35"
             >
-              <div className="text-3xl mb-3">{feature.emoji}</div>
-              <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {feature.description}
-              </p>
+              <div className="flex gap-3.5">
+                <Icon
+                  className="mt-0.5 h-6 w-6 shrink-0 text-muted-foreground"
+                  strokeWidth={1.65}
+                  aria-hidden
+                />
+                <h3 className="min-w-0 flex-1 text-lg font-semibold leading-snug text-foreground">
+                  {title}
+                </h3>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
             </div>
           ))}
         </div>

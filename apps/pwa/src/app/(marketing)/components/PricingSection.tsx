@@ -72,11 +72,7 @@ export function PricingSection({
           </p>
 
           <Link href="/learn" className="block">
-            <Button
-              variant="outline"
-              className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-gray-700"
-              size="lg"
-            >
+            <Button variant="secondary" size="lg" className="w-full font-medium shadow-sm">
               立即免费开始
             </Button>
           </Link>

@@ -271,20 +271,20 @@ function SignInContent() {
   const showOtpLogin = !isMiniprogram;
 
   return (
-    <div className="bg-white dark:bg-gray-900 min-h-screen flex flex-col">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       {/* Sign In Form */}
-      <div className="flex flex-col items-center justify-center flex-1">
-        <div className="max-w-md md:max-w-lg lg:max-w-xl w-full mx-auto p-5 md:p-8 lg:p-10 text-center box-border">
-          <h1 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+        <div className="box-border w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm md:max-w-lg md:p-8 lg:max-w-xl lg:p-10">
+          <h1 className="mb-2 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             聪明的背单词工具
           </h1>
-          <h2 className="mb-6 md:mb-8 lg:mb-10 text-gray-600 dark:text-gray-400 text-lg sm:text-xl md:text-2xl lg:text-3xl">
+          <h2 className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-10 md:text-2xl">
             登录
           </h2>
 
           {(wechatError || oauthError) && (
             <p
-              className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-left"
+              className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-left text-sm text-destructive"
               role="alert"
             >
               {wechatError
@@ -303,7 +303,7 @@ function SignInContent() {
             />
             <Label
               htmlFor="agree-terms"
-              className="text-sm text-gray-600 dark:text-gray-400 font-normal cursor-pointer leading-snug"
+              className="cursor-pointer text-sm font-normal leading-snug text-muted-foreground"
               onClick={(e) => {
                 // When clicking a link inside the label, prevent the label from
                 // also toggling the checkbox — let the link navigate normally.
@@ -345,11 +345,10 @@ function SignInContent() {
                         : "请先勾选同意服务条款与隐私政策后再使用微信登录"
                     }
                     title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
-                    className="w-full min-h-[48px] md:min-h-[52px] px-6 md:px-8 py-3.5 md:py-4 rounded-md font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500
-                      bg-[#07C160] text-white hover:bg-[#06AD56] active:bg-[#059C4D]
-                      flex items-center justify-center gap-2 touch-manipulation"
+                    className="flex min-h-[48px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-medium text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 md:min-h-[52px] md:px-8 md:py-4
+                      bg-[#07C160] hover:bg-[#06AD56] active:bg-[#059C4D]"
                   >
-                    <WeChatIcon className="h-5 w-5 flex-shrink-0" />
+                    <WeChatIcon className="h-5 w-5 shrink-0" />
                     <span>{wechatLoading ? "跳转中…" : "微信登录"}</span>
                   </button>
                 )}
@@ -366,12 +365,11 @@ function SignInContent() {
                         : "请先勾选同意服务条款与隐私政策后再使用 Apple 登录"
                     }
                     title={!agreedToTerms ? "请先勾选上方「使用即表示同意《服务条款》和《隐私政策》」" : undefined}
-                    className="w-full min-h-[48px] md:min-h-[52px] px-6 md:px-8 py-3.5 md:py-4 rounded-md font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white
-                      bg-black text-white hover:bg-gray-800 active:bg-gray-900
-                      dark:bg-white dark:text-black dark:hover:bg-gray-100 dark:active:bg-gray-200
-                      flex items-center justify-center gap-2 touch-manipulation"
+                    className="flex min-h-[48px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 md:min-h-[52px] md:px-8 md:py-4
+                      bg-neutral-950 text-white hover:bg-neutral-800 active:bg-neutral-900
+                      dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 dark:active:bg-neutral-200"
                   >
-                    <AppleIcon className="h-5 w-5 flex-shrink-0" />
+                    <AppleIcon className="h-5 w-5 shrink-0" />
                     <span>{appleLoading ? "登录中…" : "通过 Apple 登录"}</span>
                   </button>
                 )}
@@ -384,9 +382,9 @@ function SignInContent() {
             <>
               {(showWechatLogin || showAppleLogin) && (
                 <div className="relative my-4 flex items-center gap-3">
-                  <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">或</span>
-                  <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600" aria-hidden />
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                  <span className="text-sm text-muted-foreground">或</span>
+                  <span className="h-px flex-1 bg-border" aria-hidden />
                 </div>
               )}
 
@@ -409,14 +407,14 @@ function SignInContent() {
                       phoneError ? "phone-error" : "phone-description"
                     }
                     className={cn(
-                      "w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg",
-                      phoneError && "border-red-500 focus-visible:ring-red-500"
+                      "my-2.5 w-full px-4 py-3.5 text-base md:my-3 md:px-5 md:py-4 md:text-lg lg:py-5 lg:text-lg",
+                      phoneError && "border-destructive focus-visible:ring-destructive"
                     )}
                   />
                   {phoneError && (
                     <p
                       id="phone-error"
-                      className="text-red-500 text-sm mt-1 text-left"
+                      className="mt-1 text-left text-sm text-destructive"
                       role="alert"
                     >
                       {phoneError}
@@ -502,7 +500,7 @@ function SignInContent() {
           )}
         </div>
       </div>
-      <p className="text-center text-xs text-muted-foreground pb-4">
+      <p className="pb-4 text-center text-xs text-muted-foreground/80">
         v{process.env.NEXT_PUBLIC_APP_VERSION}
       </p>
     </div>
@@ -541,7 +539,13 @@ function WeChatIcon({ className }: { className?: string }) {
 
 export default function SignIn() {
   return (
-    <Suspense fallback={<div className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center"><span className="text-gray-500">加载中…</span></div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-background text-muted-foreground">
+          加载中…
+        </div>
+      }
+    >
       <SignInContent />
     </Suspense>
   );

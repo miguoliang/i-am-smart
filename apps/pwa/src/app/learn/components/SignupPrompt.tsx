@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/form/Button";
 
 interface SignupPromptProps {
   onDismiss: () => void;
@@ -11,27 +12,30 @@ export function SignupPrompt({ onDismiss, reviewedCount }: SignupPromptProps) {
   const router = useRouter();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-xl">
-        <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/35 p-4 backdrop-blur-[2px] dark:bg-black/45">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-xl">
+        <p className="mb-2 text-lg font-medium">
           刚才的 {reviewedCount} 个词，明天还记得吗？
         </p>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="mb-6 text-sm text-muted-foreground">
           注册后，我们会在你快忘的时候提醒你复习
         </p>
         <div className="flex gap-3">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 rounded-xl"
             onClick={onDismiss}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition"
           >
             先不了
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            className="flex-1 rounded-xl"
             onClick={() => router.push("/signin?next=/learn")}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition"
           >
             开始记住它们
-          </button>
+          </Button>
         </div>
       </div>
     </div>

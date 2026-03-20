@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/form/Button";
 import { LearnPageBackground } from "./LearnPageBackground";
+import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
 
 export function GuestEmptyState() {
   const router = useRouter();
@@ -12,36 +14,42 @@ export function GuestEmptyState() {
     <LearnPageBackground>
       {/* Back to home */}
       <div
-        className="absolute left-4 z-50"
-        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+        className="fixed left-3 z-50 sm:left-4"
+        style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
       >
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="返回首页"
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={learnTopChromeButtonClassName}
+          asChild
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>首页</span>
-        </Link>
+          <Link href="/" aria-label="返回首页">
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            <span>首页</span>
+          </Link>
+        </Button>
       </div>
 
-      <div className="text-center">
-        <p className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-3">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+        <p className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
           20 个词 ✓
         </p>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="mt-3 text-sm text-muted-foreground md:text-base">
           词库里还有 3000+ 个词等你，注册免费，30 秒搞定
         </p>
-        <button
+        <Button
+          type="button"
+          className="mt-8 w-full rounded-xl py-6 text-base font-medium"
           onClick={() => router.push("/signin?next=/learn")}
-          className="px-8 py-3 rounded-xl text-white bg-emerald-500 hover:bg-emerald-600 font-medium transition"
         >
           开始记住它们
-        </button>
-        <br />
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 w-full text-muted-foreground"
           onClick={() => {
-            // Clear guest learn data and restart
             const keysToRemove: string[] = [];
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
@@ -53,10 +61,9 @@ export function GuestEmptyState() {
             router.push("/learn");
             router.refresh();
           }}
-          className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           再试一次
-        </button>
+        </Button>
       </div>
     </LearnPageBackground>
   );

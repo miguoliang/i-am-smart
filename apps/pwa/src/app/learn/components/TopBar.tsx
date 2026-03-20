@@ -20,6 +20,7 @@ import {
   SheetTrigger,
 } from "@/components/overlay/Sheet";
 import { ProfileSwitcher } from "./ProfileSwitcher";
+import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
 import { ExamVocabProgressBar } from "./ExamVocabProgressBar";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useExamVocabProgress } from "../hooks/useExamVocabProgress";
@@ -95,12 +96,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               type="button"
               variant="outline"
               size="sm"
-              className={cn(
-                "h-11 min-h-[44px] gap-2 rounded-xl px-3.5 shadow-md",
-                "border-2 border-border/80 bg-card/95 text-foreground backdrop-blur-sm",
-                "hover:bg-card hover:border-foreground/25 hover:shadow-lg",
-                "font-medium text-sm"
-              )}
+              className={learnTopChromeButtonClassName}
               aria-label="打开设置"
             >
               <Settings className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
