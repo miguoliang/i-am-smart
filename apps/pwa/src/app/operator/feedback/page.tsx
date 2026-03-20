@@ -7,7 +7,7 @@ import { updateFeedback } from "@/lib/api/operator";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { Paginator } from "../import/components/Paginator";
+import { Paginator } from "../components/Paginator";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { Feedback } from "@/lib/types/feedback";
@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "@/components/overlay/Dialog";
 import { toast } from "sonner";
+import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "id", label: "ID", visible: false },
@@ -184,46 +185,43 @@ export default function FeedbackPage() {
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          用户反馈
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          查看用户提交的反馈和建议
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-2"
-          disabled={feedbacks.length === 0}
-          onClick={() =>
-            downloadCSV(
-              feedbacks.map((f) => ({
-                id: f.id,
-                status: f.status || "pending",
-                occupation: f.content.occupation || "",
-                willRecommend: f.content.willRecommend || "",
-                openFeedback: f.content.openFeedback || "",
-                operator_note: f.operator_note || "",
-                created_at: f.created_at,
-              })),
-              [
-                { key: "id", label: "ID" },
-                { key: "status", label: "状态" },
-                { key: "occupation", label: "职业" },
-                { key: "willRecommend", label: "是否推荐" },
-                { key: "openFeedback", label: "开放意见" },
-                { key: "operator_note", label: "运营备注" },
-                { key: "created_at", label: "提交时间" },
-              ],
-              `feedback-${new Date().toISOString().slice(0, 10)}`
-            )
-          }
-        >
-          导出 CSV
-        </Button>
-      </div>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="用户反馈"
+        description="查看用户提交的反馈和建议"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={feedbacks.length === 0}
+            onClick={() =>
+              downloadCSV(
+                feedbacks.map((f) => ({
+                  id: f.id,
+                  status: f.status || "pending",
+                  occupation: f.content.occupation || "",
+                  willRecommend: f.content.willRecommend || "",
+                  openFeedback: f.content.openFeedback || "",
+                  operator_note: f.operator_note || "",
+                  created_at: f.created_at,
+                })),
+                [
+                  { key: "id", label: "ID" },
+                  { key: "status", label: "状态" },
+                  { key: "occupation", label: "职业" },
+                  { key: "willRecommend", label: "是否推荐" },
+                  { key: "openFeedback", label: "开放意见" },
+                  { key: "operator_note", label: "运营备注" },
+                  { key: "created_at", label: "提交时间" },
+                ],
+                `feedback-${new Date().toISOString().slice(0, 10)}`
+              )
+            }
+          >
+            导出 CSV
+          </Button>
+        }
+      />
 
       <DataTable
         data={feedbacks}
@@ -389,6 +387,6 @@ export default function FeedbackPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </OperatorMain>
   );
 }

@@ -1,76 +1,70 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import Link from 'next/link'
-import { logger } from '@/lib/utils/logger'
-import { t } from '@/lib/i18n'
-import { Button } from '@/components/form/Button'
-import { Home, RefreshCw, Settings } from 'lucide-react'
+import { useEffect } from "react";
+import Link from "next/link";
+import { logger } from "@/lib/utils/logger";
+import { t } from "@/lib/i18n";
+import { Button } from "@/components/form/Button";
+import { Home, RefreshCw } from "lucide-react";
 
 interface ErrorProps {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
 export default function OperatorError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // Log the error to error reporting service
-    logger.error('Operator section error boundary caught error', {
+    logger.error("Operator section error boundary caught error", {
       error: error.message,
       stack: error.stack,
       digest: error.digest,
-      section: 'operator',
-    })
-  }, [error])
+      section: "operator",
+    });
+  }, [error]);
 
-  const translations = t()
+  const translations = t();
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-        <div className="mb-6">
-          <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-            <Settings className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {translations.errorBoundary.somethingWentWrong}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            管理面板遇到了问题，请重试或返回首页
-          </p>
-        </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+        <h1 className="text-base font-semibold tracking-tight text-foreground">
+          {translations.errorBoundary.somethingWentWrong}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          管理面板遇到了问题，请重试或返回首页
+        </p>
 
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-900 rounded-md text-left">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-6 rounded-md border border-border bg-muted/50 p-4 text-left">
+            <p className="mb-2 text-xs font-medium text-foreground">
               {translations.errorBoundary.errorDetails}:
             </p>
-            <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto">
+            <pre className="max-h-40 overflow-auto text-xs text-muted-foreground">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
             </pre>
-            {error.digest && (
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+            {error.digest ? (
+              <p className="mt-2 text-xs text-muted-foreground">
                 {translations.errorBoundary.errorId}: {error.digest}
               </p>
-            )}
+            ) : null}
           </div>
         )}
 
-        {error.digest && process.env.NODE_ENV === 'production' && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        {error.digest && process.env.NODE_ENV === "production" ? (
+          <p className="mt-4 text-xs text-muted-foreground">
             {translations.errorBoundary.errorId}: {error.digest}
           </p>
-        )}
+        ) : null}
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={reset} className="gap-2">
+        <div className="mt-8 flex flex-col justify-center gap-2 sm:flex-row">
+          <Button onClick={reset} className="gap-2" variant="default">
             <RefreshCw className="h-4 w-4" />
             {translations.errorBoundary.tryAgain}
           </Button>
           <Button variant="outline" asChild>
             <Link href="/">
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 <Home className="h-4 w-4" />
                 {translations.errorBoundary.goHome}
               </span>
@@ -79,5 +73,5 @@ export default function OperatorError({ error, reset }: ErrorProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

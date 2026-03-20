@@ -13,7 +13,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/form/Button";
 import { Input } from "@/components/form/Input";
 import { downloadCSV } from "@/lib/utils/csv";
-import { Paginator } from "../import/components/Paginator";
+import { Paginator } from "../components/Paginator";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { User, Ban, ShieldCheck } from "lucide-react";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { toast } from "sonner";
+import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 
 const DEBOUNCE_MS = 300;
 
@@ -235,17 +236,13 @@ export default function AccountsPage() {
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          账户管理
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          查看和管理所有用户账户
-        </p>
-      </div>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="账户管理"
+        description="查看和管理所有用户账户"
+      />
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Input
           type="search"
           placeholder="按用户名或邮箱搜索..."
@@ -292,9 +289,7 @@ export default function AccountsPage() {
         emptyMessage="暂无数据"
         getRowClassName={(account) => {
           const role = (account.role as string)?.trim() || "learner";
-          return role === "operator" 
-            ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500" 
-            : "";
+          return role === "operator" ? "border-l-2 border-primary bg-muted/40" : "";
         }}
         refreshButton={{
           onClick: () => refetch(),
@@ -457,7 +452,7 @@ export default function AccountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </OperatorMain>
   );
 }
 

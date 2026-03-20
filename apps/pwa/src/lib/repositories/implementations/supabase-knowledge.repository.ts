@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { KnowledgeRepository, PaginationParams, PaginatedResult } from '../knowledge.repository';
-import { KnowledgeItem, ImportKnowledgeParams } from '@/lib/services/knowledgeService';
+import { KnowledgeItem } from '@/lib/services/knowledgeService';
 import { DEFAULT_KNOWLEDGE_LIMIT } from '@/lib/constants';
 import { handleRepositoryError } from '../utils/error-handling';
 
@@ -22,7 +22,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
   }
 
   async getPaginated(params: PaginationParams): Promise<PaginatedResult<KnowledgeItem>> {
-    const { page, pageSize, search, level } = params;
+    const { page, pageSize, search, level, restrictToCodes } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -30,6 +30,10 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
     let countQuery = this.client
       .from('knowledge')
       .select('*', { count: 'exact', head: true });
+
+    if (restrictToCodes && restrictToCodes.length > 0) {
+      countQuery = countQuery.in('code', restrictToCodes);
+    }
 
     if (search) {
       countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
@@ -53,6 +57,10 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       .select('code, name, description, metadata, created_at, updated_at')
       .order('created_at', { ascending: false });
 
+    if (restrictToCodes && restrictToCodes.length > 0) {
+      dataQuery = dataQuery.in('code', restrictToCodes);
+    }
+
     if (search) {
       dataQuery = dataQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
@@ -73,24 +81,5 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       pageSize,
       totalPages,
     };
-  }
-
-  async import(items: ImportKnowledgeParams[]): Promise<{ count: number; skipped: number }> {
-    const { data: inserted, error } = await this.client
-      .from("knowledge")
-      .upsert(items, {
-        onConflict: "name",
-        ignoreDuplicates: true,
-      })
-      .select("code");
-
-    if (error) {
-      handleRepositoryError(error, 'Import knowledge');
-    }
-
-    const count = inserted?.length || 0;
-    const skipped = items.length - count;
-
-    return { count, skipped };
   }
 }

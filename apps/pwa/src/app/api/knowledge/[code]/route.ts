@@ -43,7 +43,7 @@ export async function PUT(
 
     const admin = createSupabaseAdmin();
     const { data, error } = await admin
-      .from("knowledges")
+      .from("knowledge")
       .update(update)
       .eq("code", code)
       .select()
@@ -61,37 +61,6 @@ export async function PUT(
     });
 
     return apiSuccess(data);
-  } catch (e) {
-    return handleApiError(e);
-  }
-}
-
-/** DELETE: Delete a knowledge item */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ code: string }> }
-) {
-  try {
-    const { user } = await requireOperator(req);
-    const { code } = await params;
-    if (!code) throw ApiError.validationError("缺少 code");
-
-    const admin = createSupabaseAdmin();
-    const { error } = await admin
-      .from("knowledges")
-      .delete()
-      .eq("code", code);
-
-    if (error) throw ApiError.internal(error.message);
-
-    void writeAuditLog({
-      operator_id: user.id,
-      action: "delete_knowledge",
-      target_type: "knowledge",
-      target_id: code,
-    });
-
-    return apiSuccess({ deleted: true });
   } catch (e) {
     return handleApiError(e);
   }

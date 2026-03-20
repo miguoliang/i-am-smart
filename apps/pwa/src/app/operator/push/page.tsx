@@ -10,6 +10,11 @@ import { Textarea } from "@/components/form/Textarea";
 import { Label } from "@/components/form/Label";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { toast } from "sonner";
+import {
+  OperatorMain,
+  OperatorPageHeader,
+  OperatorPanel,
+} from "../components/OperatorChrome";
 
 export default function PushPage() {
   useOperatorAuth();
@@ -29,17 +34,13 @@ export default function PushPage() {
   const canSend = title.trim().length > 0 && body.trim().length > 0;
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          推送通知
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          向所有已订阅用户发送推送通知
-        </p>
-      </div>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="推送通知"
+        description="向所有已订阅用户发送推送通知"
+      />
 
-      <div className="max-w-lg space-y-4">
+      <OperatorPanel className="max-w-lg space-y-4 p-5">
         <div>
           <Label htmlFor="push-title">标题</Label>
           <Input
@@ -72,7 +73,7 @@ export default function PushPage() {
         >
           发送推送
         </Button>
-      </div>
-    </div>
+      </OperatorPanel>
+    </OperatorMain>
   );
 }

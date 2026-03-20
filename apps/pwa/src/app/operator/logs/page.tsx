@@ -5,9 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { DataTable } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { Paginator } from "../import/components/Paginator";
+import { Paginator } from "../components/Paginator";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
 const PER_PAGE = 20;
@@ -111,15 +112,11 @@ export default function LogsPage() {
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          操作日志
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          运营操作审计记录
-        </p>
-      </div>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="操作日志"
+        description="运营操作审计记录"
+      />
 
       <DataTable
         data={logs}
@@ -142,6 +139,6 @@ export default function LogsPage() {
           />
         </div>
       )}
-    </div>
+    </OperatorMain>
   );
 }

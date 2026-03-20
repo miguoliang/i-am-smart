@@ -1,10 +1,12 @@
-import { KnowledgeItem, ImportKnowledgeParams } from '@/lib/services/knowledgeService';
+import { KnowledgeItem } from '@/lib/services/knowledgeService';
 
 export interface PaginationParams {
   page: number;
   pageSize: number;
   search?: string;
   level?: string;
+  /** When set, only rows whose `code` is in this list (e.g. knowledge with pending error reports). */
+  restrictToCodes?: string[];
 }
 
 export interface PaginatedResult<T> {
@@ -18,5 +20,4 @@ export interface PaginatedResult<T> {
 export interface KnowledgeRepository {
   getAll(): Promise<KnowledgeItem[]>;
   getPaginated(params: PaginationParams): Promise<PaginatedResult<KnowledgeItem>>;
-  import(items: ImportKnowledgeParams[]): Promise<{ count: number; skipped: number }>;
 }

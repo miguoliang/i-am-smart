@@ -76,16 +76,18 @@ export default function OperatorLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-2">运营后台</h1>
-        <p className="text-sm text-muted-foreground text-center mb-6">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm md:p-8">
+        <h1 className="text-center text-base font-semibold tracking-tight">
+          运营后台
+        </h1>
+        <p className="mt-1 text-center text-sm text-muted-foreground">
           使用运营账号登录
         </p>
 
         {step === "email" ? (
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div>
+          <form onSubmit={handleSendOtp} className="mt-8 space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="email">邮箱</Label>
               <Input
                 id="email"
@@ -102,11 +104,12 @@ export default function OperatorLoginPage() {
             </Button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <form onSubmit={handleVerifyOtp} className="mt-8 space-y-4">
             <p className="text-sm text-muted-foreground">
-              验证码已发送至 <span className="font-medium text-foreground">{email}</span>
+              验证码已发送至{" "}
+              <span className="font-medium text-foreground">{email}</span>
             </p>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="otp">验证码</Label>
               <Input
                 id="otp"
@@ -114,18 +117,27 @@ export default function OperatorLoginPage() {
                 inputMode="numeric"
                 placeholder="000000"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
                 autoComplete="one-time-code"
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || otp.length < 6}
+            >
               {loading ? "验证中..." : "登录"}
             </Button>
             <button
               type="button"
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => { setStep("email"); setOtp(""); }}
+              className="w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => {
+                setStep("email");
+                setOtp("");
+              }}
             >
               返回重新输入邮箱
             </button>

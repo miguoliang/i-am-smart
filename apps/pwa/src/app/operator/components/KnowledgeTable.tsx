@@ -7,7 +7,7 @@ import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
-import { Paginator } from "@/app/operator/import/components/Paginator";
+import { Paginator } from "@/app/operator/components/Paginator";
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [

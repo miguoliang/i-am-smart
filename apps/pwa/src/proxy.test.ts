@@ -84,6 +84,12 @@ describe("proxy", () => {
       expect(location.searchParams.get("next")).toBe("/operator");
     });
 
+    it("should allow access to /operator/login without session", async () => {
+      const res = await proxy(buildRequest("/operator/login"));
+
+      expect(res.status).toBe(200);
+    });
+
     it("should redirect from nested protected routes to /signin", async () => {
       const res = await proxy(buildRequest("/operator/accounts"));
 

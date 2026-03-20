@@ -6,29 +6,35 @@ import { fetchOrders, type OrderRow } from "@/lib/api/operator";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { DataTable } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { Paginator } from "../import/components/Paginator";
+import { Paginator } from "../components/Paginator";
 import { Button } from "@/components/form/Button";
 import { downloadCSV } from "@/lib/utils/csv";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 
 const PER_PAGE = 20;
 
-const statusBadgeClass: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400",
-  paid: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400",
-};
-
 function StatusBadge({ status }: { status: string }) {
-  const className =
-    statusBadgeClass[status] ??
-    "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+  const label =
+    status === "pending"
+      ? "待支付"
+      : status === "paid"
+        ? "已支付"
+        : status === "failed"
+          ? "失败"
+          : status;
+  const tone =
+    status === "failed"
+      ? "border-destructive/30 text-destructive"
+      : status === "paid"
+        ? "border-border text-foreground"
+        : "border-border text-muted-foreground";
   return (
     <span
-      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${className}`}
+      className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium tabular-nums ${tone}`}
     >
-      {status === "pending" ? "待支付" : status === "paid" ? "已支付" : status === "failed" ? "失败" : status}
+      {label}
     </span>
   );
 }
@@ -129,24 +135,24 @@ export default function OperatorOrdersPage() {
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          订单管理
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          查看和筛选支付订单
-        </p>
-      </div>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="订单管理"
+        description="查看和筛选支付订单"
+      />
 
-      {/* Summary */}
       {!loading && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 md:gap-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 md:px-4 py-3 text-sm">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            当前筛选共 <strong className="text-foreground">{summary.count}</strong> 笔订单
+        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <span>
+            当前筛选共{" "}
+            <strong className="font-medium text-foreground">{summary.count}</strong>{" "}
+            笔订单
           </span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            收入合计 <strong className="text-foreground">¥{(summary.totalAmount / 100).toFixed(2)}</strong>
+          <span>
+            收入合计{" "}
+            <strong className="font-medium tabular-nums text-foreground">
+              ¥{(summary.totalAmount / 100).toFixed(2)}
+            </strong>
           </span>
         </div>
       )}
@@ -259,6 +265,6 @@ export default function OperatorOrdersPage() {
           />
         </div>
       )}
-    </div>
+    </OperatorMain>
   );
 }

@@ -29,8 +29,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
-        <div className="text-white text-3xl font-medium">{t().operator.checkingPermissions}</div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">{t().operator.checkingPermissions}</p>
       </div>
     );
   }

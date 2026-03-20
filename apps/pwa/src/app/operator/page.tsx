@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchDashboard,
@@ -9,55 +8,29 @@ import {
 } from "@/lib/api/operator";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import { Info, X } from "lucide-react";
+import {
+  OperatorMain,
+  OperatorPageHeader,
+  OperatorPanel,
+  OperatorStatBlock,
+} from "./components/OperatorChrome";
 
 const METRIC_HELP: Record<string, string> = {
   今日注册: "今天（按本地时区）新注册的用户数，来源于 Supabase Auth 的 created_at 字段。",
   总用户数: "系统中所有已注册用户的总数，包含已封禁用户。",
-  今日复习量: "今天所有用户完成的卡片复习总次数，基于 account_cards 表中 repetitions > 0 且 updated_at 在今天范围内的记录。",
-  今日收入: "今天状态为 paid 的订单金额总和（单位：元），基于 pay_orders 表的 amount_total 字段（存储单位为分）。",
-  今日活跃: "今天至少复习过 1 张卡片的独立用户数（DAU），基于 account_cards 表中 updated_at 在今天且 repetitions > 0 的去重 account_id。",
-  次日留存: "在所有激活用户（至少有 1 张卡片）中，在 2 个或以上不同日期进行过复习的用户占比。反映用户是否在注册后第二天还会回来。",
-  "7日留存": "在所有激活用户中，在 7 个或以上不同日期进行过复习的用户占比。反映用户的长期粘性。",
-  付费转化: "在所有激活用户中，至少有 1 笔已支付订单的用户占比。计算公式：付费用户数 / 激活用户数 × 100%。",
+  今日复习量:
+    "今天所有用户完成的卡片复习总次数，基于 account_cards 表中 repetitions > 0 且 updated_at 在今天范围内的记录。",
+  今日收入:
+    "今天状态为 paid 的订单金额总和（单位：元），基于 pay_orders 表的 amount_total 字段（存储单位为分）。",
+  今日活跃:
+    "今天至少复习过 1 张卡片的独立用户数（DAU），基于 account_cards 表中 updated_at 在今天且 repetitions > 0 的去重 account_id。",
+  次日留存:
+    "在所有激活用户（至少有 1 张卡片）中，在 2 个或以上不同日期进行过复习的用户占比。反映用户是否在注册后第二天还会回来。",
+  "7日留存":
+    "在所有激活用户中，在 7 个或以上不同日期进行过复习的用户占比。反映用户的长期粘性。",
+  付费转化:
+    "在所有激活用户中，至少有 1 笔已支付订单的用户占比。计算公式：付费用户数 / 激活用户数 × 100%。",
 };
-
-function MetricCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  color: string;
-}) {
-  const [showHelp, setShowHelp] = useState(false);
-  const help = METRIC_HELP[label];
-
-  return (
-    <div className={`${color} text-white rounded-2xl p-4 md:p-6 text-center relative`}>
-      {help && (
-        <button
-          onClick={() => setShowHelp(!showHelp)}
-          className="absolute top-2 right-2 opacity-60 hover:opacity-100 transition-opacity"
-          aria-label={`${label}说明`}
-        >
-          {showHelp ? <X size={14} /> : <Info size={14} />}
-        </button>
-      )}
-      {showHelp ? (
-        <p className="text-xs leading-relaxed text-white/90 text-left px-1 py-2">
-          {help}
-        </p>
-      ) : (
-        <>
-          <p className="text-2xl md:text-4xl font-bold">{value}</p>
-          <p className="text-xs md:text-sm mt-1 md:mt-2 opacity-90">{label}</p>
-        </>
-      )}
-    </div>
-  );
-}
 
 function MiniBarChart({
   data,
@@ -70,13 +43,13 @@ function MiniBarChart({
   const max = Math.max(...values, 1);
 
   return (
-    <div className="flex items-end gap-[2px] h-20">
+    <div className="flex h-20 items-end gap-px">
       {data.map((d) => {
         const h = Math.max((d.value / max) * maxHeight, d.value > 0 ? 2 : 0);
         return (
           <div
             key={d.date}
-            className="flex-1 bg-blue-500 dark:bg-blue-400 rounded-t-sm hover:bg-blue-600 transition-colors"
+            className="min-w-0 flex-1 rounded-sm bg-primary/30 transition-colors hover:bg-primary/45"
             style={{ height: `${h}px` }}
             title={`${d.date}: ${d.value}`}
           />
@@ -98,90 +71,77 @@ export default function OperatorDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-8">仪表盘</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-          {[1, 2, 3, 4].map((i) => (
+      <OperatorMain>
+        <OperatorPageHeader title="仪表盘" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div
               key={i}
-              className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+              className="h-24 animate-pulse rounded-lg border border-border bg-muted/50 md:h-28"
             />
           ))}
         </div>
-      </div>
+      </OperatorMain>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4">仪表盘</h1>
-        <p className="text-red-500">{getErrorMessage(error)}</p>
-      </div>
+      <OperatorMain>
+        <OperatorPageHeader title="仪表盘" />
+        <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
+      </OperatorMain>
     );
   }
 
   if (!data) return null;
 
   return (
-    <div className="p-4 md:p-8">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6 md:mb-8">
-        仪表盘
-      </h1>
+    <OperatorMain>
+      <OperatorPageHeader
+        title="仪表盘"
+        description="核心运营数据 · 约每分钟自动刷新"
+      />
 
-      {/* Metric cards - row 1 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
-        <MetricCard
-          label="今日注册"
-          value={data.todayRegistrations}
-          color="bg-blue-500"
-        />
-        <MetricCard
-          label="总用户数"
-          value={data.totalUsers}
-          color="bg-indigo-500"
-        />
-        <MetricCard
-          label="今日复习量"
-          value={data.todayReviews}
-          color="bg-green-500"
-        />
-        <MetricCard
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <OperatorStatBlock label="今日注册" value={data.todayRegistrations} />
+        <OperatorStatBlock label="总用户数" value={data.totalUsers} />
+        <OperatorStatBlock label="今日复习量" value={data.todayReviews} />
+        <OperatorStatBlock
           label="今日收入"
           value={`¥${(data.todayRevenue / 100).toFixed(2)}`}
-          color="bg-amber-500"
         />
-      </div>
-
-      {/* Metric cards - row 2 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
-        <MetricCard
-          label="今日活跃"
-          value={data.todayDAU}
-          color="bg-teal-500"
-        />
-        <MetricCard
+        <OperatorStatBlock label="今日活跃" value={data.todayDAU} />
+        <OperatorStatBlock
           label="次日留存"
           value={`${data.retention.nextDayRetention}%`}
-          color="bg-purple-500"
         />
-        <MetricCard
+        <OperatorStatBlock
           label="7日留存"
           value={`${data.retention.sevenDayRetention}%`}
-          color="bg-pink-500"
         />
-        <MetricCard
+        <OperatorStatBlock
           label="付费转化"
           value={`${data.retention.paidConversion}%`}
-          color="bg-rose-500"
         />
       </div>
 
-      {/* Trend charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        <TrendCard title="注册趋势 (30天)" data={data.trends.registrations} valueKey="count" />
-        <TrendCard title="DAU 趋势 (30天)" data={data.trends.dau} valueKey="count" />
-        <TrendCard title="复习趋势 (30天)" data={data.trends.reviews} valueKey="count" />
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <TrendCard
+          title="注册趋势 (30天)"
+          data={data.trends.registrations}
+          valueKey="count"
+        />
+        <TrendCard
+          title="DAU 趋势 (30天)"
+          data={data.trends.dau}
+          valueKey="count"
+        />
+        <TrendCard
+          title="复习趋势 (30天)"
+          data={data.trends.reviews}
+          valueKey="count"
+        />
         <TrendCard
           title="收入趋势 (30天)"
           data={data.trends.revenue}
@@ -189,7 +149,21 @@ export default function OperatorDashboard() {
           formatValue={(v) => `¥${(v / 100).toFixed(0)}`}
         />
       </div>
-    </div>
+
+      <details className="mt-10 border-t border-border pt-6 text-sm">
+        <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+          指标定义（说明文案）
+        </summary>
+        <dl className="mt-4 space-y-3 text-muted-foreground">
+          {Object.entries(METRIC_HELP).map(([name, text]) => (
+            <div key={name}>
+              <dt className="font-medium text-foreground">{name}</dt>
+              <dd className="mt-0.5 leading-relaxed">{text}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
+    </OperatorMain>
   );
 }
 
@@ -214,22 +188,29 @@ function TrendCard({
 
   const chartData = data.map((d) => ({
     date: d.date,
-    value: valueKey === "amount" && "amount" in d ? d.amount : "count" in d ? d.count : 0,
+    value:
+      valueKey === "amount" && "amount" in d
+        ? d.amount
+        : "count" in d
+          ? d.count
+          : 0,
   }));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+    <OperatorPanel className="p-4 md:p-5">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {title}
         </h3>
-        <span className="text-lg font-bold">{displayTotal}</span>
+        <span className="text-lg font-semibold tabular-nums text-foreground">
+          {displayTotal}
+        </span>
       </div>
       <MiniBarChart data={chartData} />
-      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+      <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>{data[0]?.date.slice(5)}</span>
         <span>{data[data.length - 1]?.date.slice(5)}</span>
       </div>
-    </div>
+    </OperatorPanel>
   );
 }

@@ -54,8 +54,8 @@ export function Paginator({
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-      <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">
+    <div className="flex flex-col items-center justify-between gap-4 border-t border-border bg-muted/25 px-6 py-4 md:flex-row">
+      <div className="text-xs text-muted-foreground md:text-sm">
         显示 {startItem} - {endItem} 条，共 {totalItems} 条记录
       </div>
 
@@ -75,7 +75,7 @@ export function Paginator({
               return (
                 <span
                   key={`ellipsis-${idx}`}
-                  className="px-2 text-gray-400 dark:text-gray-500 text-sm"
+                  className="px-2 text-sm text-muted-foreground"
                 >
                   ...
                 </span>
@@ -91,7 +91,7 @@ export function Paginator({
                 onClick={() => onPageChange(pageNum)}
                 variant={isActive ? "default" : "outline"}
                 size="sm"
-                className="min-w-[2.5rem] md:min-w-[3rem]"
+                className="min-w-10 md:min-w-12"
               >
                 {pageNum}
               </Button>
@@ -111,4 +111,3 @@ export function Paginator({
     </div>
   );
 }
-

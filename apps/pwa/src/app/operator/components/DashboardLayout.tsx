@@ -17,65 +17,55 @@ export function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Top Navigation */}
-      <div className="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center">
           <button
-            className="md:hidden p-4 text-gray-600 dark:text-gray-300"
+            type="button"
+            className="p-3 text-muted-foreground transition-colors hover:text-foreground md:hidden"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label={sidebarOpen ? "关闭菜单" : "打开菜单"}
           >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {sidebarOpen ? <X size={20} strokeWidth={1.75} /> : <Menu size={20} strokeWidth={1.75} />}
           </button>
-          <div className="flex-1">{topNav}</div>
+          <div className="min-w-0 flex-1">{topNav}</div>
         </div>
-      </div>
+      </header>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Mobile overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+      <div className="relative flex min-h-0 flex-1 items-stretch overflow-hidden">
+        {sidebarOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-foreground/10 md:hidden"
+            aria-label="关闭菜单"
             onClick={() => setSidebarOpen(false)}
           />
-        )}
+        ) : null}
 
-        {/* Sidebar */}
         <aside
           className={`
-            fixed md:static inset-y-0 left-0 z-40
-            w-64 md:w-1/5 min-w-[200px]
-            bg-white dark:bg-gray-800
-            border-r border-gray-200 dark:border-gray-700
-            overflow-y-auto
-            transform transition-transform duration-200 ease-in-out
+            fixed inset-y-0 left-0 z-40 flex w-[240px] shrink-0 flex-col border-r border-border bg-background
+            transition-transform duration-200 ease-out md:static md:h-auto md:min-h-0 md:translate-x-0 md:self-stretch
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-            md:translate-x-0
-            top-0 md:top-auto
-            h-full
           `}
         >
-          {/* Mobile sidebar header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 md:hidden">
-            <span className="font-semibold text-gray-900 dark:text-white">菜单</span>
+          <div className="flex items-center justify-between border-b border-border p-3 md:hidden">
+            <span className="text-sm font-medium">菜单</span>
             <button
+              type="button"
               onClick={() => setSidebarOpen(false)}
-              className="text-gray-600 dark:text-gray-300"
+              className="p-1 text-muted-foreground hover:text-foreground"
               aria-label="关闭菜单"
             >
-              <X size={20} />
+              <X size={18} strokeWidth={1.75} />
             </button>
           </div>
-          <div onClick={() => setSidebarOpen(false)}>
+          <div className="flex-1 overflow-y-auto" onClick={() => setSidebarOpen(false)}>
             {sidebar}
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          {children}
-        </main>
+        <main className="min-h-0 flex-1 overflow-y-auto bg-muted/30">{children}</main>
       </div>
     </div>
   );

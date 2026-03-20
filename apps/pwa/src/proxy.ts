@@ -11,7 +11,17 @@ const AUTH_ROUTES = ["/signin"];
 // Routes that redirect to /learn when authenticated
 const MARKETING_ROUTES = ["/"];
 
+/** Under /operator but reachable without app session (operator uses its own OTP flow). */
+const OPERATOR_PUBLIC_PREFIXES = ["/operator/login"];
+
+function isOperatorPublicRoute(pathname: string): boolean {
+  return OPERATOR_PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
 function isProtectedRoute(pathname: string): boolean {
+  if (isOperatorPublicRoute(pathname)) return false;
   return PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );

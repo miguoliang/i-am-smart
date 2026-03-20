@@ -14,7 +14,7 @@ import {
   type PaginationState,
 } from "@tanstack/react-table";
 import { useState, useEffect, useMemo } from "react";
-import { Paginator } from "@/app/operator/import/components/Paginator";
+import { Paginator } from "@/app/operator/components/Paginator";
 import { ColumnSettings } from "@/app/operator/accounts/components/ColumnSettings";
 import type { ColumnConfig } from "@/app/operator/accounts/components/ColumnSettings";
 import { Button } from "@/components/form/Button";
@@ -170,7 +170,7 @@ export const DataTable = <TData,>({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-gray-400">加载中...</div>
+        <p className="text-sm text-muted-foreground">加载中...</p>
       </div>
     );
   }
@@ -178,7 +178,7 @@ export const DataTable = <TData,>({
   if (error) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-red-600 dark:text-red-400">{error}</div>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }
@@ -210,16 +210,19 @@ export const DataTable = <TData,>({
           )}
         </div>
       )}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground">
+      <div className="-mx-4 overflow-x-auto sm:mx-0">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow
+                key={headerGroup.id}
+                className="border-border hover:bg-transparent"
+              >
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    className="bg-muted/30 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
                   >
                     {header.isPlaceholder ? null : (
                       <div

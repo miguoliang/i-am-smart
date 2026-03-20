@@ -15,20 +15,7 @@ export interface KnowledgePaginationParams {
   pageSize?: number;
   search?: string;
   level?: string;
-}
-
-export interface ImportKnowledgeParams {
-  name: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ImportKnowledgeResult {
-  success: boolean;
-  count: number;
-  total: number;
-  skipped: number;
-  message: string;
+  restrictToCodes?: string[];
 }
 
 export class KnowledgeService {
@@ -67,16 +54,24 @@ export class KnowledgeService {
     const pageSize = params.pageSize || 10;
     const search = params.search;
     const level = params.level;
+    const restrictToCodes = params.restrictToCodes;
 
     logger.debug('Fetching paginated knowledge items', {
       page,
       pageSize,
       search,
       level,
+      restrictToCodesCount: restrictToCodes?.length ?? 0,
     });
     
     try {
-      const result = await this.knowledgeRepository.getPaginated({ page, pageSize, search, level });
+      const result = await this.knowledgeRepository.getPaginated({
+        page,
+        pageSize,
+        search,
+        level,
+        restrictToCodes,
+      });
       
       logger.debug('Successfully fetched paginated knowledge items', {
         page,
@@ -97,44 +92,5 @@ export class KnowledgeService {
       });
       throw error;
     }
-  }
-
-  /**
-   * Batch import/upsert knowledge items
-   */
-  async importKnowledge(items: ImportKnowledgeParams[]): Promise<ImportKnowledgeResult> {
-    // Validate and transform
-    const validItems = items
-      .map((item) => {
-        if (!item || typeof item !== 'object' || !item.name) return null;
-        
-        return {
-          name: item.name.trim(),
-          description: item.description?.trim() || "",
-          metadata: item.metadata || {},
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null && item.name.length > 0);
-
-    if (validItems.length === 0) {
-      return {
-        success: false,
-        count: 0,
-        total: 0,
-        skipped: 0,
-        message: "No valid items found",
-      };
-    }
-
-    // Upsert via repository
-    const { count, skipped } = await this.knowledgeRepository.import(validItems);
-
-    return {
-      success: true,
-      count,
-      total: validItems.length,
-      skipped,
-      message: `Successfully imported ${count} items. ${skipped} duplicates skipped.`,
-    };
   }
 }
