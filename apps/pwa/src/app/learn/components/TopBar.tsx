@@ -6,7 +6,10 @@ import { Button } from "@/components/form/Button";
 import { LogOut, Settings, Check, Lock } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
-import { EXAM_TARGETS, type Level } from "@i-am-smart/shared/constants";
+import {
+  EXAM_PICKER_ENTRIES,
+  type ExamTargetId,
+} from "@i-am-smart/shared/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,12 +27,6 @@ import { useExamVocabProgress } from "../hooks/useExamVocabProgress";
 interface TopBarProps {
   onSignOut: () => void;
   isSigningOut: boolean;
-}
-
-function formatExamLevelsLabel(levels: Level[]): string {
-  if (levels.length === 0) return "";
-  if (levels.length === 1) return levels[0];
-  return `${levels[0]}–${levels[levels.length - 1]}`;
 }
 
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
@@ -57,7 +54,9 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
 
   const progressByExamId = useMemo(() => {
     const list = examVocabProgress.data;
-    if (!list) return new Map<string, { brushed: number; total: number }>();
+    if (!list) {
+      return new Map<string, { brushed: number; total: number }>();
+    }
     return new Map(list.map((p) => [p.examId, { brushed: p.brushed, total: p.total }]));
   }, [examVocabProgress.data]);
 
@@ -136,60 +135,87 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               <ProfileSwitcher />
             </div>
 
-            {/* Exam Target Selector */}
-            <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">选择考试目标</h3>
-              {EXAM_TARGETS.map((exam) => {
-                const isSelected = currentExamTarget === exam.id;
+            {/* Exam target: merged labels (e.g. PET/四级) */}
+            <div className="mb-6 space-y-2">
+              <h3 className="mb-3 text-sm font-medium text-muted-foreground">选择考试目标</h3>
+              {EXAM_PICKER_ENTRIES.map((entry) => {
+                const isSelected = entry.examTargetIds.includes(
+                  currentExamTarget as ExamTargetId
+                );
+                const stats = progressByExamId.get(entry.canonicalExamTargetId);
+                const brushedTotal = stats?.brushed ?? 0;
+                const wordsTotal = stats?.total ?? 0;
+                const canonical = entry.canonicalExamTargetId;
+                const showSuccess =
+                  successExamId != null &&
+                  entry.examTargetIds.includes(successExamId as ExamTargetId);
                 return (
                   <button
-                    key={exam.id}
+                    key={entry.scopeKey}
+                    type="button"
                     disabled={updateExamMutation.isPending}
                     onClick={() => {
-                      if (!exam.isFree && !isPro) { setOpen(false); router.push("/pay"); return; }
-                      if (activeProfile && !isSelected) {
-                        setPendingExamId(exam.id);
-                        updateExamMutation.mutate(exam.id);
+                      if (entry.requiresPro && !isPro) {
+                        setOpen(false);
+                        router.push("/pay");
+                        return;
                       }
+                      if (!activeProfile || isSelected) return;
+                      setPendingExamId(canonical);
+                      updateExamMutation.mutate(canonical);
                     }}
                     className={cn(
-                      "w-full flex flex-col items-stretch gap-0 rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
+                      "w-full rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
                       "hover:bg-accent",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
                   >
                     <div className="flex w-full items-center gap-3">
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center">
-                        {pendingExamId === exam.id && (
-                          <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        {pendingExamId === canonical && (
+                          <svg
+                            className="h-4 w-4 animate-spin text-indigo-500"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            />
                           </svg>
                         )}
-                        {pendingExamId !== exam.id && successExamId === exam.id && (
+                        {pendingExamId !== canonical && showSuccess && (
                           <Check className="h-4 w-4 text-emerald-500" />
                         )}
-                        {pendingExamId !== exam.id && successExamId !== exam.id && isSelected && (
+                        {pendingExamId !== canonical && !showSuccess && isSelected && (
                           <Check className="h-4 w-4" />
                         )}
-                        {pendingExamId !== exam.id && successExamId !== exam.id && !isSelected && !exam.isFree && !isPro && (
-                          <Lock className="h-4 w-4 text-amber-500" />
-                        )}
+                        {pendingExamId !== canonical &&
+                          !showSuccess &&
+                          !isSelected &&
+                          entry.requiresPro &&
+                          !isPro && <Lock className="h-4 w-4 text-amber-500" />}
                       </div>
-                      <span className="min-w-0 flex-1 font-medium">{exam.name}</span>
-                      {!exam.isFree && !isPro && (
+                      <span className="min-w-0 flex-1 font-medium">{entry.label}</span>
+                      <ExamVocabProgressBar
+                        brushed={brushedTotal}
+                        total={wordsTotal}
+                        isLoading={examVocabProgress.isLoading}
+                      />
+                      {entry.requiresPro && !isPro && (
                         <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-500">
                           Pro
                         </span>
                       )}
-                    </div>
-                    <div className="pl-8">
-                      <ExamVocabProgressBar
-                        levelsLabel={formatExamLevelsLabel(exam.levels)}
-                        brushed={progressByExamId.get(exam.id)?.brushed ?? 0}
-                        total={progressByExamId.get(exam.id)?.total ?? 0}
-                        isLoading={examVocabProgress.isLoading}
-                      />
                     </div>
                   </button>
                 );
