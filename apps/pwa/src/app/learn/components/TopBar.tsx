@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
-import { LogOut, Settings, Check, Lock, HelpCircle } from "lucide-react";
-import { toast } from "sonner";
+import { LogOut, Settings, Check, Lock } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfile as updateProfileApi } from "@/lib/api/profiles";
-import { EXAM_TARGETS } from "@i-am-smart/shared/constants";
+import { EXAM_TARGETS, type Level } from "@i-am-smart/shared/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -18,12 +17,19 @@ import {
   SheetTrigger,
 } from "@/components/overlay/Sheet";
 import { ProfileSwitcher } from "./ProfileSwitcher";
-import { useStats } from "@/app/stats/hooks/useStats";
+import { ExamVocabProgressBar } from "./ExamVocabProgressBar";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useExamVocabProgress } from "../hooks/useExamVocabProgress";
 
 interface TopBarProps {
   onSignOut: () => void;
   isSigningOut: boolean;
+}
+
+function formatExamLevelsLabel(levels: Level[]): string {
+  if (levels.length === 0) return "";
+  if (levels.length === 1) return levels[0];
+  return `${levels[0]}–${levels[levels.length - 1]}`;
 }
 
 export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
@@ -46,8 +52,14 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
   const currentExamTarget = activeProfile?.exam_target ?? "ket";
-  const stats = useStats();
   const { isPro } = useSubscription();
+  const examVocabProgress = useExamVocabProgress(activeProfile?.id);
+
+  const progressByExamId = useMemo(() => {
+    const list = examVocabProgress.data;
+    if (!list) return new Map<string, { brushed: number; total: number }>();
+    return new Map(list.map((p) => [p.examId, { brushed: p.brushed, total: p.total }]));
+  }, [examVocabProgress.data]);
 
   const updateExamMutation = useMutation({
     mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
@@ -57,7 +69,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
         (old) => old?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) ?? old
       );
       queryClient.invalidateQueries({ queryKey: ["cards"] });
-      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["exam-vocab-progress"] });
       setSuccessExamId(updatedProfile.exam_target ?? null);
       setPendingExamId(null);
       setTimeout(() => setSuccessExamId(null), 1500);
@@ -77,17 +89,44 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <div
-            className="absolute left-4 z-50"
-            style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+            className="fixed left-3 z-60 sm:left-4"
+            style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
           >
-            <Button variant="ghost" size="icon">
-              <Settings className="h-6 w-6" />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={cn(
+                "h-11 min-h-[44px] gap-2 rounded-xl px-3.5 shadow-md",
+                "border-2 border-border/80 bg-card/95 text-foreground backdrop-blur-sm",
+                "hover:bg-card hover:border-foreground/25 hover:shadow-lg",
+                "font-medium text-sm"
+              )}
+              aria-label="打开设置"
+            >
+              <Settings className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
+              <span>设置</span>
             </Button>
           </div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="flex flex-col p-0 gap-0 rounded-t-2xl" style={{ maxHeight: sheetMaxH }}>
-          <SheetHeader className="border-b p-6 text-left">
+        <SheetContent
+          side="bottom"
+          overlayClassName={cn(
+            "bg-stone-900/35 dark:bg-black/45 backdrop-blur-[2px]",
+            "data-[state=open]:duration-500 data-[state=closed]:duration-280"
+          )}
+          className={cn(
+            "flex flex-col p-0 gap-0 rounded-t-[1.35rem] sm:rounded-t-2xl border-x-0 border-b-0",
+            "border-t border-border/60 bg-background/92 backdrop-blur-md supports-backdrop-filter:bg-background/78",
+            "shadow-[0_-12px_40px_-10px_rgba(0,0,0,0.14)] dark:shadow-[0_-12px_48px_-12px_rgba(0,0,0,0.5)]",
+            "data-[state=open]:duration-500 data-[state=closed]:duration-300",
+            "data-[state=open]:ease-[cubic-bezier(0.22,1,0.36,1)] data-[state=closed]:ease-in",
+            "pb-[max(1rem,env(safe-area-inset-bottom))]"
+          )}
+          style={{ maxHeight: sheetMaxH }}
+        >
+          <SheetHeader className="border-b border-border/50 p-6 text-left">
             <SheetTitle>设置</SheetTitle>
           </SheetHeader>
 
@@ -114,50 +153,48 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
                       }
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
+                      "w-full flex flex-col items-stretch gap-0 rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
                       "hover:bg-accent",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
                   >
-                    <div className="w-5 h-5 flex items-center justify-center">
-                      {pendingExamId === exam.id && (
-                        <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                        </svg>
-                      )}
-                      {pendingExamId !== exam.id && successExamId === exam.id && (
-                        <Check className="h-4 w-4 text-emerald-500" />
-                      )}
-                      {pendingExamId !== exam.id && successExamId !== exam.id && isSelected && (
-                        <Check className="h-4 w-4" />
-                      )}
-                      {pendingExamId !== exam.id && successExamId !== exam.id && !isSelected && !exam.isFree && !isPro && (
-                        <Lock className="h-4 w-4 text-amber-500" />
+                    <div className="flex w-full items-center gap-3">
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        {pendingExamId === exam.id && (
+                          <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                        )}
+                        {pendingExamId !== exam.id && successExamId === exam.id && (
+                          <Check className="h-4 w-4 text-emerald-500" />
+                        )}
+                        {pendingExamId !== exam.id && successExamId !== exam.id && isSelected && (
+                          <Check className="h-4 w-4" />
+                        )}
+                        {pendingExamId !== exam.id && successExamId !== exam.id && !isSelected && !exam.isFree && !isPro && (
+                          <Lock className="h-4 w-4 text-amber-500" />
+                        )}
+                      </div>
+                      <span className="min-w-0 flex-1 font-medium">{exam.name}</span>
+                      {!exam.isFree && !isPro && (
+                        <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-500">
+                          Pro
+                        </span>
                       )}
                     </div>
-                    <span className="flex-1">{exam.name}</span>
-                    {!exam.isFree && !isPro && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded">Pro</span>}
+                    <div className="pl-8">
+                      <ExamVocabProgressBar
+                        levelsLabel={formatExamLevelsLabel(exam.levels)}
+                        brushed={progressByExamId.get(exam.id)?.brushed ?? 0}
+                        total={progressByExamId.get(exam.id)?.total ?? 0}
+                        isLoading={examVocabProgress.isLoading}
+                      />
+                    </div>
                   </button>
                 );
               })}
             </div>
-
-            {/* Mastered count */}
-            {stats.total > 0 && (
-              <div className="mb-6 px-4 py-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-1">
-                  <p className="text-sm text-muted-foreground">已掌握 <span className="font-medium text-foreground">{stats.mastered}</span> / {stats.total} 词</p>
-                  <button
-                    type="button"
-                    onClick={() => toast("「已掌握」= 复习 ≥7 次且间隔 ≥30 天的单词", { duration: 4000 })}
-                    className="text-muted-foreground/60 hover:text-muted-foreground"
-                  >
-                    <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Bottom: Sign out */}

@@ -69,3 +69,6 @@ apps/miniprogram/miniprogram_npm
 apps/miniprogram/**/*.js
 !apps/miniprogram/node_modules/**/*.js
 e2e-test-results/
+
+# Supabase CLI local link cache (repo root `supabase link`)
+/supabase/.temp/

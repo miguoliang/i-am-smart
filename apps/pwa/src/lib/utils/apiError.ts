@@ -57,10 +57,13 @@ export function handleApiError(error: unknown) {
   const message = error instanceof Error ? error.message : 'Unknown error occurred';
   
   // Try to map known Supabase errors to proper status codes
-  if (message.includes('permission denied')) {
+  if (
+    message.toLowerCase().includes('permission denied') ||
+    message.toLowerCase().includes('access denied')
+  ) {
     return NextResponse.json<ApiResponse>(
-        { error: { code: ApiErrorCode.FORBIDDEN, message: 'Permission denied' } },
-        { status: 403 }
+      { error: { code: ApiErrorCode.FORBIDDEN, message: 'Permission denied' } },
+      { status: 403 }
     );
   }
 

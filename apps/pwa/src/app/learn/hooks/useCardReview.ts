@@ -76,6 +76,9 @@ export function useCardReview({
           cards: old.cards.filter((c) => c.id !== cardId),
         };
       });
+      if (activeProfile?.id) {
+        queryClient.invalidateQueries({ queryKey: ["exam-vocab-progress", activeProfile.id] });
+      }
     },
     // If mutation fails, rollback to previous state
     onError: (error, variables, context) => {
