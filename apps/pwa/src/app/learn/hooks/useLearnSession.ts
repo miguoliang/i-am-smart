@@ -13,7 +13,7 @@ export function useLearnSession() {
   const { cards, setCards, reviewedCount: apiReviewedCount, loading } = useCards();
   const { currentIndex, setCurrentIndex, currentCard } = useCardNavigation(cards);
   
-  const { answerRevealed, revealAnswer, resetReveal, getResponseTimeMs } = useAnswerReveal();
+  const { answerRevealed, revealAnswer, resetReveal } = useAnswerReveal();
   const { speak } = useSpeech();
 
   // 2. Progress Calculation
@@ -22,24 +22,13 @@ export function useLearnSession() {
   const totalCount = apiReviewedCount + cards.length;
 
   // 3. Review Handler
-  const { handleRate: rawHandleRate } = useCardReview({
+  const { handleRate, isPending: isReviewPending, isSubmittingCurrentCard } = useCardReview({
     cards,
     currentIndex,
     setCurrentIndex,
     setCards,
     resetFlip: resetReveal,
   });
-
-  // Adjust quality based on response time:
-  // If user said "会了" (quality 4) but took >5s, downgrade to 3 (borderline)
-  const handleRate = (quality: number) => {
-    const responseTime = getResponseTimeMs();
-    let adjustedQuality = quality;
-    if (quality >= 4 && responseTime > 5000) {
-      adjustedQuality = 3;
-    }
-    rawHandleRate(adjustedQuality);
-  };
 
   return {
     loading,
@@ -59,6 +48,8 @@ export function useLearnSession() {
     },
     review: {
       handleRate,
+      isPending: isReviewPending,
+      isSubmittingCurrentCard,
     },
     auth: {
       handleSignOut: signOut,

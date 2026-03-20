@@ -116,7 +116,7 @@ describe("Learn flow (integration)", () => {
     expect(screen.queryByText(/A greeting/)).not.toBeInTheDocument();
   });
 
-  it("reveals answer and shows rating buttons", async () => {
+  it("chooses 会了, shows answer and 下一个", async () => {
     render(
       <TestWrapper>
         <Learn />
@@ -127,15 +127,14 @@ describe("Learn flow (integration)", () => {
       expect(screen.getByText("Hello")).toBeInTheDocument();
     });
 
-    const revealButton = screen.getByRole("button", {
-      name: /显示答案/,
-    });
-    await userEvent.click(revealButton);
+    await userEvent.click(screen.getByRole("button", { name: /会了/ }));
 
     await waitFor(() => {
-      const perfectButton = screen.getByRole("button", { name: /会了/ });
-      expect(perfectButton).toBeInTheDocument();
+      expect(screen.getByText(/A greeting/)).toBeInTheDocument();
     });
+
+    expect(screen.getByRole("button", { name: /记错了/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /下一个/ })).toBeInTheDocument();
   });
 
   it("calls review API when user rates a card", async () => {
@@ -149,22 +148,44 @@ describe("Learn flow (integration)", () => {
       expect(screen.getByText("Hello")).toBeInTheDocument();
     });
 
-    const revealButton = screen.getByRole("button", {
-      name: /显示答案/,
-    });
-    await userEvent.click(revealButton);
+    await userEvent.click(screen.getByRole("button", { name: /会了/ }));
 
-    const perfectButton = await screen.findByRole("button", { name: /会了/ });
+    const nextButton = await screen.findByRole("button", { name: /下一个/ });
 
-    // React 19 may throw AggregateError from concurrent state updates during review
     try {
-      await userEvent.click(perfectButton);
+      await userEvent.click(nextButton);
     } catch {
       // Ignore AggregateError from act() — the review still fires
     }
 
     await waitFor(() => {
       expect(mockReviewCard).toHaveBeenCalledWith(1, 4, "profile-1");
+    });
+  });
+
+  it("calls review API with quality 1 when 记错了 after 会了", async () => {
+    render(
+      <TestWrapper>
+        <Learn />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Hello")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /会了/ }));
+
+    const misrememberButton = await screen.findByRole("button", { name: /记错了/ });
+
+    try {
+      await userEvent.click(misrememberButton);
+    } catch {
+      // Ignore AggregateError from act() — the review still fires
+    }
+
+    await waitFor(() => {
+      expect(mockReviewCard).toHaveBeenCalledWith(1, 1, "profile-1");
     });
   });
 });

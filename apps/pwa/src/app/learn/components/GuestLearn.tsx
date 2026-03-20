@@ -2,30 +2,24 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useCallback, useState } from "react";
 import { WordCard } from "./WordCard";
 import { RatingButtons } from "./RatingButtons";
+import { NextCardButton } from "./NextCardButton";
+import { MisrememberButton } from "./MisrememberButton";
 import { GuestEmptyState } from "./GuestEmptyState";
 import { SignupPrompt } from "./SignupPrompt";
 import { LearnPageBackground } from "./LearnPageBackground";
 import { useGuestLearnSession } from "../hooks/useGuestLearnSession";
+import { usePointerFine } from "../hooks/usePointerFine";
+import { useLearnKeyboardShortcuts } from "../hooks/useLearnKeyboardShortcuts";
+import { toast } from "sonner";
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 md:mt-12 w-full max-w-md flex gap-4 md:gap-6">
+    <div className="mt-6 md:mt-12 w-full min-w-0 flex gap-4 md:gap-6">
       {children}
     </div>
-  );
-}
-
-function RevealButton({ onReveal }: { onReveal: () => void }) {
-  return (
-    <button
-      onClick={onReveal}
-      className="flex-1 py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl"
-      aria-label="显示答案"
-    >
-      显示答案
-    </button>
   );
 }
 
@@ -46,6 +40,94 @@ function getAccentPreference(): "en-US" | "en-GB" {
   return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
 }
 
+interface GuestLearnActiveProps {
+  isPointerFine: boolean;
+  currentCard: NonNullable<ReturnType<typeof useGuestLearnSession>["currentCard"]>;
+  answer: ReturnType<typeof useGuestLearnSession>["answer"];
+  speech: ReturnType<typeof useGuestLearnSession>["speech"];
+  review: ReturnType<typeof useGuestLearnSession>["review"];
+}
+
+function GuestLearnActive({
+  isPointerFine,
+  currentCard,
+  answer,
+  speech,
+  review,
+}: GuestLearnActiveProps) {
+  const [pendingQuality, setPendingQuality] = useState<number | null>(null);
+
+  const speakCurrent = () =>
+    speech.speak(currentCard.knowledge.name, getAccentPreference());
+
+  const chooseQuality = useCallback(
+    (q: 1 | 4) => {
+      answer.reveal();
+      setPendingQuality(q);
+    },
+    [answer]
+  );
+
+  const submitNext = useCallback(() => {
+    if (pendingQuality === null) return;
+    review.handleRate(pendingQuality);
+  }, [pendingQuality, review]);
+
+  const submitMisremembered = useCallback(() => {
+    review.handleRate(1);
+  }, [review]);
+
+  const waitingForNext = pendingQuality !== null;
+
+  const hintLoginForReport = useCallback(() => {
+    toast.message("请登录后使用快捷键 W 向运营反馈词条问题");
+  }, []);
+
+  useLearnKeyboardShortcuts({
+    enabled: isPointerFine,
+    waitingForNext,
+    chooseForgot: () => chooseQuality(1),
+    chooseKnown: () => chooseQuality(4),
+    submitNext,
+    submitMisremembered,
+    speak: speakCurrent,
+    onReportKnowledgeError: hintLoginForReport,
+  });
+
+  return (
+    <>
+      <div className="w-full max-w-2xl mx-auto min-w-0 flex flex-col items-stretch">
+        <WordCard
+          key={currentCard.id}
+          knowledge={currentCard.knowledge}
+          answerRevealed={answer.isRevealed}
+        />
+        {isPointerFine && !waitingForNext ? (
+          <span className="sr-only">按 A 不会，D 会了；出示答案后 A 记错了，D、Enter 或 N 下一个</span>
+        ) : null}
+        {isPointerFine && waitingForNext ? (
+          <span className="sr-only">按 A 记错了，或按 D、Enter、N 下一个</span>
+        ) : null}
+        {isPointerFine ? (
+          <span className="sr-only">按 W 可标记本词内容有误（试学请登录后使用）</span>
+        ) : null}
+        {waitingForNext ? (
+          <ActionRow>
+            <SpeakButton onSpeak={speakCurrent} />
+            <MisrememberButton onClick={submitMisremembered} />
+            <NextCardButton onClick={submitNext} />
+          </ActionRow>
+        ) : (
+          <ActionRow>
+            <SpeakButton onSpeak={speakCurrent} />
+            <RatingButtons onChoose={chooseQuality} />
+          </ActionRow>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function GuestLearn() {
   const {
     cards,
@@ -57,6 +139,7 @@ export function GuestLearn() {
     showSignupPrompt,
     dismissSignupPrompt,
   } = useGuestLearnSession();
+  const isPointerFine = usePointerFine();
 
   // All guest words completed
   if (cards.length === 0 || !currentCard) {
@@ -94,22 +177,14 @@ export function GuestLearn() {
         </Link>
       </div>
 
-      <WordCard
+      <GuestLearnActive
         key={currentCard.id}
-        knowledge={currentCard.knowledge}
-        answerRevealed={answer.isRevealed}
+        isPointerFine={isPointerFine}
+        currentCard={currentCard}
+        answer={answer}
+        speech={speech}
+        review={review}
       />
-      {answer.isRevealed ? (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RatingButtons onRate={review.handleRate} />
-        </ActionRow>
-      ) : (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RevealButton onReveal={answer.reveal} />
-        </ActionRow>
-      )}
 
       {/* Signup prompt after 10 words */}
       {showSignupPrompt && (

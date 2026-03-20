@@ -12,8 +12,15 @@ import { getLevelLabelAndPalette } from "./lib/learnBackground";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GuestLearn } from "./components/GuestLearn";
+import { NextCardButton } from "./components/NextCardButton";
+import { MisrememberButton } from "./components/MisrememberButton";
+import { usePointerFine } from "./hooks/usePointerFine";
+import { useLearnKeyboardShortcuts } from "./hooks/useLearnKeyboardShortcuts";
+import { submitKnowledgeErrorReport } from "@/lib/api/knowledgeErrorReports";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { toast } from "sonner";
 
 export default function Learn() {
   return (
@@ -43,6 +50,117 @@ function LearnInner() {
   return <AuthenticatedLearn />;
 }
 
+interface AuthenticatedLearnActiveProps {
+  isPointerFine: boolean;
+  currentCard: NonNullable<ReturnType<typeof useLearnSession>["currentCard"]>;
+  answer: ReturnType<typeof useLearnSession>["answer"];
+  speech: ReturnType<typeof useLearnSession>["speech"];
+  review: ReturnType<typeof useLearnSession>["review"];
+  auth: ReturnType<typeof useLearnSession>["auth"];
+}
+
+function AuthenticatedLearnActive({
+  isPointerFine,
+  currentCard,
+  answer,
+  speech,
+  review,
+  auth,
+}: AuthenticatedLearnActiveProps) {
+  const [pendingQuality, setPendingQuality] = useState<number | null>(null);
+  const reportingRef = useRef(false);
+
+  const speakCurrent = () =>
+    speech.speak(currentCard.knowledge.name, getAccentPreference());
+
+  const chooseQuality = useCallback(
+    (q: 1 | 4) => {
+      answer.reveal();
+      setPendingQuality(q);
+    },
+    [answer]
+  );
+
+  const submitNext = useCallback(() => {
+    if (pendingQuality === null) return;
+    review.handleRate(pendingQuality);
+  }, [pendingQuality, review]);
+
+  const submitMisremembered = useCallback(() => {
+    review.handleRate(1);
+  }, [review]);
+
+  const waitingForNext = pendingQuality !== null;
+
+  const reportKnowledgeError = useCallback(async () => {
+    if (reportingRef.current) return;
+    reportingRef.current = true;
+    try {
+      const result = await submitKnowledgeErrorReport(currentCard.knowledge.code);
+      toast.success(result.message ?? "已提交");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      reportingRef.current = false;
+    }
+  }, [currentCard.knowledge.code]);
+
+  useLearnKeyboardShortcuts({
+    enabled: isPointerFine,
+    waitingForNext,
+    isReviewPending: review.isSubmittingCurrentCard,
+    chooseForgot: () => chooseQuality(1),
+    chooseKnown: () => chooseQuality(4),
+    submitNext,
+    submitMisremembered,
+    speak: speakCurrent,
+    onReportKnowledgeError: reportKnowledgeError,
+  });
+
+  return (
+    <>
+      <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
+      <p
+        className="fixed right-3 z-60 text-xs text-muted-foreground/50 sm:right-4 pointer-events-none select-none tabular-nums"
+        style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
+      >
+        v{process.env.NEXT_PUBLIC_APP_VERSION}
+      </p>
+      <div className="w-full max-w-2xl mx-auto min-w-0 flex flex-col items-stretch">
+        <WordCard
+          key={currentCard.id}
+          knowledge={currentCard.knowledge}
+          answerRevealed={answer.isRevealed}
+        />
+        {isPointerFine && !waitingForNext ? (
+          <span className="sr-only">按 A 不会，D 会了；出示答案后 A 记错了，D、Enter 或 N 下一个</span>
+        ) : null}
+        {isPointerFine && waitingForNext ? (
+          <span className="sr-only">按 A 记错了，或按 D、Enter、N 下一个</span>
+        ) : null}
+        {isPointerFine ? (
+          <span className="sr-only">按 W 可标记本词内容有误（隐藏功能）</span>
+        ) : null}
+        {waitingForNext ? (
+          <ActionRow>
+            <SpeakButton onSpeak={speakCurrent} />
+            <MisrememberButton
+              onClick={submitMisremembered}
+              disabled={review.isSubmittingCurrentCard}
+            />
+            <NextCardButton onClick={submitNext} disabled={review.isSubmittingCurrentCard} />
+          </ActionRow>
+        ) : (
+          <ActionRow>
+            <SpeakButton onSpeak={speakCurrent} />
+            <RatingButtons onChoose={chooseQuality} />
+          </ActionRow>
+        )}
+      </div>
+    </>
+  );
+}
+
 function AuthenticatedLearn() {
   const { activeProfile } = useProfile();
   const {
@@ -55,6 +173,7 @@ function AuthenticatedLearn() {
     review,
     auth,
   } = useLearnSession();
+  const isPointerFine = usePointerFine();
   const { levelLabel, paletteKey } = getLevelLabelAndPalette(
     activeProfile?.exam_target,
     activeProfile?.level
@@ -67,42 +186,16 @@ function AuthenticatedLearn() {
 
   return (
     <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
-      <TopBar onSignOut={auth.handleSignOut} isSigningOut={auth.isSigningOut} />
-      <WordCard
+      <AuthenticatedLearnActive
         key={currentCard.id}
-        knowledge={currentCard.knowledge}
-        answerRevealed={answer.isRevealed}
+        isPointerFine={isPointerFine}
+        currentCard={currentCard}
+        answer={answer}
+        speech={speech}
+        review={review}
+        auth={auth}
       />
-      {answer.isRevealed ? (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RatingButtons onRate={review.handleRate} />
-        </ActionRow>
-      ) : (
-        <ActionRow>
-          <SpeakButton onSpeak={() => speech.speak(currentCard.knowledge.name, getAccentPreference())} />
-          <RevealButton onReveal={answer.reveal} />
-        </ActionRow>
-      )}
-      <p
-        className="absolute text-xs text-muted-foreground/50"
-        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))", right: "1rem" }}
-      >
-        v{process.env.NEXT_PUBLIC_APP_VERSION}
-      </p>
     </LearnPageBackground>
-  );
-}
-
-function RevealButton({ onReveal }: { onReveal: () => void }) {
-  return (
-    <button
-      onClick={onReveal}
-      className="flex-1 py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl"
-      aria-label="显示答案"
-    >
-      显示答案
-    </button>
   );
 }
 
@@ -120,7 +213,7 @@ function SpeakButton({ onSpeak }: { onSpeak: () => void }) {
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 md:mt-12 w-full max-w-2xl flex gap-4 md:gap-6">
+    <div className="mt-6 md:mt-12 w-full min-w-0 flex gap-4 md:gap-6">
       {children}
     </div>
   );

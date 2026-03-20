@@ -1,19 +1,24 @@
 interface RatingButtonsProps {
-  onRate: (quality: number) => void;
+  /** 不会 = 1，会了 = 4 — 仅记录选择并显示答案，不提交复习 */
+  onChoose: (quality: 1 | 4) => void;
 }
 
-export function RatingButtons({ onRate }: RatingButtonsProps) {
+export function RatingButtons({ onChoose }: RatingButtonsProps) {
   return (
     <>
       <button
-        onClick={() => onRate(1)}
+        type="button"
+        onClick={() => onChoose(1)}
         className="flex-1 py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-rose-500 hover:bg-rose-600 text-white shadow-xl"
+        aria-label="不会"
       >
-        再看看 ✗
+        不会 ✗
       </button>
       <button
-        onClick={() => onRate(4)}
+        type="button"
+        onClick={() => onChoose(4)}
         className="flex-1 py-5 md:py-8 text-xl md:text-3xl font-bold rounded-2xl transition transform active:scale-95 hover:scale-105 bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl"
+        aria-label="会了"
       >
         会了 ✓
       </button>

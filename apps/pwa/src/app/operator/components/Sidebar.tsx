@@ -14,6 +14,7 @@ const sidebarItems: SidebarItem[] = [
   { href: "/operator/saas", label: "SaaS 指标", icon: "📈" },
   { href: "/operator/orders", label: "订单管理", icon: "💰" },
   { href: "/operator/knowledges", label: "单词列表", icon: "📚" },
+  { href: "/operator/knowledge-error-reports", label: "词条纠错", icon: "✏️" },
   { href: "/operator/import", label: "导入词库", icon: "📥" },
   { href: "/operator/accounts", label: "账户管理", icon: "👥" },
   { href: "/operator/push", label: "推送通知", icon: "🔔" },

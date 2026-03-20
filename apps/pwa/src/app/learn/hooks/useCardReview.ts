@@ -25,7 +25,7 @@ export function useCardReview({
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
-  const { mutate: reviewCard, isPending } = useMutation({
+  const { mutate: reviewCard, isPending, variables: pendingVariables } = useMutation({
     mutationFn: ({ cardId, quality }: { cardId: number; quality: number }) =>
       reviewCardAPI(cardId, quality, activeProfile?.id),
     // Optimistic update: mark card as reviewed today
@@ -96,5 +96,10 @@ export function useCardReview({
     }
   };
 
-  return { handleRate, isPending };
+  const currentCard = cards[currentIndex];
+  /** Only block UI when the in-flight review is for the card currently shown (avoids disabling the next card while the previous request finishes). */
+  const isSubmittingCurrentCard =
+    isPending && pendingVariables?.cardId === currentCard?.id;
+
+  return { handleRate, isPending, isSubmittingCurrentCard };
 }
