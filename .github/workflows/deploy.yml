@@ -1,8 +1,9 @@
 # Build, test, and deploy to server via SSH.
+# 发布策略：生产只打 tag；main 只发预发（同一台机用不同 PM2 进程与端口）。
 # - Pull request → build + test only (no deploy).
-# - Push to main → build + deploy to preview.
-# - Push tag (v*) → build + deploy to production.
-# - workflow_dispatch → build + deploy to preview.
+# - Push to main → preview build (NEXT_PUBLIC_APP_ENV=preview) → PM2 be-it-forever-preview :3001
+# - Push tag v* → production build (NEXT_PUBLIC_APP_ENV=production) → PM2 be-it-forever :3000
+# - workflow_dispatch → same as main (preview)
 name: Deploy to Server
 
 on:
