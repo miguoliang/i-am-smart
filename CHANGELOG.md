@@ -4,6 +4,29 @@
 
 ---
 
+## [1.5.0] - 2026-03-14
+
+### 营销与支付
+
+- **营销单页**：定价区块并入首页（`#pricing`），`/pricing` 重定向至 `/#pricing`，不再维护独立定价页
+- **支付页**：与定价区块视觉与布局统一（Card、标题层级、信任文案）
+
+### 学习页
+
+- **背景**：按当前词库/考试显示纹理文字（KET、PET、四级等），sin/cos 公式生成旋转与缩放；不同级别独立配色
+- **下载**：PWA「下载」入口移至营销导航右上角，学习页 TopBar 不再展示
+
+### 开发体验
+
+- **环境变量**：`next.config` 从 monorepo 根目录加载 `.env.local`（配合 `dotenv`），本地调试与根目录 `.env.local` 一致；新增 `docs/env-local.md`
+
+### 文档
+
+- 新增 `docs/product-design-philosophy.md`（产品底层原则与红线）
+- 清理旧文档（PRD、product-improvement-notes、monorepo 迁移 PDF 等）
+
+---
+
 ## [1.4.0] - 2026-02-27
 
 ### 新功能 (Features)
