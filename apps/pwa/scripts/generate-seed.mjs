@@ -65,7 +65,7 @@ function readJsonFile(filePath) {
  */
 function generateKnowledgeSql() {
   const dataDir = join(rootDir, 'data');
-  const levels = ['A1', 'A2', 'B1', 'B2'];
+  const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
   const sections = [];
   
   for (const level of levels) {
@@ -148,7 +148,15 @@ ON CONFLICT (code) DO NOTHING;`;
   
   // 2. Knowledge files by level (split into chunks of max 250 records)
   const MAX_RECORDS_PER_FILE = 250;
-  const levelOrder = { 'A1': '02', 'A2': '03', 'B1': '04', 'B2': '05' };
+  // B2, C1, C2 share prefix 05 so lexicographic order stays: … b2 → c1 → c2 → 06-users
+  const levelOrder = {
+    A1: '02',
+    A2: '03',
+    B1: '04',
+    B2: '05',
+    C1: '05',
+    C2: '05',
+  };
   
   for (const section of knowledgeSections) {
     const levelNum = levelOrder[section.level];
