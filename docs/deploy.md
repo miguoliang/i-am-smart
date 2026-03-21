@@ -1,16 +1,23 @@
 # 通过 GitHub Actions 部署到服务器
 
-Workflow 根据**触发方式**绑定 GitHub **Environment**（`production` 或 `preview`），可在各 Environment 下配置不同的 `DEPLOY_PATH` / Secrets。构建时写入的 `NEXT_PUBLIC_APP_ENV` 与 PM2 见下表。
+**同一套构建产物**部署到服务器；**预发 / 正式由访问域名在运行时决定**（见 `apps/pwa/src/lib/runtimeDeployment.ts`），不再依赖构建期 `NEXT_PUBLIC_APP_ENV`。
 
 ## 发布策略（约定）
 
-| 触发方式 | 构建环境 | 导航「Preview」角标 | PM2 进程名 | 默认端口 |
-|----------|----------|---------------------|------------|----------|
-| 推送 **`v*` tag**（如 `v1.8.0`） | `NEXT_PUBLIC_APP_ENV=production` | 不显示 | `be-it-forever` | `3000` |
-| 推送 **`main`** 或 **Run workflow** | `NEXT_PUBLIC_APP_ENV=preview` | 显示 | `be-it-forever-preview` | `3001` |
-| **Pull Request** | 仅 CI（构建/测，不部署） | — | — | — |
+| 请求的 Host | 行为 |
+|-------------|------|
+| **`preview.iamsmart.top`** | 预发：导航显示 Preview 角标；登录页不展示桌面端微信扫码等（与原先 preview 一致） |
+| **`www.iamsmart.top`** | 正式：无 Preview 角标；`/api/auth/send-otp` 等对「仅正式」的限制按生产处理 |
+| 其他（如 `localhost`） | 开发/其它环境：不按上述两域名套用 |
 
-**结论：正式环境只通过打 tag 发布；合并到 `main` 只会更新预发。** 若正式域名仍出现 Preview 角标，说明线上跑的是预发构建，应改用 tag 流水线重新部署生产。
+| 触发方式 | 部署 |
+|----------|------|
+| 仅推送符合 **`v*`** 的 **tag**（如 `v1.10.0`） | 构建、测试、打包并 SSH 部署；解压后重启 PM2 **`be-it-forever`**（默认 **`PORT=3000`**） |
+| 推送 **`main`**、**Pull Request**、其它事件 | **不运行**本 Deploy workflow |
+
+**反向代理 / 网关（如 Candy、Nginx、Caddy 等）**：`preview.iamsmart.top` 与 `www.iamsmart.top` 应反代到**同一 Node 端口**，并保留 **`Host`**（或正确设置 **`X-Forwarded-Host`**），以便应用识别域名。
+
+**说明**：Secrets/Variables 使用仓库级或你自行为本 job 配置的 GitHub Environment 均可。**应用层预发/正式由域名决定**，不再使用构建期 `NEXT_PUBLIC_APP_ENV`。
 
 ## 1. 在 GitHub 仓库配置 Secrets / Variables
 
@@ -64,7 +71,7 @@ Workflow 在 **Build** 步使用，并在 **Package** 步写入部署包内的 `
 - **Node.js**：建议 20.x，与 CI 一致。
 - **SSH**：用上面配置的 `DEPLOY_USER` + `DEPLOY_SSH_PASSWORD` 能通过密码登录。
 - **部署目录**：`DEPLOY_PATH` 对应的目录需存在或可由对应用户创建（workflow 会 `mkdir -p`）。
-- **pm2**：若已安装 [pm2](https://pm2.keymetrics.io/)，workflow 解压后会按上表重启 **`be-it-forever`**（生产）或 **`be-it-forever-preview`**（预发）；进程不存在时会 `pm2 start server.js --name <上表名称>`。未安装 pm2 时需自行用 systemd 等方式启动/重启。
+- **pm2**：若已安装 [pm2](https://pm2.keymetrics.io/)，workflow 解压后会重启 **`be-it-forever`**（默认端口 `3000`）；进程不存在时会 `PORT=3000 pm2 start server.js --name be-it-forever`。未安装 pm2 时需自行用 systemd 等方式启动/重启。
 - **运行时环境变量**：部署包内已包含 `.env`（由 workflow 从 Secrets/Variables 生成）。若需在服务器上覆盖，可在 `DEPLOY_PATH` 下放 `.env.local` 或在 pm2/systemd 中设置 `env`。
 - **gh**（可选）：若服务器已安装 [GitHub CLI](https://cli.github.com/)（`gh`），可用于在服务器上拉取 artifact、查看 run 等；当前部署流程为 Actions 主动 SCP 推送，不依赖 `gh`。
 
@@ -81,13 +88,12 @@ PORT=3000 node server.js
 
 ## 3. 触发部署
 
-- **预发**：推送到 **`main`**，或 **Actions** → **Deploy to Server** → **Run workflow**（与 main 相同，均为 preview 构建）。
-- **生产**：在要打上线的 commit 上 **`git tag vX.Y.Z && git push origin vX.Y.Z`**（须符合 `v*` 格式）。
-- **PR**：仅跑检查，不向服务器部署。
+- **上线**：在要打版本的 commit 上执行 **`git tag vX.Y.Z && git push origin vX.Y.Z`**（须符合 **`v*`**），仅此会触发 **Deploy to Server**。
+- **日常合并到 `main`**：不会触发本 workflow；需要合并前跑 lint/测试时，请本地执行或另建 **CI workflow**（本仓库当前未包含）。
 
 ## 4. 流程说明
 
-1. Workflow 从 Secrets/Variables 读取应用环境变量，在 **Build** 步执行 `npm run build`（standalone 输出）。
+1. Workflow 从 Secrets/Variables（及 Environment `production` 若已配置）读取应用环境变量，在 **Build** 步执行 `pnpm build`（standalone 输出）。
 2. **Package** 步：将 `public/`、`.next/static` 拷入 standalone 输出，从 Secrets/Variables 生成 `.env` 打入包内，打成 `deploy/<repo>.tar.gz`（`<repo>` 为仓库名）。
 3. 通过 SCP 将上述 tarball 传到服务器 `/tmp`。
-4. SSH 到服务器，在 `DEPLOY_PATH` 解压（`--strip-components=1`），删除临时包；若检测到 pm2 则按本次构建类型重启 **`be-it-forever`** 或 **`be-it-forever-preview`**。
+4. SSH 到服务器，在 `DEPLOY_PATH` 解压（`--strip-components=1`），删除临时包；若检测到 pm2 则重启 **`be-it-forever`**。

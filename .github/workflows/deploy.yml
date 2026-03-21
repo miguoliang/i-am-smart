@@ -1,24 +1,17 @@
 # Build, test, and deploy to server via SSH.
-# 发布策略：生产只打 tag；main 只发预发（同一台机用不同 PM2 进程与端口）。
-# - Pull request → build + test only (no deploy).
-# - Push to main → preview build (NEXT_PUBLIC_APP_ENV=preview) → PM2 be-it-forever-preview :3001
-# - Push tag v* → production build (NEXT_PUBLIC_APP_ENV=production) → PM2 be-it-forever :3000
-# - workflow_dispatch → same as main (preview)
+# 仅在推送 v* tag 时运行；合并 main、PR、手动 Run workflow 均不触发本 workflow。
+# 同一套构建产物；运行时由 Host 区分预发/正式（preview.iamsmart.top → 预发，www.iamsmart.top → 正式）。
+# PM2 be-it-forever（默认 PORT=3000，由反向代理按域名转发，如 Candy）。
 name: Deploy to Server
 
 on:
   push:
-    branches: [main]
     tags: ["v*"]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'preview' || (startsWith(github.ref, 'refs/tags/') && 'production' || 'preview') }}
     env:
       PACKAGE_NAME: ${{ github.event.repository.name }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -30,7 +23,6 @@ jobs:
       NEXT_PUBLIC_BAIDU_ANALYTICS_ID: ${{ secrets.NEXT_PUBLIC_BAIDU_ANALYTICS_ID || vars.NEXT_PUBLIC_BAIDU_ANALYTICS_ID }}
       NEXT_PUBLIC_BAIDU_SITE_VERIFICATION: ${{ secrets.NEXT_PUBLIC_BAIDU_SITE_VERIFICATION || vars.NEXT_PUBLIC_BAIDU_SITE_VERIFICATION }}
       NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || vars.NEXT_PUBLIC_SITE_URL }}
-      NEXT_PUBLIC_APP_ENV: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'preview' }}
       WECHAT_OPEN_APP_ID: ${{ secrets.WECHAT_OPEN_APP_ID || vars.WECHAT_OPEN_APP_ID }}
       WECHAT_OPEN_APP_SECRET: ${{ secrets.WECHAT_OPEN_APP_SECRET }}
       NEXT_PUBLIC_WECHAT_OPEN_APP_ID: ${{ secrets.NEXT_PUBLIC_WECHAT_OPEN_APP_ID || vars.NEXT_PUBLIC_WECHAT_OPEN_APP_ID }}
@@ -72,8 +64,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build miniprogram config
-        env:
-          ALLOW_MISSING_CONFIG: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
         run: pnpm --filter @i-am-smart/pwa run build:miniprogram-config
 
       - name: Lint
@@ -89,7 +79,6 @@ jobs:
         run: pnpm --filter @i-am-smart/pwa run test
 
       - name: Cache .next
-        if: github.event_name != 'pull_request'
         uses: actions/cache@v4
         with:
           path: apps/pwa/.next/cache
@@ -97,11 +86,9 @@ jobs:
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Build
-        if: github.event_name != 'pull_request'
         run: pnpm --filter @i-am-smart/pwa run build
 
       - name: Package
-        if: github.event_name != 'pull_request'
         run: |
           pkg=deploy/${{ env.PACKAGE_NAME }}
           mkdir -p "$pkg"
@@ -109,12 +96,10 @@ jobs:
           cp -r apps/pwa/public "$pkg/apps/pwa/public"
           mkdir -p "$pkg/apps/pwa/.next"
           cp -r apps/pwa/.next/static "$pkg/apps/pwa/.next/static"
-          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE AUTH_HOOK_SECRET TEST_PHONE_WHITELIST TEST_OTP_CODE; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY WECHAT_MINIPROGRAM_APP_ID WECHAT_MINIPROGRAM_APP_SECRET ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE AUTH_HOOK_SECRET TEST_PHONE_WHITELIST TEST_OTP_CODE; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
           tar -czf ${{ env.PACKAGE_NAME }}.tar.gz -C deploy ${{ env.PACKAGE_NAME }}
 
-      # Deploy directly via SCP + SSH (no artifact needed)
       - name: Deploy to server
-        if: github.event_name != 'pull_request'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -124,7 +109,6 @@ jobs:
           target: /tmp
 
       - name: Extract and restart
-        if: github.event_name != 'pull_request'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -140,22 +124,8 @@ jobs:
             rm -f "$TARBALL"
             if command -v pm2 &>/dev/null; then
               cd "$DEPLOY_PATH/apps/pwa"
-              PM2_NAME="${{ startsWith(github.ref, 'refs/tags/') && 'be-it-forever' || 'be-it-forever-preview' }}"
-              APP_PORT="${{ startsWith(github.ref, 'refs/tags/') && '3000' || '3001' }}"
+              PM2_NAME="be-it-forever"
+              APP_PORT="3000"
               pm2 restart "$PM2_NAME" 2>/dev/null || PORT="$APP_PORT" pm2 start server.js --name "$PM2_NAME" || true
             fi
             echo "Deploy done."
-
-  auto-merge:
-    name: Auto Merge PR
-    if: github.event_name == 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Squash merge
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --squash --delete-branch

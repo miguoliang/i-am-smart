@@ -4,6 +4,20 @@
 
 ---
 
+## [1.11.0] - 2026-03-25
+
+### 部署与应用
+
+- **预发 / 正式按域名运行时区分**：`preview.iamsmart.top` 为预发行为，`www.iamsmart.top` 为正式；同一构建与 PM2 进程（`be-it-forever`）；导航 Preview 角标与登录页逻辑按 Host 判定；`/api/auth/send-otp` 仅正式域名限制
+- **Deploy workflow 仅 tag 触发**：仅推送 **`v*`** tag 时执行构建与部署；`main` 推送、PR、手动 Run workflow 均不再触发；已移除原 PR 自动 squash 合并 job
+- **文档**：`docs/deploy.md` 与 workflow 注释同步（含反向代理如 Candy 的 Host / `X-Forwarded-Host` 说明）
+
+### 发布
+
+- 版本号 **v1.11.0**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa` 包版本一致）
+
+---
+
 ## [1.10.1] - 2026-03-24
 
 ### 学习

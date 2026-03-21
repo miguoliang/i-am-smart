@@ -4,7 +4,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider } from 'next-themes';
-import SignIn from './page';
+import { SignInPageClient } from './SignInPageClient';
 import { usePhoneSignIn } from '../hooks/usePhoneSignIn';
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useDebounce } from '../hooks/useDebounce';
@@ -121,7 +121,7 @@ describe('SignIn', () => {
     it('should have no accessibility violations', async () => {
       const { container } = render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -132,7 +132,7 @@ describe('SignIn', () => {
     it('should have accessible form controls with phone input by default', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -148,7 +148,7 @@ describe('SignIn', () => {
     it('should have proper ARIA attributes for phone input', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -174,7 +174,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -193,7 +193,7 @@ describe('SignIn', () => {
     it('should render phone input field by default', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -204,7 +204,7 @@ describe('SignIn', () => {
     it('should call setPhone when phone input changes', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -232,7 +232,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -256,7 +256,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -283,7 +283,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -312,7 +312,7 @@ describe('SignIn', () => {
     it('should render OTP input when OTP is sent', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -323,7 +323,7 @@ describe('SignIn', () => {
     it('should sanitize OTP input to only allow digits', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -336,7 +336,7 @@ describe('SignIn', () => {
     it('should limit OTP input to 6 digits', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -349,7 +349,7 @@ describe('SignIn', () => {
     it('should handle OTP paste and sanitize', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -372,7 +372,7 @@ describe('SignIn', () => {
     it('should call handleVerifyOtp when Enter key is pressed on OTP input', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -387,7 +387,7 @@ describe('SignIn', () => {
     it('should render send OTP button when OTP is not sent', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -398,7 +398,7 @@ describe('SignIn', () => {
     it('should disable send button when phone is empty', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -422,7 +422,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -446,7 +446,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -473,7 +473,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -497,7 +497,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -521,7 +521,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -545,7 +545,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -578,7 +578,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -603,7 +603,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -637,7 +637,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -665,7 +665,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -690,7 +690,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -715,7 +715,7 @@ describe('SignIn', () => {
 
       const { rerender } = render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -727,7 +727,7 @@ describe('SignIn', () => {
 
       rerender(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -754,7 +754,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -778,7 +778,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -791,7 +791,7 @@ describe('SignIn', () => {
     it('should render page title', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -815,7 +815,7 @@ describe('SignIn', () => {
     it('should render Apple login button when NEXT_PUBLIC_APPLE_CLIENT_ID is set', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -827,7 +827,7 @@ describe('SignIn', () => {
     it('should disable Apple button when terms not agreed', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -838,7 +838,7 @@ describe('SignIn', () => {
     it('should enable Apple button after agreeing to terms', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -850,7 +850,7 @@ describe('SignIn', () => {
     it('should call handleAppleSignIn when Apple button is clicked', () => {
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -869,7 +869,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -877,14 +877,15 @@ describe('SignIn', () => {
     });
 
     it('should not render Apple button when NEXT_PUBLIC_APPLE_CLIENT_ID is not set and not in development', () => {
-      process.env = { ...originalEnv };
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: 'production',
+      } as NodeJS.ProcessEnv;
       delete process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
-      // Set to production to test non-development behavior
-      process.env.NEXT_PUBLIC_APP_ENV = 'production';
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="production" />
         </TestWrapper>
       );
 
@@ -927,7 +928,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -940,7 +941,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -953,7 +954,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 
@@ -971,7 +972,7 @@ describe('SignIn', () => {
 
       render(
         <TestWrapper>
-          <SignIn />
+          <SignInPageClient deploymentSurface="other" />
         </TestWrapper>
       );
 

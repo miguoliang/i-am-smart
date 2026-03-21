@@ -6,10 +6,17 @@ import {
 } from "@/lib/utils/errorHandling";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidEmail } from "@/lib/utils/emailValidation";
+import {
+  getDeploymentSurfaceFromHeaders,
+  isProductionSurface,
+} from "@/lib/runtimeDeployment";
 
 export async function POST(req: NextRequest) {
   try {
-    if (process.env.NEXT_PUBLIC_APP_ENV === "production") {
+    const surface = getDeploymentSurfaceFromHeaders((name) =>
+      req.headers.get(name)
+    );
+    if (isProductionSurface(surface)) {
       return NextResponse.json(
         { error: "生产环境仅支持微信登录" },
         { status: 403 }
