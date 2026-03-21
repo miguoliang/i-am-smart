@@ -11,7 +11,8 @@ import { LearnPageBackground } from "./components/LearnPageBackground";
 import { getLevelLabelAndPalette } from "./lib/learnBackground";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { LEARN_SIGN_OUT_PENDING_KEY } from "@/hooks/useSignOut";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GuestLearn } from "./components/GuestLearn";
 import { NextCardButton } from "./components/NextCardButton";
@@ -31,6 +32,7 @@ export default function Learn() {
 }
 
 function LearnInner() {
+  const pathname = usePathname();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
 
@@ -45,7 +47,14 @@ function LearnInner() {
   if (authLoading) return <LoadingState />;
 
   // Guest mode: unauthenticated users can try learning with built-in words
-  if (!isAuthenticated) return <GuestLearn />;
+  if (!isAuthenticated) {
+    const signingOutPending =
+      typeof window !== "undefined" &&
+      pathname === "/learn" &&
+      sessionStorage.getItem(LEARN_SIGN_OUT_PENDING_KEY) === "1";
+    if (signingOutPending) return <LoadingState />;
+    return <GuestLearn />;
+  }
 
   return <AuthenticatedLearn />;
 }
