@@ -4,6 +4,14 @@
 
 ---
 
+## [Unreleased]
+
+### 部署
+
+- **Deploy workflow**：`build:miniprogram-config` 在 `NEXT_PUBLIC_APP_ORIGIN` 或 `WECHAT_MINIPROGRAM_APP_ID` 为空时自动 `ALLOW_MISSING_CONFIG`，避免仅配 Environment 或未配小程序变量时整段部署失败；`WECHAT_MINIPROGRAM_APP_ID` 增加 `vars` 回退
+
+---
+
 ## [1.11.0] - 2026-03-25
 
 ### 部署与应用

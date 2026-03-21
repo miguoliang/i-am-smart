@@ -33,7 +33,7 @@ jobs:
       WECHAT_PAY_MERCHANT_SERIAL_NO: ${{ secrets.WECHAT_PAY_MERCHANT_SERIAL_NO }}
       WECHAT_PAY_PRIVATE_KEY: ${{ secrets.WECHAT_PAY_PRIVATE_KEY }}
       WECHAT_PAY_API_V3_KEY: ${{ secrets.WECHAT_PAY_API_V3_KEY }}
-      WECHAT_MINIPROGRAM_APP_ID: ${{ secrets.WECHAT_MINIPROGRAM_APP_ID }}
+      WECHAT_MINIPROGRAM_APP_ID: ${{ secrets.WECHAT_MINIPROGRAM_APP_ID || vars.WECHAT_MINIPROGRAM_APP_ID }}
       WECHAT_MINIPROGRAM_APP_SECRET: ${{ secrets.WECHAT_MINIPROGRAM_APP_SECRET }}
       ALIPAY_APP_ID: ${{ secrets.ALIPAY_APP_ID }}
       ALIPAY_PRIVATE_KEY: ${{ secrets.ALIPAY_PRIVATE_KEY }}
@@ -63,7 +63,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # If either is empty (e.g. secrets only on GitHub Environment), skip generation and keep apps/miniprogram/config.ts defaults.
       - name: Build miniprogram config
+        env:
+          ALLOW_MISSING_CONFIG: ${{ (env.NEXT_PUBLIC_APP_ORIGIN == '' || env.WECHAT_MINIPROGRAM_APP_ID == '') && 'true' || 'false' }}
         run: pnpm --filter @i-am-smart/pwa run build:miniprogram-config
 
       - name: Lint

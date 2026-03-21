@@ -61,6 +61,10 @@ Workflow 在 **Build** 步使用，并在 **Package** 步写入部署包内的 `
 | `VAPID_SUBJECT` | 是 | Variable | 如 `mailto:your@email.com`。 |
 | `NEXT_PUBLIC_BAIDU_ANALYTICS_ID` | 是 | Variable | 百度统计站点 ID（公开）。 |
 | `NEXT_PUBLIC_SITE_URL` | 否 | Variable | 站点根 URL（SEO）；不填用默认。 |
+| `NEXT_PUBLIC_APP_ORIGIN` | 见下 | Variable / Secret | PWA 与回调等；**小程序 config 生成**也依赖此项。 |
+| `WECHAT_MINIPROGRAM_APP_ID` | 见下 | Variable / Secret | 小程序 AppID；可用 `vars` 或 `secrets`。 |
+
+**`build:miniprogram-config`**：当 **`NEXT_PUBLIC_APP_ORIGIN`** 与 **`WECHAT_MINIPROGRAM_APP_ID`** 在 **本 workflow 能读到的** Secrets/Variables 里**都非空**时，会写入 `apps/miniprogram/config.ts`；**任一空**则跳过生成并保留仓库内默认占位（**不阻塞 PWA 构建与部署**）。若你曾把变量只配在 GitHub **Environment** 而 deploy job **未**使用 `environment:`，在仓库级补一份或给 job 加上对应 Environment。
 
 变量名与本地 `.env.supabase` / 根目录 `.env.supabase.example` 一致。
 
