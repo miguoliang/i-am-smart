@@ -4,6 +4,19 @@
 
 ---
 
+## [1.11.2] - 2026-03-27
+
+### 部署
+
+- **deploy.yml**：`DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_PATH` 支持 **Variable 或 Secret**（`secrets || vars`）；SSH 与 scp 使用统一 job `env`；新增部署前校验，避免 `DEPLOY_PATH` 等为空仍上传
+- **文档**：`docs/deploy.md` 说明仓库级 Secret/Variable 与 Environment 的区别及 `DEPLOY_PATH` 建议
+
+### 发布
+
+- 版本号 **v1.11.2**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa` 包版本一致）
+
+---
+
 ## [1.11.1] - 2026-03-26
 
 ### 部署

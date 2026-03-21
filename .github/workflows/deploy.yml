@@ -14,6 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PACKAGE_NAME: ${{ github.event.repository.name }}
+      # 部署目标：Secret 或 Variable 均可（路径、主机名通常用 Variables 即可）
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST || vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER || vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH }}
+      DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -63,6 +68,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify deploy target configuration
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "::error::DEPLOY_HOST is empty. Add it under Settings → Secrets and variables → Actions (Repository **Secrets** or **Variables**, name DEPLOY_HOST)."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_USER" ]; then
+            echo "::error::DEPLOY_USER is empty. Set Secret or Variable DEPLOY_USER."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_SSH_PASSWORD" ]; then
+            echo "::error::DEPLOY_SSH_PASSWORD is empty. Must be a **Secret** (Settings → Actions → Secrets)."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_PATH" ]; then
+            echo "::error::DEPLOY_PATH is empty. Set **Variable** or Secret DEPLOY_PATH (e.g. /var/www/i-am-smart). Prefer **Variables** — paths are not sensitive."
+            exit 1
+          fi
+          echo "Deploy target: $DEPLOY_USER@$DEPLOY_HOST → $DEPLOY_PATH"
+
       # If either is empty (e.g. secrets only on GitHub Environment), skip generation and keep apps/miniprogram/config.ts defaults.
       - name: Build miniprogram config
         env:
@@ -105,21 +130,21 @@ jobs:
       - name: Deploy to server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          password: ${{ env.DEPLOY_SSH_PASSWORD }}
           source: ${{ env.PACKAGE_NAME }}.tar.gz
           target: /tmp
 
       - name: Extract and restart
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          password: ${{ env.DEPLOY_SSH_PASSWORD }}
           script: |
             set -e
-            DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'
+            DEPLOY_PATH='${{ env.DEPLOY_PATH }}'
             mkdir -p "$DEPLOY_PATH"
             rm -rf "$DEPLOY_PATH/node_modules" "$DEPLOY_PATH/.next" "$DEPLOY_PATH/apps"
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)

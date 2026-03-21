@@ -38,14 +38,18 @@
 - **只部署到一台生产服务器**：所有部署相关（下面两表）可全部放在 **Repository**，无需建 Environment。
 - **有多环境（如 production / staging）或要对生产加保护**：在 **Environments** 里新建 `production`（及可选的 `staging`），把**部署与服务器**和**应用环境变量**都配在该 Environment 下；deploy workflow 里为 deploy job 增加 `environment: production`（见 workflow 内注释）。
 
-### 部署与服务器（必填，全部用 Secret）
+### 部署与服务器（必填）
+
+Workflow 使用 **`secrets.<名> || vars.<名>`**：同名 **Secret 优先**，否则读 **Variable**。`deploy.yml` **未**绑定 GitHub Environment 时，只会读到**仓库级**的 Secrets/Variables；若你曾把 `DEPLOY_PATH` 等只配在 **Environment `production`** 里，这里会是空的 — 请在仓库 **Actions → Variables**（或 Secrets）下再建一份，或给 deploy job 加 `environment: production`。
 
 | 名称 | 类型 | 说明 |
 |------|------|------|
-| `DEPLOY_HOST` | Secret | 服务器 IP 或域名。 |
-| `DEPLOY_USER` | Secret | SSH 登录用户名。 |
-| `DEPLOY_SSH_PASSWORD` | Secret | SSH 登录**密码**（当前为密码认证；若改用密钥，在 workflow 中把 `password` 改为 `key`，Secret 改为 `DEPLOY_SSH_KEY`）。 |
-| `DEPLOY_PATH` | Secret | 应用在服务器上的目录，如 `/var/www/i-am-smart`。 |
+| `DEPLOY_HOST` | **Variable** 或 Secret | 服务器 IP 或域名。 |
+| `DEPLOY_USER` | **Variable** 或 Secret | SSH 登录用户名。 |
+| `DEPLOY_SSH_PASSWORD` | **Secret**（必填） | SSH 登录密码；勿用 Variable。 |
+| `DEPLOY_PATH` | **Variable** 或 Secret | 应用在服务器上的绝对路径，如 `/var/www/i-am-smart`。路径非敏感，**建议用 Repository Variable**。 |
+
+部署前 workflow 会校验以上四项均非空；`DEPLOY_PATH` 为空时日志会提示优先检查 Variable。
 
 ### 应用环境变量（与本地 `.env.supabase` 对应）
 
