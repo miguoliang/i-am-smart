@@ -4,11 +4,15 @@
 
 ---
 
-## [Unreleased]
+## [1.11.1] - 2026-03-26
 
 ### 部署
 
-- **Deploy workflow**：`build:miniprogram-config` 在 `NEXT_PUBLIC_APP_ORIGIN` 或 `WECHAT_MINIPROGRAM_APP_ID` 为空时自动 `ALLOW_MISSING_CONFIG`，避免仅配 Environment 或未配小程序变量时整段部署失败；`WECHAT_MINIPROGRAM_APP_ID` 增加 `vars` 回退
+- **Deploy workflow**：`build:miniprogram-config` 在 `NEXT_PUBLIC_APP_ORIGIN` 或 `WECHAT_MINIPROGRAM_APP_ID` 为空时自动 `ALLOW_MISSING_CONFIG`，避免仅配 Environment 或未配小程序变量时整段部署失败；`WECHAT_MINIPROGRAM_APP_ID` 增加 `vars` 回退；`docs/deploy.md` 补充说明
+
+### 发布
+
+- 版本号 **v1.11.1**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa` 包版本一致）
 
 ---
 
