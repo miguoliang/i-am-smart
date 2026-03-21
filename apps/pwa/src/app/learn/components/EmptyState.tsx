@@ -1,5 +1,4 @@
 import { useSignOut } from "@/hooks/useSignOut";
-import { useStats } from "@/app/stats/hooks/useStats";
 import { Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -11,6 +10,7 @@ import {
 } from "@/components/overlay/Sheet";
 import { Button } from "@/components/form/Button";
 import { useProfile } from "@/hooks/useProfile";
+import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { NpsRating } from "./NpsRating";
 import { InviteCard } from "./InviteCard";
@@ -22,7 +22,6 @@ const NPS_DISMISSED_KEY = "nps_dismissed_at";
 export function EmptyState() {
   const { activeProfile } = useProfile();
   const { signOut, isSigningOut } = useSignOut();
-  const stats = useStats();
   const [open, setOpen] = useState(false);
   const [showNps, setShowNps] = useState(false);
   const { levelLabel, paletteKey } = getLevelLabelAndPalette(
@@ -59,30 +58,42 @@ export function EmptyState() {
 
   return (
     <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
-      <div className="relative w-full flex flex-col items-center justify-center">
-      {/* Settings */}
-      <div
-        className="absolute left-4 z-50"
-        style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
-      >
+      <div className="relative flex w-full flex-col items-center justify-center">
+        {/* Settings — same chrome as learn TopBar (fixed + labeled button) */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Settings className="h-6 w-6" />
-            </Button>
+            <div
+              className="fixed left-3 z-60 sm:left-4"
+              style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={learnTopChromeButtonClassName}
+                aria-label="打开设置"
+              >
+                <Settings className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
+                <span>设置</span>
+              </Button>
+            </div>
           </SheetTrigger>
-          <SheetContent side="bottom" className="p-0 gap-0 max-h-[85dvh] rounded-t-2xl">
+          <SheetContent side="bottom" className="max-h-[85dvh] gap-0 rounded-t-2xl p-0">
             <SheetHeader className="border-b p-6 text-left">
               <SheetTitle>设置</SheetTitle>
             </SheetHeader>
             <div className="p-4">
               <ProfileSwitcher />
             </div>
-            <div className="border-t p-4 mt-auto">
+            <div className="mt-auto border-t p-4">
               <button
-                onClick={() => { setOpen(false); signOut(); }}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  signOut();
+                }}
                 disabled={isSigningOut}
-                className="flex items-center gap-3 rounded-lg px-4 py-3 w-full text-left hover:bg-accent transition-colors disabled:opacity-50"
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
               >
                 <LogOut className="h-5 w-5" />
                 <span>退出登录</span>
@@ -90,32 +101,26 @@ export function EmptyState() {
             </div>
           </SheetContent>
         </Sheet>
-      </div>
 
-      <div className="text-center">
-        <p className="text-2xl md:text-3xl font-medium text-gray-700 dark:text-gray-300">
-          今天够了，明天见 👋
-        </p>
-        {stats.total > 0 && (
-          <p className="text-sm text-muted-foreground mt-4">
-            已掌握 {stats.mastered} 词
+        <div className="text-center">
+          <p className="text-2xl md:text-3xl font-medium text-gray-700 dark:text-gray-300">
+            今天够了，明天见 👋
           </p>
+        </div>
+
+        {/* NPS Rating */}
+        {showNps && (
+          <div className="mt-8 w-full max-w-sm rounded-xl border bg-white p-4 shadow-sm dark:bg-gray-800">
+            <NpsRating onSubmit={handleNpsSubmit} onDismiss={handleNpsDismiss} />
+          </div>
         )}
-      </div>
 
-      {/* NPS Rating */}
-      {showNps && (
-        <div className="mt-8 w-full max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-4">
-          <NpsRating onSubmit={handleNpsSubmit} onDismiss={handleNpsDismiss} />
-        </div>
-      )}
-
-      {/* Invite */}
-      {!showNps && (
-        <div className="mt-8 w-full max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-4">
-          <InviteCard />
-        </div>
-      )}
+        {/* Invite */}
+        {!showNps && (
+          <div className="mt-8 w-full max-w-sm rounded-xl border bg-white p-4 shadow-sm dark:bg-gray-800">
+            <InviteCard />
+          </div>
+        )}
       </div>
     </LearnPageBackground>
   );
