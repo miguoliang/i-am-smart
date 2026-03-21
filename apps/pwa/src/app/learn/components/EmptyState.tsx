@@ -1,6 +1,9 @@
+"use client";
+
 import { useSignOut } from "@/hooks/useSignOut";
-import { Settings, LogOut } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -10,8 +13,9 @@ import {
 } from "@/components/overlay/Sheet";
 import { Button } from "@/components/form/Button";
 import { useProfile } from "@/hooks/useProfile";
+import { cn } from "@/lib/utils";
 import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
-import { ProfileSwitcher } from "./ProfileSwitcher";
+import { LearnSettingsSheetContent } from "./LearnSettingsSheetContent";
 import { NpsRating } from "./NpsRating";
 import { InviteCard } from "./InviteCard";
 import { LearnPageBackground } from "./LearnPageBackground";
@@ -22,12 +26,24 @@ const NPS_DISMISSED_KEY = "nps_dismissed_at";
 export function EmptyState() {
   const { activeProfile } = useProfile();
   const { signOut, isSigningOut } = useSignOut();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [sheetMaxH, setSheetMaxH] = useState("85dvh");
   const [showNps, setShowNps] = useState(false);
   const { levelLabel, paletteKey } = getLevelLabelAndPalette(
     activeProfile?.exam_target,
     activeProfile?.level
   );
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setSheetMaxH(`${vv.height * 0.85}px`);
+    };
+    vv.addEventListener("resize", update);
+    return () => vv.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     // Show NPS if not dismissed in last 30 days
@@ -78,27 +94,37 @@ export function EmptyState() {
               </Button>
             </div>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[85dvh] gap-0 rounded-t-2xl p-0">
-            <SheetHeader className="border-b p-6 text-left">
+          <SheetContent
+            side="bottom"
+            overlayClassName={cn(
+              "bg-stone-900/35 dark:bg-black/45 backdrop-blur-[2px]",
+              "data-[state=open]:duration-500 data-[state=closed]:duration-280"
+            )}
+            className={cn(
+              "flex flex-col gap-0 border-x-0 border-b-0 p-0",
+              "rounded-t-[1.35rem] border-t border-border/60 sm:rounded-t-2xl",
+              "bg-background/92 backdrop-blur-md supports-backdrop-filter:bg-background/78",
+              "shadow-[0_-12px_40px_-10px_rgba(0,0,0,0.14)] dark:shadow-[0_-12px_48px_-12px_rgba(0,0,0,0.5)]",
+              "data-[state=open]:duration-500 data-[state=closed]:duration-300",
+              "data-[state=open]:ease-[cubic-bezier(0.22,1,0.36,1)] data-[state=closed]:ease-in",
+              "pb-[max(1rem,env(safe-area-inset-bottom))]"
+            )}
+            style={{ maxHeight: sheetMaxH }}
+          >
+            <SheetHeader className="border-b border-border/50 p-6 text-left">
               <SheetTitle>设置</SheetTitle>
             </SheetHeader>
-            <div className="p-4">
-              <ProfileSwitcher />
-            </div>
-            <div className="mt-auto border-t p-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  signOut();
-                }}
-                disabled={isSigningOut}
-                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>退出登录</span>
-              </button>
-            </div>
+            <LearnSettingsSheetContent
+              onNavigateToPay={() => {
+                setOpen(false);
+                router.push("/pay");
+              }}
+              onSignOut={() => {
+                setOpen(false);
+                signOut();
+              }}
+              isSigningOut={isSigningOut}
+            />
           </SheetContent>
         </Sheet>
 
