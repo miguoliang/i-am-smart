@@ -1,6 +1,5 @@
 "use client";
 
-import { useSignOut } from "@/hooks/useSignOut";
 import { Settings } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -26,9 +25,18 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 type NpsSlot = "loading" | "nps" | "invite";
 
-export function EmptyState() {
+export interface LearnAuthActions {
+  handleSignOut: () => void;
+  isSigningOut: boolean;
+}
+
+interface EmptyStateProps {
+  auth: LearnAuthActions;
+}
+
+export function EmptyState({ auth }: EmptyStateProps) {
   const { activeProfile } = useProfile();
-  const { signOut, isSigningOut } = useSignOut();
+  const { handleSignOut, isSigningOut } = auth;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [sheetMaxH, setSheetMaxH] = useState("85dvh");
@@ -89,7 +97,13 @@ export function EmptyState() {
     <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
       <div className="relative flex w-full flex-col items-center justify-center">
         {/* Settings — same chrome as learn TopBar (fixed + labeled button) */}
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet
+          open={open}
+          onOpenChange={(next) => {
+            if (isSigningOut && next) return;
+            setOpen(next);
+          }}
+        >
           <SheetTrigger asChild>
             <div
               className="fixed left-3 z-60 sm:left-4"
@@ -101,6 +115,7 @@ export function EmptyState() {
                 size="sm"
                 className={learnTopChromeButtonClassName}
                 aria-label="打开设置"
+                disabled={isSigningOut}
               >
                 <Settings className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
                 <span>设置</span>
@@ -134,7 +149,7 @@ export function EmptyState() {
               }}
               onSignOut={() => {
                 setOpen(false);
-                signOut();
+                handleSignOut();
               }}
               isSigningOut={isSigningOut}
             />

@@ -42,7 +42,13 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
 
   return (
     <>
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          if (isSigningOut && next) return;
+          setOpen(next);
+        }}
+      >
         <SheetTrigger asChild>
           <div
             className="fixed left-3 z-60 sm:left-4"
@@ -54,6 +60,7 @@ export function TopBar({ onSignOut, isSigningOut }: TopBarProps) {
               size="sm"
               className={learnTopChromeButtonClassName}
               aria-label="打开设置"
+              disabled={isSigningOut}
             >
               <Settings className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
               <span>设置</span>

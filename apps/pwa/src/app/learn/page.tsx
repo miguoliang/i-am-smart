@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
+import { SignOutLockOverlay } from "@/components/overlay/SignOutLockOverlay";
 import { WordCard } from "./components/WordCard";
 import { RatingButtons } from "./components/RatingButtons";
 import { useLearnSession } from "./hooks/useLearnSession";
@@ -190,21 +191,27 @@ function AuthenticatedLearn() {
 
   const isSessionComplete = progress.total > 0 && progress.reviewed >= progress.total;
 
-  if (loading) return <LoadingState />;
-  if (cards.length === 0 || !currentCard || isSessionComplete) return <EmptyState />;
-
   return (
-    <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
-      <AuthenticatedLearnActive
-        key={currentCard.id}
-        isPointerFine={isPointerFine}
-        currentCard={currentCard}
-        answer={answer}
-        speech={speech}
-        review={review}
-        auth={auth}
-      />
-    </LearnPageBackground>
+    <>
+      {auth.isSigningOut ? <SignOutLockOverlay /> : null}
+      {loading ? (
+        <LoadingState />
+      ) : cards.length === 0 || !currentCard || isSessionComplete ? (
+        <EmptyState auth={auth} />
+      ) : (
+        <LearnPageBackground levelLabel={levelLabel} paletteKey={paletteKey}>
+          <AuthenticatedLearnActive
+            key={currentCard.id}
+            isPointerFine={isPointerFine}
+            currentCard={currentCard}
+            answer={answer}
+            speech={speech}
+            review={review}
+            auth={auth}
+          />
+        </LearnPageBackground>
+      )}
+    </>
   );
 }
 

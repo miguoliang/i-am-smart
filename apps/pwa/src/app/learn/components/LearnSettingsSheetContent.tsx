@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Lock, LogOut } from "lucide-react";
+import { Check, Loader2, Lock, LogOut } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   EXAM_PICKER_ENTRIES,
@@ -68,7 +68,12 @@ export function LearnSettingsSheetContent({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto p-4",
+          isSigningOut && "pointer-events-none select-none opacity-60"
+        )}
+      >
         <div className="mb-6">
           <ProfileSwitcher />
         </div>
@@ -87,7 +92,7 @@ export function LearnSettingsSheetContent({
               <button
                 key={entry.scopeKey}
                 type="button"
-                disabled={updateExamMutation.isPending}
+                disabled={updateExamMutation.isPending || isSigningOut}
                 onClick={() => {
                   if (entry.requiresPro && !isPro) {
                     onNavigateToPay();
@@ -157,15 +162,24 @@ export function LearnSettingsSheetContent({
         </div>
       </div>
 
-      <div className="border-t p-4">
+      <div className={cn("border-t p-4", isSigningOut && "pointer-events-none select-none")}>
         <button
           type="button"
           onClick={onSignOut}
           disabled={isSigningOut}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-100"
         >
-          <LogOut className="h-5 w-5 shrink-0" aria-hidden />
-          <span>退出登录</span>
+          {isSigningOut ? (
+            <>
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+              <span>正在退出…</span>
+            </>
+          ) : (
+            <>
+              <LogOut className="h-5 w-5 shrink-0" aria-hidden />
+              <span>退出登录</span>
+            </>
+          )}
         </button>
       </div>
     </>

@@ -1,30 +1,41 @@
 // src/app/stats/page.tsx
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabaseClient'
-import { Button } from '@/components/form/Button'
-import { LogOut } from 'lucide-react'
-import { useStats } from './hooks/useStats'
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { createClient } from "@/lib/supabaseClient";
+import { Button } from "@/components/form/Button";
+import { SignOutLockOverlay } from "@/components/overlay/SignOutLockOverlay";
+import { LogOut } from "lucide-react";
+import { useStats } from "./hooks/useStats";
 
 export default function Stats() {
-  const stats = useStats()
-  const router = useRouter()
+  const stats = useStats();
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+      {isSigningOut ? <SignOutLockOverlay /> : null}
       <div className="absolute top-4 right-4">
         <Button
           onClick={handleSignOut}
           variant="ghost"
           size="sm"
           className="gap-2"
+          disabled={isSigningOut}
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">退出登录</span>
