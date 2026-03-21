@@ -2,6 +2,7 @@
 # 仅在推送 v* tag 时运行；合并 main、PR、手动 Run workflow 均不触发本 workflow。
 # 同一套构建产物；运行时由 Host 区分预发/正式（preview.iamsmart.top → 预发，www.iamsmart.top → 正式）。
 # PM2 be-it-forever（默认 PORT=3000，由反向代理按域名转发，如 Candy）。
+# 本 job 使用 GitHub Environment「production」：请在仓库 Settings → Environments 创建同名环境并配置 Secrets/Variables。
 name: Deploy to Server
 
 on:
@@ -12,6 +13,7 @@ jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
+    environment: Production
     env:
       PACKAGE_NAME: ${{ github.event.repository.name }}
       # 部署目标：Secret 或 Variable 均可（路径、主机名通常用 Variables 即可）

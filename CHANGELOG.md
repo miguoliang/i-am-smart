@@ -4,6 +4,18 @@
 
 ---
 
+## [1.11.3] - 2026-03-28
+
+### 部署
+
+- **deploy.yml**：deploy job 绑定 **`environment: production`**（须在 Settings → Environments 创建同名环境）；`docs/deploy.md` 同步说明 Environment 与仓库级 Secret/Variable 的关系
+
+### 发布
+
+- 版本号 **v1.11.3**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa` 包版本一致）
+
+---
+
 ## [1.11.2] - 2026-03-27
 
 ### 部署

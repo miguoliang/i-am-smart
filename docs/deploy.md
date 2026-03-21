@@ -17,7 +17,7 @@
 
 **反向代理 / 网关（如 Candy、Nginx、Caddy 等）**：`preview.iamsmart.top` 与 `www.iamsmart.top` 应反代到**同一 Node 端口**，并保留 **`Host`**（或正确设置 **`X-Forwarded-Host`**），以便应用识别域名。
 
-**说明**：Secrets/Variables 使用仓库级或你自行为本 job 配置的 GitHub Environment 均可。**应用层预发/正式由域名决定**，不再使用构建期 `NEXT_PUBLIC_APP_ENV`。
+**说明**：Deploy workflow 的 job 已写 **`environment: production`**，会读取 GitHub **Environment `production`** 下的 Secrets/Variables（并与仓库级合并；同名时一般以 Environment 为准，以 GitHub 实际行为为准）。请先在 **Settings → Environments** 创建 **`production`**。**应用层预发/正式由域名决定**，不再使用构建期 `NEXT_PUBLIC_APP_ENV`。
 
 ## 1. 在 GitHub 仓库配置 Secrets / Variables
 
@@ -35,12 +35,12 @@
 
 **建议**：
 
-- **只部署到一台生产服务器**：所有部署相关（下面两表）可全部放在 **Repository**，无需建 Environment。
-- **有多环境（如 production / staging）或要对生产加保护**：在 **Environments** 里新建 `production`（及可选的 `staging`），把**部署与服务器**和**应用环境变量**都配在该 Environment 下；deploy workflow 里为 deploy job 增加 `environment: production`（见 workflow 内注释）。
+- **当前 deploy.yml**：deploy job 固定使用 **`environment: production`**，请在该 Environment 下配置**部署与应用**相关 Secrets/Variables（也可同时在仓库级配置，按需复用）。
+- **多环境 / 审批**：可在 `production` 上开启保护规则、审批人；若需改用其它环境名，修改 `deploy.yml` 中 `environment:` 并与 GitHub 中 Environment 名称一致。
 
 ### 部署与服务器（必填）
 
-Workflow 使用 **`secrets.<名> || vars.<名>`**：同名 **Secret 优先**，否则读 **Variable**。`deploy.yml` **未**绑定 GitHub Environment 时，只会读到**仓库级**的 Secrets/Variables；若你曾把 `DEPLOY_PATH` 等只配在 **Environment `production`** 里，这里会是空的 — 请在仓库 **Actions → Variables**（或 Secrets）下再建一份，或给 deploy job 加 `environment: production`。
+Workflow 使用 **`secrets.<名> || vars.<名>`**（同名 Secret 优先）。Job 绑定 **`production`** 后，**Environment `production`** 与**仓库级** Actions Secrets/Variables 均可能参与解析；请至少保证 **`production`** 环境已创建，且 `DEPLOY_*`、应用构建所需项在该环境或仓库级有值。
 
 | 名称 | 类型 | 说明 |
 |------|------|------|
