@@ -16,12 +16,15 @@ import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { learnTopChromeButtonClassName } from "./learnTopChromeStyles";
 import { LearnSettingsSheetContent } from "./LearnSettingsSheetContent";
-import { NpsRating } from "./NpsRating";
+import { NpsRating, NpsRatingSkeleton } from "./NpsRating";
 import { InviteCard } from "./InviteCard";
 import { LearnPageBackground } from "./LearnPageBackground";
 import { getLevelLabelAndPalette } from "../lib/learnBackground";
 
 const NPS_DISMISSED_KEY = "nps_dismissed_at";
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+type NpsSlot = "loading" | "nps" | "invite";
 
 export function EmptyState() {
   const { activeProfile } = useProfile();
@@ -29,7 +32,7 @@ export function EmptyState() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [sheetMaxH, setSheetMaxH] = useState("85dvh");
-  const [showNps, setShowNps] = useState(false);
+  const [npsSlot, setNpsSlot] = useState<NpsSlot>("loading");
   const { levelLabel, paletteKey } = getLevelLabelAndPalette(
     activeProfile?.exam_target,
     activeProfile?.level
@@ -46,16 +49,26 @@ export function EmptyState() {
   }, []);
 
   useEffect(() => {
-    // Show NPS if not dismissed in last 30 days
     const dismissed = localStorage.getItem(NPS_DISMISSED_KEY);
-    if (dismissed && Date.now() - Number(dismissed) < 30 * 24 * 60 * 60 * 1000) return;
+    if (dismissed && Date.now() - Number(dismissed) < THIRTY_DAYS_MS) {
+      queueMicrotask(() => setNpsSlot("invite"));
+      return;
+    }
 
+    let cancelled = false;
     fetch("/api/nps")
       .then((r) => r.json())
       .then((res) => {
-        if (res.data?.canRate) setShowNps(true);
+        if (cancelled) return;
+        setNpsSlot(res.data?.canRate ? "nps" : "invite");
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setNpsSlot("invite");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleNpsSubmit = useCallback((score: number, comment?: string) => {
@@ -68,7 +81,7 @@ export function EmptyState() {
   }, []);
 
   const handleNpsDismiss = useCallback(() => {
-    setShowNps(false);
+    setNpsSlot("invite");
     localStorage.setItem(NPS_DISMISSED_KEY, String(Date.now()));
   }, []);
 
@@ -134,15 +147,18 @@ export function EmptyState() {
           </p>
         </div>
 
-        {/* NPS Rating */}
-        {showNps && (
+        {/* NPS (loading skeleton / form) or invite */}
+        {npsSlot !== "invite" && (
           <div className="mt-8 w-full max-w-sm rounded-xl border bg-white p-4 shadow-sm dark:bg-gray-800">
-            <NpsRating onSubmit={handleNpsSubmit} onDismiss={handleNpsDismiss} />
+            {npsSlot === "loading" ? (
+              <NpsRatingSkeleton />
+            ) : (
+              <NpsRating onSubmit={handleNpsSubmit} onDismiss={handleNpsDismiss} />
+            )}
           </div>
         )}
 
-        {/* Invite */}
-        {!showNps && (
+        {npsSlot === "invite" && (
           <div className="mt-8 w-full max-w-sm rounded-xl border bg-white p-4 shadow-sm dark:bg-gray-800">
             <InviteCard />
           </div>

@@ -8,6 +8,33 @@ interface NpsRatingProps {
   onDismiss: () => void;
 }
 
+export function NpsRatingSkeleton() {
+  return (
+    <div
+      className="space-y-4"
+      role="status"
+      aria-busy="true"
+      aria-label="加载推荐度问卷"
+    >
+      <div className="mx-auto h-4 w-[min(100%,18rem)] rounded-md bg-muted animate-pulse" />
+      <div className="flex justify-center gap-1" aria-hidden>
+        {Array.from({ length: 11 }, (_, i) => (
+          <div
+            key={i}
+            className="h-8 w-8 shrink-0 rounded-lg bg-muted animate-pulse"
+            style={{ animationDelay: `${i * 40}ms` }}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between px-1" aria-hidden>
+        <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+        <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+      </div>
+      <div className="mx-auto h-3 w-16 rounded bg-muted animate-pulse" aria-hidden />
+    </div>
+  );
+}
+
 export function NpsRating({ onSubmit, onDismiss }: NpsRatingProps) {
   const [score, setScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
