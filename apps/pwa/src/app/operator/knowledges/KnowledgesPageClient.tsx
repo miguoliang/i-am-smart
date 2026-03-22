@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchKnowledges, updateKnowledge, type Knowledge } from "@/lib/api/knowledge";
+import { deleteKnowledge, fetchKnowledges, updateKnowledge, type Knowledge } from "@/lib/api/knowledge";
 import { resolveKnowledgeErrorReportsByCode } from "@/lib/api/knowledgeErrorReports";
 import { DataTable, ColumnConfig } from "@/components/table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
@@ -24,7 +24,7 @@ import {
 } from "@/components/overlay/Dialog";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { toast } from "sonner";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -67,7 +67,12 @@ export function KnowledgesPageClient() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<Knowledge | null>(null);
   const [resolvingCode, setResolvingCode] = useState<string | null>(null);
+  const editItemRef = useRef<Knowledge | null>(null);
+  useEffect(() => {
+    editItemRef.current = editItem;
+  }, [editItem]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -112,6 +117,20 @@ export function KnowledgesPageClient() {
     onSuccess: () => {
       toast.success("已更新");
       setEditOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["knowledges"] });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (code: string) => deleteKnowledge(code),
+    onSuccess: (_data, deletedCode) => {
+      toast.success("已删除词条");
+      setDeleteItem(null);
+      if (editItemRef.current?.code === deletedCode) {
+        setEditOpen(false);
+        setEditItem(null);
+      }
       void queryClient.invalidateQueries({ queryKey: ["knowledges"] });
     },
     onError: (err) => toast.error(getErrorMessage(err)),
@@ -208,6 +227,15 @@ export function KnowledgesPageClient() {
               }}
             >
               <Pencil className="h-3 w-3" /> 编辑
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-1"
+              onClick={() => setDeleteItem(k)}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-3 w-3" /> 删除
             </Button>
             {pending ? (
               <Button
@@ -348,6 +376,38 @@ export function KnowledgesPageClient() {
               loading={editMutation.isPending}
             >
               保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteItem !== null} onOpenChange={(open) => !open && setDeleteItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>确认删除词条</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  将永久删除{" "}
+                  <span className="font-medium text-foreground">{deleteItem?.name}</span>（
+                  <span className="font-mono text-xs">{deleteItem?.code}</span>）。
+                </p>
+                <p>用户在该词上的学习卡片与未结纠错记录会一并删除，且无法恢复。</p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={deleteMutation.isPending}>
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteItem) deleteMutation.mutate(deleteItem.code);
+              }}
+              loading={deleteMutation.isPending}
+            >
+              删除
             </Button>
           </DialogFooter>
         </DialogContent>

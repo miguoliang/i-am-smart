@@ -73,3 +73,15 @@ export async function updateKnowledge(
   return json.data;
 }
 
+export async function deleteKnowledge(code: string): Promise<{ code: string; name: string }> {
+  const res = await fetch(`/api/knowledge/${encodeURIComponent(code)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const message = await parseApiErrorResponse(res, "删除失败");
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data;
+}
+

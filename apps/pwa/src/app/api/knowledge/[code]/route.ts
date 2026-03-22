@@ -65,3 +65,41 @@ export async function PUT(
     return handleApiError(e);
   }
 }
+
+/** DELETE: Remove a knowledge item (cascades account_cards, error reports) */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  try {
+    const { user } = await requireOperator(req);
+    const { code } = await params;
+    if (!code) throw ApiError.validationError("缺少 code");
+
+    const admin = createSupabaseAdmin();
+    const { data: row, error: selectError } = await admin
+      .from("knowledge")
+      .select("code, name")
+      .eq("code", code)
+      .maybeSingle();
+
+    if (selectError) throw ApiError.internal(selectError.message);
+    if (!row) throw ApiError.notFound("知识条目不存在");
+
+    const { error: deleteError } = await admin.from("knowledge").delete().eq("code", code);
+
+    if (deleteError) throw ApiError.internal(deleteError.message);
+
+    void writeAuditLog({
+      operator_id: user.id,
+      action: "delete_knowledge",
+      target_type: "knowledge",
+      target_id: code,
+      detail: { name: row.name },
+    });
+
+    return apiSuccess({ code: row.code, name: row.name });
+  } catch (e) {
+    return handleApiError(e);
+  }
+}
