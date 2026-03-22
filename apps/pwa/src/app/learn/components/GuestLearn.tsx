@@ -17,6 +17,7 @@ import { useGuestLearnSession } from "../hooks/useGuestLearnSession";
 import { usePointerFine } from "../hooks/usePointerFine";
 import { useLearnKeyboardShortcuts } from "../hooks/useLearnKeyboardShortcuts";
 import { toast } from "sonner";
+import { SpeakButton } from "./SpeakButton";
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
@@ -26,26 +27,13 @@ function ActionRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SpeakButton({ onSpeak }: { onSpeak: () => void }) {
-  return (
-    <button
-      onClick={onSpeak}
-      className="py-5 md:py-8 px-6 md:px-8 text-xl md:text-3xl rounded-2xl transition transform active:scale-95 hover:scale-105 bg-card hover:bg-muted text-foreground shadow-xl border"
-      aria-label="播放发音"
-    >
-      🔊
-    </button>
-  );
-}
-
 function getAccentPreference(): "en-US" | "en-GB" {
   if (typeof window === "undefined") return "en-US";
   return (localStorage.getItem("accent_preference") as "en-US" | "en-GB") || "en-US";
 }
 
 interface GuestLearnActiveProps {
-  isPointerFine: boolean;
-  /** False while signup modal is open — do not handle A/S/D/W (or Enter/N in review step). */
+  /** False while signup modal is open — do not handle A/S/D/W。 */
   keyboardShortcutsEnabled: boolean;
   currentCard: NonNullable<ReturnType<typeof useGuestLearnSession>["currentCard"]>;
   answer: ReturnType<typeof useGuestLearnSession>["answer"];
@@ -54,7 +42,6 @@ interface GuestLearnActiveProps {
 }
 
 function GuestLearnActive({
-  isPointerFine,
   keyboardShortcutsEnabled,
   currentCard,
   answer,
@@ -108,25 +95,16 @@ function GuestLearnActive({
           knowledge={currentCard.knowledge}
           answerRevealed={answer.isRevealed}
         />
-        {isPointerFine && !waitingForNext ? (
-          <span className="sr-only">按 A 不会，D 会了；出示答案后 A 记错了，D、Enter 或 N 下一个</span>
-        ) : null}
-        {isPointerFine && waitingForNext ? (
-          <span className="sr-only">按 A 记错了，或按 D、Enter、N 下一个</span>
-        ) : null}
-        {isPointerFine ? (
-          <span className="sr-only">按 W 可标记本词内容有误（试学请登录后使用）</span>
-        ) : null}
         {waitingForNext ? (
           <ActionRow>
-            <SpeakButton onSpeak={speakCurrent} />
-            <MisrememberButton onClick={submitMisremembered} />
-            <NextCardButton onClick={submitNext} />
+            <SpeakButton onSpeak={speakCurrent} showKeyHint={keyboardShortcutsEnabled} />
+            <MisrememberButton onClick={submitMisremembered} showKeyHint={keyboardShortcutsEnabled} />
+            <NextCardButton onClick={submitNext} showKeyHint={keyboardShortcutsEnabled} />
           </ActionRow>
         ) : (
           <ActionRow>
-            <SpeakButton onSpeak={speakCurrent} />
-            <RatingButtons onChoose={chooseQuality} />
+            <SpeakButton onSpeak={speakCurrent} showKeyHint={keyboardShortcutsEnabled} />
+            <RatingButtons onChoose={chooseQuality} showKeyHints={keyboardShortcutsEnabled} />
           </ActionRow>
         )}
       </div>
@@ -186,7 +164,6 @@ export function GuestLearn() {
 
       <GuestLearnActive
         key={currentCard.id}
-        isPointerFine={isPointerFine}
         keyboardShortcutsEnabled={isPointerFine && !showSignupPrompt}
         currentCard={currentCard}
         answer={answer}

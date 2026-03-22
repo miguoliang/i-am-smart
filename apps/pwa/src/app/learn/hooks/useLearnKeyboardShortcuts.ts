@@ -27,7 +27,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 /**
  * Desktop (pointer: fine): S 发音；先 A 不会 / D 会了（显示答案）；
- * 出示答案后 A 记错了（难度1）、D / Enter / N 下一个（按原选择）。
+ * 出示答案后 A 记错了（难度1）、D 下一个（按原选择）。
  * W：标记当前词条有误（需传入 onReportKnowledgeError）。
  */
 export function useLearnKeyboardShortcuts({
@@ -68,7 +68,7 @@ export function useLearnKeyboardShortcuts({
           submitMisremembered();
           return;
         }
-        if (k === "d" || e.key === "Enter" || k === "n") {
+        if (k === "d") {
           e.preventDefault();
           submitNext();
         }

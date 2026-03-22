@@ -23,6 +23,7 @@ import { useLearnKeyboardShortcuts } from "./hooks/useLearnKeyboardShortcuts";
 import { submitKnowledgeErrorReport } from "@/lib/api/knowledgeErrorReports";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { toast } from "sonner";
+import { SpeakButton } from "./components/SpeakButton";
 
 export default function Learn() {
   return (
@@ -142,28 +143,24 @@ function AuthenticatedLearnActive({
           knowledge={currentCard.knowledge}
           answerRevealed={answer.isRevealed}
         />
-        {isPointerFine && !waitingForNext ? (
-          <span className="sr-only">按 A 不会，D 会了；出示答案后 A 记错了，D、Enter 或 N 下一个</span>
-        ) : null}
-        {isPointerFine && waitingForNext ? (
-          <span className="sr-only">按 A 记错了，或按 D、Enter、N 下一个</span>
-        ) : null}
-        {isPointerFine ? (
-          <span className="sr-only">按 W 可标记本词内容有误（隐藏功能）</span>
-        ) : null}
         {waitingForNext ? (
           <ActionRow>
-            <SpeakButton onSpeak={speakCurrent} />
+            <SpeakButton onSpeak={speakCurrent} showKeyHint={isPointerFine} />
             <MisrememberButton
               onClick={submitMisremembered}
               disabled={review.isSubmittingCurrentCard}
+              showKeyHint={isPointerFine}
             />
-            <NextCardButton onClick={submitNext} disabled={review.isSubmittingCurrentCard} />
+            <NextCardButton
+              onClick={submitNext}
+              disabled={review.isSubmittingCurrentCard}
+              showKeyHint={isPointerFine}
+            />
           </ActionRow>
         ) : (
           <ActionRow>
-            <SpeakButton onSpeak={speakCurrent} />
-            <RatingButtons onChoose={chooseQuality} />
+            <SpeakButton onSpeak={speakCurrent} showKeyHint={isPointerFine} />
+            <RatingButtons onChoose={chooseQuality} showKeyHints={isPointerFine} />
           </ActionRow>
         )}
       </div>
@@ -212,18 +209,6 @@ function AuthenticatedLearn() {
         </LearnPageBackground>
       )}
     </>
-  );
-}
-
-function SpeakButton({ onSpeak }: { onSpeak: () => void }) {
-  return (
-    <button
-      onClick={onSpeak}
-      className="py-5 md:py-8 px-6 md:px-8 text-xl md:text-3xl rounded-2xl transition transform active:scale-95 hover:scale-105 bg-card hover:bg-muted text-foreground shadow-xl border"
-      aria-label="播放发音"
-    >
-      🔊
-    </button>
   );
 }
 
