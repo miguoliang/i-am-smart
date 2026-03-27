@@ -17,8 +17,8 @@ export function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground">
+      <header className="z-20 shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center">
           <button
             type="button"
@@ -45,7 +45,7 @@ export function DashboardLayout({
         <aside
           className={`
             fixed inset-y-0 left-0 z-40 flex w-[240px] shrink-0 flex-col border-r border-border bg-background
-            transition-transform duration-200 ease-out md:static md:h-auto md:min-h-0 md:translate-x-0 md:self-stretch
+            transition-transform duration-200 ease-out md:static md:h-full md:min-h-0 md:max-h-full md:translate-x-0 md:self-stretch
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
         >
