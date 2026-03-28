@@ -8,6 +8,12 @@ export interface KnowledgeItem {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  /** When true, entry is flagged for operator correction */
+  needs_correction?: boolean;
+  pos: string;
+  level: string;
+  selfExaminePrompt: string;
+  theme: string;
 }
 
 export interface KnowledgePaginationParams {
@@ -16,6 +22,8 @@ export interface KnowledgePaginationParams {
   search?: string;
   level?: string;
   restrictToCodes?: string[];
+  /** Only rows flagged for correction */
+  needsCorrectionOnly?: boolean;
 }
 
 export class KnowledgeService {
@@ -55,6 +63,7 @@ export class KnowledgeService {
     const search = params.search;
     const level = params.level;
     const restrictToCodes = params.restrictToCodes;
+    const needsCorrectionOnly = params.needsCorrectionOnly;
 
     logger.debug('Fetching paginated knowledge items', {
       page,
@@ -62,6 +71,7 @@ export class KnowledgeService {
       search,
       level,
       restrictToCodesCount: restrictToCodes?.length ?? 0,
+      needsCorrectionOnly: Boolean(needsCorrectionOnly),
     });
     
     try {
@@ -71,6 +81,7 @@ export class KnowledgeService {
         search,
         level,
         restrictToCodes,
+        needsCorrectionOnly,
       });
       
       logger.debug('Successfully fetched paginated knowledge items', {

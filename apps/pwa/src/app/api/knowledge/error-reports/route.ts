@@ -4,54 +4,27 @@ import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireAuth, requireOperator } from "@/lib/middleware/auth";
 import { logger } from "@/lib/utils/logger";
 
-/** GET: operators list error reports (default: unresolved only) */
+/** GET: operators list knowledge entries flagged for correction */
 export async function GET(req: NextRequest) {
   try {
     await requireOperator(req);
-    const showAll = req.nextUrl.searchParams.get("resolved") === "all";
 
     const admin = createSupabaseAdmin();
-    let q = admin
-      .from("knowledge_error_reports")
-      .select("id, knowledge_code, reporter_id, created_at, resolved_at")
-      .order("created_at", { ascending: false });
-
-    if (!showAll) {
-      q = q.is("resolved_at", null);
-    }
-
-    const { data: reports, error } = await q;
+    const { data: rows, error } = await admin
+      .from("knowledge")
+      .select("code, name, description, created_at, updated_at")
+      .eq("needs_correction", true)
+      .order("updated_at", { ascending: false });
 
     if (error) throw ApiError.internal(error.message);
 
-    const rows = reports ?? [];
-    const codes = [...new Set(rows.map((r) => r.knowledge_code))];
-    const nameByCode = new Map<string, { name: string; description: string }>();
-
-    if (codes.length > 0) {
-      const { data: knowRows, error: kErr } = await admin
-        .from("knowledge")
-        .select("code, name, description")
-        .in("code", codes);
-
-      if (kErr) throw ApiError.internal(kErr.message);
-      for (const k of knowRows ?? []) {
-        nameByCode.set(k.code, { name: k.name, description: k.description });
-      }
-    }
-
-    const mapped = rows.map((r) => {
-      const k = nameByCode.get(r.knowledge_code);
-      return {
-        id: r.id,
-        knowledge_code: r.knowledge_code,
-        reporter_id: r.reporter_id,
-        created_at: r.created_at,
-        resolved_at: r.resolved_at,
-        knowledge_name: k?.name ?? "",
-        knowledge_description: k?.description ?? "",
-      };
-    });
+    const mapped = (rows ?? []).map((r) => ({
+      knowledge_code: r.code,
+      knowledge_name: r.name,
+      knowledge_description: r.description,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
 
     return apiSuccess(mapped);
   } catch (e) {
@@ -59,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** POST: authenticated learner flags current knowledge entry */
+/** POST: authenticated learner flags current knowledge entry for correction */
 export async function POST(req: NextRequest) {
   try {
     const { user } = await requireAuth(req);
@@ -78,36 +51,28 @@ export async function POST(req: NextRequest) {
 
     const { data: knowledgeRow, error: kErr } = await admin
       .from("knowledge")
-      .select("code")
+      .select("code, needs_correction")
       .eq("code", code)
       .maybeSingle();
 
     if (kErr) throw ApiError.internal(kErr.message);
     if (!knowledgeRow) throw ApiError.validationError("词条不存在");
 
-    const { data: existing } = await admin
-      .from("knowledge_error_reports")
-      .select("id")
-      .eq("knowledge_code", code)
-      .is("resolved_at", null)
-      .limit(1)
-      .maybeSingle();
-
-    if (existing) {
+    if (knowledgeRow.needs_correction) {
       return apiSuccess({
         alreadyReported: true,
         message: "该词条已在待处理列表中，感谢反馈",
       });
     }
 
-    const { error: insErr } = await admin.from("knowledge_error_reports").insert({
-      knowledge_code: code,
-      reporter_id: user.id,
-    });
+    const { error: updErr } = await admin
+      .from("knowledge")
+      .update({ needs_correction: true })
+      .eq("code", code);
 
-    if (insErr) throw ApiError.internal(insErr.message);
+    if (updErr) throw ApiError.internal(updErr.message);
 
-    logger.info("Knowledge error reported", { userId: user.id, knowledgeCode: code });
+    logger.info("Knowledge flagged for correction", { userId: user.id, knowledgeCode: code });
 
     return apiSuccess({
       alreadyReported: false,

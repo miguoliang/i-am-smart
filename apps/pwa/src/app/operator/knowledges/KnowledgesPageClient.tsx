@@ -177,7 +177,7 @@ export function KnowledgesPageClient() {
       id: "level",
       header: "等级",
       cell: ({ row }) => {
-        const lvl = (row.original.metadata as Record<string, unknown>)?.level as string;
+        const lvl = row.original.level || ((row.original.metadata as Record<string, unknown>)?.level as string);
         return lvl ? (
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900/40 dark:text-blue-400">
             {lvl}

@@ -37,7 +37,11 @@ export class SupabaseCardRepository implements CardRepository {
           code,
           name,
           description,
-          metadata
+          metadata,
+          pos,
+          level,
+          self_examine_prompt,
+          theme
         ),
         ease_factor,
         interval_days,
@@ -85,7 +89,11 @@ export class SupabaseCardRepository implements CardRepository {
           code,
           name,
           description,
-          metadata
+          metadata,
+          pos,
+          level,
+          self_examine_prompt,
+          theme
         )
       `)
       .eq('id', cardId)

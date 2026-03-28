@@ -1,27 +1,34 @@
 import type { Card } from "../types";
 
 /** A small built-in A1 word list for anonymous users. */
+const emptyMeta = {
+  pos: "",
+  level: "",
+  selfExaminePrompt: "",
+  theme: "",
+} as const;
+
 const GUEST_WORDS: Pick<Card, "knowledge">[] = [
-  { knowledge: { code: "hello", name: "hello", description: "你好", metadata: {} } },
-  { knowledge: { code: "goodbye", name: "goodbye", description: "再见", metadata: {} } },
-  { knowledge: { code: "thank", name: "thank you", description: "谢谢", metadata: {} } },
-  { knowledge: { code: "please", name: "please", description: "请", metadata: {} } },
-  { knowledge: { code: "yes", name: "yes", description: "是", metadata: {} } },
-  { knowledge: { code: "no", name: "no", description: "不", metadata: {} } },
-  { knowledge: { code: "water", name: "water", description: "水", metadata: {} } },
-  { knowledge: { code: "food", name: "food", description: "食物", metadata: {} } },
-  { knowledge: { code: "friend", name: "friend", description: "朋友", metadata: {} } },
-  { knowledge: { code: "family", name: "family", description: "家庭", metadata: {} } },
-  { knowledge: { code: "school", name: "school", description: "学校", metadata: {} } },
-  { knowledge: { code: "book", name: "book", description: "书", metadata: {} } },
-  { knowledge: { code: "time", name: "time", description: "时间", metadata: {} } },
-  { knowledge: { code: "day", name: "day", description: "天", metadata: {} } },
-  { knowledge: { code: "night", name: "night", description: "夜晚", metadata: {} } },
-  { knowledge: { code: "morning", name: "good morning", description: "早上好", metadata: {} } },
-  { knowledge: { code: "happy", name: "happy", description: "快乐的", metadata: {} } },
-  { knowledge: { code: "big", name: "big", description: "大的", metadata: {} } },
-  { knowledge: { code: "small", name: "small", description: "小的", metadata: {} } },
-  { knowledge: { code: "love", name: "love", description: "爱", metadata: {} } },
+  { knowledge: { code: "hello", name: "hello", description: "你好", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "goodbye", name: "goodbye", description: "再见", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "thank", name: "thank you", description: "谢谢", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "please", name: "please", description: "请", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "yes", name: "yes", description: "是", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "no", name: "no", description: "不", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "water", name: "water", description: "水", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "food", name: "food", description: "食物", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "friend", name: "friend", description: "朋友", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "family", name: "family", description: "家庭", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "school", name: "school", description: "学校", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "book", name: "book", description: "书", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "time", name: "time", description: "时间", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "day", name: "day", description: "天", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "night", name: "night", description: "夜晚", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "morning", name: "good morning", description: "早上好", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "happy", name: "happy", description: "快乐的", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "big", name: "big", description: "大的", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "small", name: "small", description: "小的", metadata: {}, ...emptyMeta } },
+  { knowledge: { code: "love", name: "love", description: "爱", metadata: {}, ...emptyMeta } },
 ];
 
 const STORAGE_KEY = "guest_progress";

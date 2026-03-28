@@ -7,6 +7,10 @@ export interface Knowledge {
   name: string;
   description: string;
   metadata: KnowledgeMetadata;
+  pos: string;
+  level: string;
+  selfExaminePrompt: string;
+  theme: string;
 }
 
 export interface Card {

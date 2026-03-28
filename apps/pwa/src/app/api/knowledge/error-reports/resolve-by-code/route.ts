@@ -4,7 +4,7 @@ import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
 import { writeAuditLog } from "@/lib/utils/auditLog";
 
-/** POST: resolve all unresolved error reports for one knowledge code (after operator edits the entry). */
+/** POST: clear correction flag after operator edits the entry */
 export async function POST(req: NextRequest) {
   try {
     const { user } = await requireOperator(req);
@@ -21,13 +21,12 @@ export async function POST(req: NextRequest) {
     if (!code) throw ApiError.validationError("缺少 knowledgeCode");
 
     const admin = createSupabaseAdmin();
-    const now = new Date().toISOString();
     const { data: updated, error } = await admin
-      .from("knowledge_error_reports")
-      .update({ resolved_at: now })
-      .eq("knowledge_code", code)
-      .is("resolved_at", null)
-      .select("id");
+      .from("knowledge")
+      .update({ needs_correction: false })
+      .eq("code", code)
+      .eq("needs_correction", true)
+      .select("code");
 
     if (error) throw ApiError.internal(error.message);
 
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
         action: "resolve_knowledge_error_report",
         target_type: "knowledge",
         target_id: code,
-        detail: { knowledge_code: code, resolved_count: resolvedCount },
+        detail: { knowledge_code: code },
       });
     }
 

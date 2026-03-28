@@ -10,7 +10,16 @@ describe('CardService', () => {
   const createMockCard = (overrides?: Partial<Card>): Card => ({
     id: 1,
     knowledge_code: 'k1',
-    knowledge: { code: 'k1', name: 'n', description: 'd', metadata: {} },
+    knowledge: {
+      code: 'k1',
+      name: 'n',
+      description: 'd',
+      metadata: {},
+      pos: '',
+      level: '',
+      selfExaminePrompt: '',
+      theme: '',
+    },
     next_review_date: '2023-01-01',
     ease_factor: 2.5,
     repetitions: 0,

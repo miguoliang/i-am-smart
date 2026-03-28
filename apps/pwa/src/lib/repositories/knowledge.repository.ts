@@ -5,8 +5,10 @@ export interface PaginationParams {
   pageSize: number;
   search?: string;
   level?: string;
-  /** When set, only rows whose `code` is in this list (e.g. knowledge with pending error reports). */
+  /** When set, only rows whose `code` is in this list. */
   restrictToCodes?: string[];
+  /** Only rows with needs_correction = true */
+  needsCorrectionOnly?: boolean;
 }
 
 export interface PaginatedResult<T> {

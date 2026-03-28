@@ -27,14 +27,32 @@ describe('useCards', () => {
     { 
       id: 1, 
       knowledge_code: 'test1',
-      knowledge: { code: 'test1', name: 'Test 1', description: 'Test knowledge 1', metadata: {} },
+      knowledge: {
+        code: 'test1',
+        name: 'Test 1',
+        description: 'Test knowledge 1',
+        metadata: {},
+        pos: '',
+        level: '',
+        selfExaminePrompt: '',
+        theme: '',
+      },
       next_review_date: '2024-01-01',
       reviewed: false 
     },
     { 
       id: 2, 
       knowledge_code: 'test2',
-      knowledge: { code: 'test2', name: 'Test 2', description: 'Test knowledge 2', metadata: {} },
+      knowledge: {
+        code: 'test2',
+        name: 'Test 2',
+        description: 'Test knowledge 2',
+        metadata: {},
+        pos: '',
+        level: '',
+        selfExaminePrompt: '',
+        theme: '',
+      },
       next_review_date: '2024-01-02',
       reviewed: false 
     },

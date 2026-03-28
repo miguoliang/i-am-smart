@@ -13,7 +13,11 @@ export interface Knowledge {
   metadata: KnowledgeMetadata;
   created_at: string;
   updated_at: string;
-  /** Operator list: unresolved learner error reports for this entry */
+  pos: string;
+  level: string;
+  selfExaminePrompt: string;
+  theme: string;
+  /** Operator list: 1 when needs_correction, else 0（兼容旧列展示） */
   pending_error_report_count?: number;
 }
 
@@ -58,7 +62,15 @@ export async function fetchKnowledges(params: FetchKnowledgesParams = {}): Promi
 
 export async function updateKnowledge(
   code: string,
-  data: { name?: string; description?: string; metadata?: Record<string, unknown> }
+  data: {
+    name?: string;
+    description?: string;
+    metadata?: Record<string, unknown>;
+    pos?: string;
+    level?: string;
+    selfExaminePrompt?: string;
+    theme?: string;
+  }
 ): Promise<Knowledge> {
   const res = await fetch(`/api/knowledge/${encodeURIComponent(code)}`, {
     method: "PUT",

@@ -4,6 +4,21 @@ import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
 import { writeAuditLog } from "@/lib/utils/auditLog";
 
+function mapKnowledgeDbRowToApi(row: Record<string, unknown>) {
+  return {
+    code: row.code as string,
+    name: row.name as string,
+    description: row.description as string,
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    pos: (row.pos as string) ?? "",
+    level: (row.level as string) ?? "",
+    selfExaminePrompt: (row.self_examine_prompt as string) ?? "",
+    theme: (row.theme as string) ?? "",
+  };
+}
+
 /** PUT: Update a knowledge item */
 export async function PUT(
   req: NextRequest,
@@ -14,7 +29,15 @@ export async function PUT(
     const { code } = await params;
     if (!code) throw ApiError.validationError("缺少 code");
 
-    let body: { name?: string; description?: string; metadata?: Record<string, unknown> };
+    let body: {
+      name?: string;
+      description?: string;
+      metadata?: Record<string, unknown>;
+      pos?: string;
+      level?: string;
+      selfExaminePrompt?: string;
+      theme?: string;
+    };
     try {
       body = await req.json();
     } catch {
@@ -34,6 +57,24 @@ export async function PUT(
     if (body.metadata !== undefined) {
       update.metadata = body.metadata;
     }
+    if (body.pos !== undefined) {
+      if (typeof body.pos !== "string") throw ApiError.validationError("pos 必须是字符串");
+      update.pos = body.pos;
+    }
+    if (body.level !== undefined) {
+      if (typeof body.level !== "string") throw ApiError.validationError("level 必须是字符串");
+      update.level = body.level;
+    }
+    if (body.selfExaminePrompt !== undefined) {
+      if (typeof body.selfExaminePrompt !== "string") {
+        throw ApiError.validationError("selfExaminePrompt 必须是字符串");
+      }
+      update.self_examine_prompt = body.selfExaminePrompt;
+    }
+    if (body.theme !== undefined) {
+      if (typeof body.theme !== "string") throw ApiError.validationError("theme 必须是字符串");
+      update.theme = body.theme;
+    }
 
     if (Object.keys(update).length === 0) {
       throw ApiError.validationError("至少提供一个要更新的字段");
@@ -52,6 +93,8 @@ export async function PUT(
     if (error) throw ApiError.internal(error.message);
     if (!data) throw ApiError.notFound("知识条目不存在");
 
+    const payload = mapKnowledgeDbRowToApi(data as Record<string, unknown>);
+
     void writeAuditLog({
       operator_id: user.id,
       action: "update_knowledge",
@@ -60,7 +103,7 @@ export async function PUT(
       detail: update,
     });
 
-    return apiSuccess(data);
+    return apiSuccess(payload);
   } catch (e) {
     return handleApiError(e);
   }
