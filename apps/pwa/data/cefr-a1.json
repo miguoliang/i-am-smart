@@ -580,7 +580,7 @@
     "imageName": null
   },
   {
-    "englishWord": "bank (money)",
+    "englishWord": "bank",
     "pos": "n.",
     "level": "A1",
     "chineseTranslation": "银行",
@@ -1200,7 +1200,7 @@
     "imageName": null
   },
   {
-    "englishWord": "can1",
+    "englishWord": "can",
     "pos": "modal v.",
     "level": "A1",
     "chineseTranslation": "能够；可以",
@@ -1500,7 +1500,7 @@
     "imageName": null
   },
   {
-    "englishWord": "close1",
+    "englishWord": "close",
     "pos": "v.",
     "level": "A1",
     "chineseTranslation": "关闭",
@@ -2110,10 +2110,10 @@
     "imageName": null
   },
   {
-    "englishWord": "do1",
+    "englishWord": "do",
     "pos": "v., auxiliary v.",
     "level": "A1",
-    "chineseTranslation": "做",
+    "chineseTranslation": "做；助动词",
     "exampleSentence": "What do you do?",
     "selfExaminePrompt": "What do you do every morning?",
     "theme": "Actions",
@@ -4160,7 +4160,7 @@
     "imageName": null
   },
   {
-    "englishWord": "kind (type)",
+    "englishWord": "kind",
     "pos": "n.",
     "level": "A1",
     "chineseTranslation": "种类",
@@ -4220,12 +4220,12 @@
     "imageName": null
   },
   {
-    "englishWord": "last1 (final)",
+    "englishWord": "last",
     "pos": "det.",
     "level": "A1",
     "chineseTranslation": "最后的",
     "exampleSentence": "This is the last question.",
-    "selfExaminePrompt": "What did you do last weekend?",
+    "selfExaminePrompt": "What is the last thing you do before bed?",
     "theme": "Time",
     "imageName": null
   },
@@ -4340,12 +4340,12 @@
     "imageName": null
   },
   {
-    "englishWord": "lie1",
+    "englishWord": "lie",
     "pos": "v.",
     "level": "A1",
-    "chineseTranslation": "躺；说谎",
+    "chineseTranslation": "说谎；躺",
     "exampleSentence": "Don't lie to me.",
-    "selfExaminePrompt": "Where do you lie down to rest?",
+    "selfExaminePrompt": "What is the opposite of telling the truth?",
     "theme": "Actions",
     "imageName": null
   },
@@ -4360,7 +4360,7 @@
     "imageName": null
   },
   {
-    "englishWord": "light (from the sun/a lamp)",
+    "englishWord": "light",
     "pos": "n., adj.",
     "level": "A1",
     "chineseTranslation": "光；轻的",
@@ -4370,7 +4370,7 @@
     "imageName": null
   },
   {
-    "englishWord": "like (similar)",
+    "englishWord": "like",
     "pos": "prep.",
     "level": "A1",
     "chineseTranslation": "像",
@@ -4380,7 +4380,7 @@
     "imageName": null
   },
   {
-    "englishWord": "like (find sb/sth pleasant)",
+    "englishWord": "like",
     "pos": "v.",
     "level": "A1",
     "chineseTranslation": "喜欢",
@@ -4440,7 +4440,7 @@
     "imageName": null
   },
   {
-    "englishWord": "live1",
+    "englishWord": "live",
     "pos": "v.",
     "level": "A1",
     "chineseTranslation": "居住；生活",
@@ -4460,8 +4460,8 @@
     "imageName": null
   },
   {
-    "englishWord": "long1",
-    "pos": "adj., adv.",
+    "englishWord": "long",
+    "pos": "adj.",
     "level": "A1",
     "chineseTranslation": "长的",
     "exampleSentence": "She has long hair.",
@@ -4620,7 +4620,7 @@
     "imageName": null
   },
   {
-    "englishWord": "match (contest/correspond)",
+    "englishWord": "match",
     "pos": "n., v.",
     "level": "A1",
     "chineseTranslation": "比赛；匹配",
@@ -4800,7 +4800,7 @@
     "imageName": null
   },
   {
-    "englishWord": "minute1",
+    "englishWord": "minute",
     "pos": "n.",
     "level": "A1",
     "chineseTranslation": "分钟",
@@ -6680,8 +6680,8 @@
     "imageName": null
   },
   {
-    "englishWord": "second1 (next after the first)",
-    "pos": "det./number",
+    "englishWord": "second",
+    "pos": "det.",
     "level": "A1",
     "chineseTranslation": "第二",
     "exampleSentence": "This is my second cup of coffee.",
