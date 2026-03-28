@@ -1,12 +1,9 @@
-export interface KnowledgeMetadata {
-  [key: string]: unknown;
-}
-
 export interface Knowledge {
   code: string;
   name: string;
   description: string;
-  metadata: KnowledgeMetadata;
+  exampleSentence: string;
+  imageName: string | null;
   pos: string;
   level: string;
   selfExaminePrompt: string;

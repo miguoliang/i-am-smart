@@ -2,15 +2,12 @@
 import { t } from "@/lib/i18n";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
-export interface KnowledgeMetadata {
-  [key: string]: unknown;
-}
-
 export interface Knowledge {
   code: string;
   name: string;
   description: string;
-  metadata: KnowledgeMetadata;
+  exampleSentence: string;
+  imageName: string | null;
   created_at: string;
   updated_at: string;
   pos: string;
@@ -65,7 +62,8 @@ export async function updateKnowledge(
   data: {
     name?: string;
     description?: string;
-    metadata?: Record<string, unknown>;
+    exampleSentence?: string;
+    imageName?: string | null;
     pos?: string;
     level?: string;
     selfExaminePrompt?: string;

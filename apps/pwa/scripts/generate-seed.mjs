@@ -11,7 +11,8 @@ const rootDir = join(__dirname, '..');
 /**
  * Regenerates supabase/seeds/*.sql (card_types, operator user, accounts).
  * `config.toml` uses sql_paths = ["./seeds/*.sql"] — root supabase/seed.sql is not loaded by CLI.
- * Knowledge bulk seed was removed; load vocabulary via operator UI, migrations, or custom import.
+ * CEFR vocabulary shards (08-cefr-vocab-part-*.sql) are generated separately:
+ *   node apps/pwa/scripts/generate-cefr-knowledge-seeds.mjs
  */
 function generateSeedFiles() {
   console.log('Generating seed files (no knowledge bulk inserts)...\n');

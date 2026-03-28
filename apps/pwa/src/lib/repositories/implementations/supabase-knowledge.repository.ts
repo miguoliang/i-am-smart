@@ -8,7 +8,8 @@ interface KnowledgeRowDb {
   code: string;
   name: string;
   description: string | null;
-  metadata: Record<string, unknown> | null;
+  example_sentence?: string | null;
+  image_name?: string | null;
   created_at: string;
   updated_at: string;
   needs_correction?: boolean | null;
@@ -23,7 +24,8 @@ function mapKnowledgeRow(row: KnowledgeRowDb): KnowledgeItem {
     code: row.code,
     name: row.name,
     description: row.description,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    exampleSentence: row.example_sentence ?? '',
+    imageName: row.image_name ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     pos: row.pos ?? '',
@@ -44,7 +46,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
     const { data, error } = await this.client
       .from('knowledge')
       .select(
-        'code, name, description, metadata, created_at, updated_at, pos, level, self_examine_prompt, theme'
+        'code, name, description, example_sentence, image_name, created_at, updated_at, pos, level, self_examine_prompt, theme'
       )
       .order('created_at', { ascending: false })
       .limit(DEFAULT_KNOWLEDGE_LIMIT);
@@ -94,7 +96,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
     let dataQuery = this.client
       .from('knowledge')
       .select(
-        'code, name, description, metadata, created_at, updated_at, needs_correction, pos, level, self_examine_prompt, theme'
+        'code, name, description, example_sentence, image_name, created_at, updated_at, needs_correction, pos, level, self_examine_prompt, theme'
       )
       .order('created_at', { ascending: false });
 

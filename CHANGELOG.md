@@ -4,6 +4,27 @@
 
 ---
 
+## [1.12.0] - 2026-03-28
+
+### 数据库
+
+- **`knowledge`**：唯一约束改为 `(name, level, pos)`，支持同形异级、同级异义
+- **`knowledge`**：新增 `example_sentence`、`image_name`；移除 `metadata` 列；删除 `knowledge_sync_from_metadata` 触发器与 `idx_knowledge_metadata` 索引
+
+### 数据与工具
+
+- **CEFR 词汇**：自 `cefr-a1`…`cefr-c2` JSON 生成分片 SQL seed（`08-cefr-vocab-part-*.sql`），脚本 `scripts/generate-cefr-knowledge-seeds.mjs`
+
+### 应用
+
+- API、仓储与类型：`Knowledge` 使用 `exampleSentence` / `imageName`；`packages/shared` 卡片类型同步
+
+### 发布
+
+- 版本号 **v1.12.0**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa` 包版本一致）；Git tag **`v1.12.0`**
+
+---
+
 ## [1.11.6] - 2026-03-22
 
 ### 学习

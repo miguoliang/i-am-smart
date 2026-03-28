@@ -9,7 +9,8 @@ function mapKnowledgeDbRowToApi(row: Record<string, unknown>) {
     code: row.code as string,
     name: row.name as string,
     description: row.description as string,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    exampleSentence: (row.example_sentence as string) ?? "",
+    imageName: (row.image_name as string | null) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     pos: (row.pos as string) ?? "",
@@ -32,7 +33,8 @@ export async function PUT(
     let body: {
       name?: string;
       description?: string;
-      metadata?: Record<string, unknown>;
+      exampleSentence?: string;
+      imageName?: string | null;
       pos?: string;
       level?: string;
       selfExaminePrompt?: string;
@@ -54,8 +56,17 @@ export async function PUT(
     if (body.description !== undefined) {
       update.description = body.description;
     }
-    if (body.metadata !== undefined) {
-      update.metadata = body.metadata;
+    if (body.exampleSentence !== undefined) {
+      if (typeof body.exampleSentence !== "string") {
+        throw ApiError.validationError("exampleSentence 必须是字符串");
+      }
+      update.example_sentence = body.exampleSentence;
+    }
+    if (body.imageName !== undefined) {
+      if (body.imageName !== null && typeof body.imageName !== "string") {
+        throw ApiError.validationError("imageName 必须是字符串或 null");
+      }
+      update.image_name = body.imageName;
     }
     if (body.pos !== undefined) {
       if (typeof body.pos !== "string") throw ApiError.validationError("pos 必须是字符串");

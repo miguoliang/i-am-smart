@@ -5,7 +5,8 @@ export interface KnowledgeItem {
   code: string;
   name: string;
   description: string | null;
-  metadata: Record<string, unknown>;
+  exampleSentence: string;
+  imageName: string | null;
   created_at: string;
   updated_at: string;
   /** When true, entry is flagged for operator correction */

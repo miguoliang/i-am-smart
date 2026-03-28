@@ -1,12 +1,6 @@
 import { z } from "zod";
 
 /**
- * Schema for knowledge metadata (arbitrary key-value from DB).
- * Used when parsing Supabase card/knowledge responses.
- */
-export const KnowledgeMetadataSchema = z.record(z.string(), z.unknown());
-
-/**
  * Schema for the nested knowledge object returned by Supabase
  * when selecting card with knowledge (e.g. knowledge!inner or knowledge(...)).
  */
@@ -15,21 +9,23 @@ export const KnowledgeSchema = z
     code: z.string(),
     name: z.string(),
     description: z.string(),
-    metadata: KnowledgeMetadataSchema.default({}),
     pos: z.string().nullable().optional(),
     level: z.string().nullable().optional(),
     self_examine_prompt: z.string().nullable().optional(),
     theme: z.string().nullable().optional(),
+    example_sentence: z.string().nullable().optional(),
+    image_name: z.string().nullable().optional(),
   })
   .transform((k) => ({
     code: k.code,
     name: k.name,
     description: k.description,
-    metadata: k.metadata,
     pos: k.pos ?? "",
     level: k.level ?? "",
     selfExaminePrompt: k.self_examine_prompt ?? "",
     theme: k.theme ?? "",
+    exampleSentence: k.example_sentence ?? "",
+    imageName: k.image_name ?? null,
   }));
 
 /**
