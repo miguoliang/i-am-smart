@@ -1,0 +1,8 @@
+node_modules/
+out/
+out-test/
+.remotion/
+dist/
+*.mp4
+public/narration.wav
+!public/

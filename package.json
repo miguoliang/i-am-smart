@@ -9,6 +9,8 @@
     "test": "turbo run test",
     "test:e2e": "playwright test",
     "type-check": "turbo run type-check",
+    "word-videos:render": "pnpm --filter @i-am-smart/word-videos render",
+    "word-videos:type-check": "pnpm --filter @i-am-smart/word-videos exec tsc --noEmit",
     "prepare": "husky"
   },
   "devDependencies": {
