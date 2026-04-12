@@ -14,6 +14,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useExamVocabProgress } from "../hooks/useExamVocabProgress";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { ExamVocabProgressBar } from "./ExamVocabProgressBar";
+import { LearnProgressShare } from "./LearnProgressShare";
 
 export interface LearnSettingsSheetContentProps {
   /** Close sheet then route to pay (e.g. Pro-only exam). */
@@ -48,6 +49,19 @@ export function LearnSettingsSheetContent({
     return new Map(list.map((p) => [p.examId, { brushed: p.brushed, total: p.total }]));
   }, [examVocabProgress.data]);
 
+  const shareExamMeta = useMemo(() => {
+    const entry = EXAM_PICKER_ENTRIES.find((e) =>
+      e.examTargetIds.includes(currentExamTarget as ExamTargetId)
+    );
+    const canonical = entry?.canonicalExamTargetId ?? "ket";
+    const stats = progressByExamId.get(canonical);
+    return {
+      label: entry?.label ?? currentExamTarget,
+      brushed: stats?.brushed ?? 0,
+      total: stats?.total ?? 0,
+    };
+  }, [currentExamTarget, progressByExamId]);
+
   const updateExamMutation = useMutation({
     mutationFn: (examId: string) => updateProfileApi(activeProfile!.id, { exam_target: examId }),
     onSuccess: (updatedProfile) => {
@@ -76,6 +90,18 @@ export function LearnSettingsSheetContent({
       >
         <div className="mb-6">
           <ProfileSwitcher />
+        </div>
+
+        <div className="mb-6">
+          <h3 className="mb-2 text-sm font-medium text-muted-foreground">分享</h3>
+          <LearnProgressShare
+            profileName={activeProfile?.name?.trim() || "学习者"}
+            examLabel={shareExamMeta.label}
+            brushed={shareExamMeta.brushed}
+            total={shareExamMeta.total}
+            progressLoading={examVocabProgress.isLoading}
+            disabled={isSigningOut}
+          />
         </div>
 
         <div className="mb-6 space-y-2">

@@ -24,7 +24,6 @@ import { submitKnowledgeErrorReport } from "@/lib/api/knowledgeErrorReports";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { toast } from "sonner";
 import { SpeakButton } from "./components/SpeakButton";
-import { LearnMomentShare } from "./components/LearnMomentShare";
 
 export default function Learn() {
   return (
@@ -147,9 +146,6 @@ function AuthenticatedLearnActive({
         {waitingForNext ? (
           <ActionRow>
             <SpeakButton onSpeak={speakCurrent} showKeyHint={isPointerFine} />
-            <LearnMomentShare
-              knowledge={currentCard.knowledge}
-            />
             <MisrememberButton
               onClick={submitMisremembered}
               disabled={review.isSubmittingCurrentCard}
@@ -164,9 +160,6 @@ function AuthenticatedLearnActive({
         ) : (
           <ActionRow>
             <SpeakButton onSpeak={speakCurrent} showKeyHint={isPointerFine} />
-            <LearnMomentShare
-              knowledge={currentCard.knowledge}
-            />
             <RatingButtons onChoose={chooseQuality} showKeyHints={isPointerFine} />
           </ActionRow>
         )}
@@ -221,7 +214,7 @@ function AuthenticatedLearn() {
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 md:mt-12 flex w-full min-w-0 flex-wrap justify-center gap-4 gap-y-3 md:gap-6 md:gap-y-4">
+    <div className="mt-6 md:mt-12 w-full min-w-0 flex gap-4 md:gap-6">
       {children}
     </div>
   );
