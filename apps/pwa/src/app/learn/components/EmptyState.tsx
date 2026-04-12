@@ -41,10 +41,7 @@ export function EmptyState({ auth }: EmptyStateProps) {
   const [open, setOpen] = useState(false);
   const [sheetMaxH, setSheetMaxH] = useState("85dvh");
   const [npsSlot, setNpsSlot] = useState<NpsSlot>("loading");
-  const { levelLabel, paletteKey } = getLevelLabelAndPalette(
-    activeProfile?.exam_target,
-    activeProfile?.level
-  );
+  const { levelLabel, paletteKey } = getLevelLabelAndPalette(activeProfile?.exam_target);
 
   useEffect(() => {
     const vv = window.visualViewport;

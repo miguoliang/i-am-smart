@@ -1,8 +1,9 @@
 /**
- * Learn page background: level/exam label for texture text and per-level color palettes.
+ * Learn page background: **exam target** label for texture text and per-exam color palettes.
+ * Never uses CEFR word band (A1–C2) — only the profile’s 考试目标 (defaults to KET).
  * Texture layout uses deterministic math (grid + rotation/scale formulas) for variation with regularity.
  */
-import { getExamTarget } from "@i-am-smart/shared/constants";
+import { DEFAULT_EXAM_TARGET, getExamTarget } from "@i-am-smart/shared/constants";
 
 export type PaletteKey =
   | "ket"
@@ -22,7 +23,7 @@ export interface LevelPalette {
   textureOpacityDark: number;
 }
 
-/** Per-level/exam palettes — distinct, comfortable, eye-friendly. */
+/** Per-exam palettes — distinct, comfortable, eye-friendly. */
 export const LEVEL_PALETTES: Record<PaletteKey, LevelPalette> = {
   ket: {
     bgLight: "#f5f2ee",
@@ -82,33 +83,18 @@ export const LEVEL_PALETTES: Record<PaletteKey, LevelPalette> = {
   },
 };
 
-/** Map CEFR level to palette key when no exam_target is set. */
-const LEVEL_TO_PALETTE: Record<string, PaletteKey> = {
-  A1: "ket",
-  A2: "ket",
-  B1: "pet",
-  B2: "pet",
-  C1: "ielts",
-  C2: "ielts",
-};
-
 /**
  * Resolve the label shown in the texture (e.g. "KET", "PET", "四级") and palette key for colors.
+ * Always derived from **exam target**; missing/blank `examTarget` uses {@link DEFAULT_EXAM_TARGET}.
  */
 export function getLevelLabelAndPalette(
-  examTarget: string | null | undefined,
-  level: string | null | undefined
+  examTarget: string | null | undefined
 ): { levelLabel: string; paletteKey: PaletteKey } {
-  if (examTarget) {
-    const exam = getExamTarget(examTarget);
-    const name = exam?.name ?? level ?? "KET";
-    const paletteKey = (examTarget as PaletteKey) in LEVEL_PALETTES
-      ? (examTarget as PaletteKey)
-      : "default";
-    return { levelLabel: name, paletteKey };
-  }
-  const paletteKey = level ? LEVEL_TO_PALETTE[level] ?? "default" : "default";
-  const levelLabel = level ?? "KET";
+  const target = (examTarget?.trim() || DEFAULT_EXAM_TARGET) as PaletteKey | string;
+  const exam = getExamTarget(target);
+  const levelLabel = exam?.name ?? "KET";
+  const paletteKey =
+    target in LEVEL_PALETTES ? (target as PaletteKey) : "default";
   return { levelLabel, paletteKey };
 }
 

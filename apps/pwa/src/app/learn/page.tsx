@@ -181,10 +181,7 @@ function AuthenticatedLearn() {
     auth,
   } = useLearnSession();
   const isPointerFine = usePointerFine();
-  const { levelLabel, paletteKey } = getLevelLabelAndPalette(
-    activeProfile?.exam_target,
-    activeProfile?.level
-  );
+  const { levelLabel, paletteKey } = getLevelLabelAndPalette(activeProfile?.exam_target);
 
   const isSessionComplete = progress.total > 0 && progress.reviewed >= progress.total;
 
