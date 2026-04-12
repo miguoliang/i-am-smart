@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toPng } from "html-to-image";
 import QRCode from "qrcode";
@@ -26,7 +26,8 @@ interface LearnMomentShareCardProps {
  * Fixed-size DOM for PNG export (positioned off-screen). Uses inline styles so
  * html-to-image captures reliably without relying on Tailwind in hidden trees.
  */
-function LearnMomentShareCard({ knowledge, qrDataUrl }: LearnMomentShareCardProps) {
+const LearnMomentShareCard = forwardRef<HTMLDivElement, LearnMomentShareCardProps>(
+  function LearnMomentShareCard({ knowledge, qrDataUrl }, ref) {
   const example =
     knowledge.exampleSentence.length > 96
       ? `${knowledge.exampleSentence.slice(0, 96)}…`
@@ -34,12 +35,14 @@ function LearnMomentShareCard({ knowledge, qrDataUrl }: LearnMomentShareCardProp
 
   return (
     <div
+      ref={ref}
       style={{
         width: CARD_PX,
         boxSizing: "border-box",
         padding: "28px 24px 24px",
         borderRadius: 20,
-        background: "linear-gradient(165deg, #fafafa 0%, #f4f4f5 100%)",
+        /* Solid bg: linear-gradient often rasterizes blank under html-to-image + WebKit */
+        backgroundColor: "#f4f4f5",
         border: "1px solid #e4e4e7",
         fontFamily:
           'system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
@@ -143,10 +146,29 @@ function LearnMomentShareCard({ knowledge, qrDataUrl }: LearnMomentShareCardProp
       </div>
     </div>
   );
-}
+});
+
+LearnMomentShareCard.displayName = "LearnMomentShareCard";
 
 interface LearnMomentShareProps {
   knowledge: Knowledge;
+}
+
+async function waitForImagesInNode(node: HTMLElement): Promise<void> {
+  const imgs = node.querySelectorAll("img");
+  await Promise.all(
+    [...imgs].map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        })
+    )
+  );
 }
 
 export function LearnMomentShare({ knowledge }: LearnMomentShareProps) {
@@ -179,17 +201,38 @@ export function LearnMomentShare({ knowledge }: LearnMomentShareProps) {
       flushSync(() => {
         setExportPayload({ knowledge, qrDataUrl: qr });
       });
+      /* Layout + paint: WebKit often yields blank PNG if we capture in the same frame as mount. */
       await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => resolve())
+        );
       });
+      await new Promise<void>((r) => setTimeout(r, 32));
+      if (typeof document !== "undefined" && document.fonts?.ready) {
+        try {
+          await document.fonts.ready;
+        } catch {
+          /* ignore */
+        }
+      }
       const node = cardRef.current;
       if (!node) {
         throw new Error("分享卡片未就绪");
       }
+      await waitForImagesInNode(node);
+      const height = Math.ceil(node.getBoundingClientRect().height);
       const dataUrl = await toPng(node, {
-        pixelRatio: 3,
+        width: CARD_PX,
+        height: height > 0 ? height : undefined,
+        pixelRatio: 2,
         cacheBust: true,
         backgroundColor: "#f4f4f5",
+        style: {
+          transform: "none",
+          position: "static",
+          left: "auto",
+          top: "auto",
+        },
       });
       setExportPayload(null);
       const res = await fetch(dataUrl);
@@ -230,18 +273,22 @@ export function LearnMomentShare({ knowledge }: LearnMomentShareProps) {
   return (
     <>
       {exportPayload ? (
+        /*
+         * Do NOT use transform to move off-screen — WebKit / 微信内置浏览器 often rasterizes
+         * an empty bitmap. Use large negative left + fixed so the subtree is still painted.
+         */
         <div
-          ref={cardRef}
-          className="pointer-events-none fixed z-0"
+          className="pointer-events-none fixed z-[5] max-h-none max-w-none overflow-visible"
           style={{
-            left: 0,
+            left: -10000,
             top: 0,
-            transform: "translateX(-12000px)",
+            width: CARD_PX,
             opacity: 1,
           }}
           aria-hidden
         >
           <LearnMomentShareCard
+            ref={cardRef}
             knowledge={exportPayload.knowledge}
             qrDataUrl={exportPayload.qrDataUrl}
           />
