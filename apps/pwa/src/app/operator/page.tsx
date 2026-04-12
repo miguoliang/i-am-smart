@@ -8,6 +8,7 @@ import {
 } from "@/lib/api/operator";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OperatorMain, OperatorPanel, OperatorStatBlock } from "./components/OperatorChrome";
 
 const METRIC_HELP: Record<string, string> = {
@@ -75,10 +76,26 @@ export default function OperatorDashboard() {
       <OperatorMain>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-lg border border-border bg-muted/50 md:h-28"
-            />
+            <OperatorPanel key={i} className="p-4 md:p-5">
+              <Skeleton className="h-3 w-[5.5rem]" aria-hidden />
+              <Skeleton className="mt-2 h-8 w-24 md:h-9 md:w-28" aria-hidden />
+            </OperatorPanel>
+          ))}
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <OperatorPanel key={i} className="p-4 md:p-5">
+              <div className="mb-4 flex items-baseline justify-between gap-3">
+                <Skeleton className="h-3 w-36 max-w-[70%]" aria-hidden />
+                <Skeleton className="h-7 w-14 shrink-0" aria-hidden />
+              </div>
+              <Skeleton className="h-20 w-full rounded-sm" aria-hidden />
+              <div className="mt-2 flex justify-between">
+                <Skeleton className="h-3 w-9" aria-hidden />
+                <Skeleton className="h-3 w-9" aria-hidden />
+              </div>
+            </OperatorPanel>
           ))}
         </div>
       </OperatorMain>
