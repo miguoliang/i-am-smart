@@ -4,6 +4,19 @@
 
 ---
 
+## [1.12.4] - 2026-04-12
+
+### 数据库与学习
+
+- **`get_due_cards_by_profile`**：到期卡片队列由 `ORDER BY random()` 改为 **弱词优先**——按 `ease_factor` 升序（越低越先）、再 `next_review_date`、`interval_days`、`id`，便于把每日复习额度用在掌握较弱的词上
+
+### 发布
+
+- 版本号 **v1.12.4**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa`、仓库根 `package.json` 一致）；Git tag **`v1.12.4`**
+- 部署后请在目标环境执行 Supabase migration：`20260412100000_get_due_cards_weak_first.sql`
+
+---
+
 ## [1.12.3] - 2026-04-12
 
 ### 运营 UI
