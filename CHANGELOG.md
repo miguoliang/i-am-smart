@@ -4,6 +4,19 @@
 
 ---
 
+## [1.12.9] - 2026-04-12
+
+### 学习
+
+- **刷词分享图**：学习页增加「分享」按钮，生成带当前词条（英/中、例句等）与**扫码落地页二维码**的 PNG，便于发朋友圈；支持预览、下载与长按保存说明
+- 依赖 **`html-to-image`**；二维码链接优先 `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_ORIGIN`，可选 **`NEXT_PUBLIC_SHARE_CARD_BRAND`** 自定义卡片顶栏品牌文案
+
+### 发布
+
+- 版本号 **v1.12.9**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa`、仓库根 `package.json` 一致）；Git tag **`v1.12.9`**
+
+---
+
 ## [1.12.8] - 2026-04-12
 
 ### 运营

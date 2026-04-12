@@ -2,7 +2,7 @@
  * Integration tests for the learn flow: load due cards → display card → reveal answer → rate.
  * Tests the full flow with mocked API client (avoids loading next/server in jsdom).
  */
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
@@ -115,7 +115,9 @@ describe("Learn flow (integration)", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("word-card")).getByText("Hello")
+      ).toBeInTheDocument();
     });
 
     // Answer should not be visible until revealed
@@ -130,13 +132,17 @@ describe("Learn flow (integration)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("word-card")).getByText("Hello")
+      ).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: /会了/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/A greeting/)).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("word-card")).getByText(/A greeting/)
+      ).toBeInTheDocument();
     });
 
     expect(screen.getByRole("button", { name: /记错了/ })).toBeInTheDocument();
@@ -151,7 +157,9 @@ describe("Learn flow (integration)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("word-card")).getByText("Hello")
+      ).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: /会了/ }));
@@ -177,7 +185,9 @@ describe("Learn flow (integration)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("word-card")).getByText("Hello")
+      ).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: /会了/ }));

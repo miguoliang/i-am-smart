@@ -18,10 +18,11 @@ import { usePointerFine } from "../hooks/usePointerFine";
 import { useLearnKeyboardShortcuts } from "../hooks/useLearnKeyboardShortcuts";
 import { toast } from "sonner";
 import { SpeakButton } from "./SpeakButton";
+import { LearnMomentShare } from "./LearnMomentShare";
 
 function ActionRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 md:mt-12 w-full min-w-0 flex gap-4 md:gap-6">
+    <div className="mt-6 md:mt-12 flex w-full min-w-0 flex-wrap justify-center gap-4 gap-y-3 md:gap-6 md:gap-y-4">
       {children}
     </div>
   );
@@ -98,12 +99,14 @@ function GuestLearnActive({
         {waitingForNext ? (
           <ActionRow>
             <SpeakButton onSpeak={speakCurrent} showKeyHint={keyboardShortcutsEnabled} />
+            <LearnMomentShare knowledge={currentCard.knowledge} />
             <MisrememberButton onClick={submitMisremembered} showKeyHint={keyboardShortcutsEnabled} />
             <NextCardButton onClick={submitNext} showKeyHint={keyboardShortcutsEnabled} />
           </ActionRow>
         ) : (
           <ActionRow>
             <SpeakButton onSpeak={speakCurrent} showKeyHint={keyboardShortcutsEnabled} />
+            <LearnMomentShare knowledge={currentCard.knowledge} />
             <RatingButtons onChoose={chooseQuality} showKeyHints={keyboardShortcutsEnabled} />
           </ActionRow>
         )}

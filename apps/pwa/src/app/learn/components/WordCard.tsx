@@ -8,7 +8,10 @@ interface WordCardProps {
 
 export function WordCard({ knowledge, answerRevealed }: WordCardProps) {
   return (
-    <div className="w-full min-w-0 rounded-3xl shadow-2xl bg-card py-14 px-10 md:py-24 md:px-16 flex flex-col items-stretch justify-center">
+    <div
+      data-testid="word-card"
+      className="w-full min-w-0 rounded-3xl shadow-2xl bg-card py-14 px-10 md:py-24 md:px-16 flex flex-col items-stretch justify-center"
+    >
       <CardContent side="front" knowledge={knowledge} className="min-w-0 w-full" />
 
       {answerRevealed && (
