@@ -18,8 +18,30 @@ function getBrandLine(): string {
   return process.env.NEXT_PUBLIC_SHARE_CARD_BRAND?.trim() || BRAND_FALLBACK;
 }
 
+/** Short learning-themed mottos / famous lines; one is chosen per share image. */
+const LEARNING_QUOTES = [
+  { text: "学而不思则罔，思而不学则殆。", attribution: "《论语·为政》" },
+  { text: "温故而知新，可以为师矣。", attribution: "《论语》" },
+  { text: "学而时习之，不亦说乎。", attribution: "《论语》" },
+  { text: "不积跬步，无以至千里；不积小流，无以成江海。", attribution: "《荀子·劝学》" },
+  { text: "锲而不舍，金石可镂。", attribution: "《荀子·劝学》" },
+  { text: "书山有路勤为径，学海无涯苦作舟。", attribution: "韩愈" },
+  { text: "业精于勤，荒于嬉；行成于思，毁于随。", attribution: "韩愈《进学解》" },
+  { text: "读书破万卷，下笔如有神。", attribution: "杜甫" },
+  { text: "问渠那得清如许？为有源头活水来。", attribution: "朱熹" },
+  { text: "旧书不厌百回读，熟读深思子自知。", attribution: "苏轼" },
+  { text: "纸上得来终觉浅，绝知此事要躬行。", attribution: "陆游" },
+  { text: "千里之行，始于足下。", attribution: "《道德经》" },
+] as const;
+
+function pickLearningQuote(): { text: string; attribution: string } {
+  const i = Math.floor(Math.random() * LEARNING_QUOTES.length);
+  return LEARNING_QUOTES[i]!;
+}
+
 interface LearnProgressShareCardProps {
-  profileName: string;
+  quoteText: string;
+  quoteAttribution: string;
   examLabel: string;
   brushed: number;
   total: number;
@@ -28,7 +50,7 @@ interface LearnProgressShareCardProps {
 
 const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCardProps>(
   function LearnProgressShareCard(
-    { profileName, examLabel, brushed, total, qrDataUrl },
+    { quoteText, quoteAttribution, examLabel, brushed, total, qrDataUrl },
     ref
   ) {
     const pct =
@@ -65,7 +87,7 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
         </p>
         <h2
           style={{
-            margin: "14px 0 0",
+            margin: "12px 0 0",
             fontSize: 22,
             fontWeight: 800,
             lineHeight: 1.2,
@@ -74,20 +96,39 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
         >
           我的学习进度
         </h2>
-        <p
+        <div
           style={{
-            margin: "14px 0 0",
-            fontSize: 14,
-            color: "#52525b",
-            lineHeight: 1.45,
+            marginTop: 12,
+            paddingLeft: 11,
+            borderLeft: "3px solid #d4d4d8",
           }}
         >
-          <span style={{ color: "#71717a" }}>学习档案</span>{" "}
-          <span style={{ fontWeight: 600, color: "#18181b" }}>{profileName}</span>
-        </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: "#3f3f46",
+              lineHeight: 1.55,
+              fontStyle: "italic",
+            }}
+          >
+            {quoteText}
+          </p>
+          <p
+            style={{
+              margin: "6px 0 0",
+              fontSize: 11,
+              color: "#a1a1aa",
+              lineHeight: 1.35,
+              textAlign: "right",
+            }}
+          >
+            — {quoteAttribution}
+          </p>
+        </div>
         <p
           style={{
-            margin: "8px 0 0",
+            margin: "12px 0 0",
             fontSize: 14,
             color: "#52525b",
             lineHeight: 1.45,
@@ -180,7 +221,6 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
 LearnProgressShareCard.displayName = "LearnProgressShareCard";
 
 export interface LearnProgressShareProps {
-  profileName: string;
   examLabel: string;
   brushed: number;
   total: number;
@@ -206,7 +246,6 @@ async function waitForImagesInNode(node: HTMLElement): Promise<void> {
 }
 
 export function LearnProgressShare({
-  profileName,
   examLabel,
   brushed,
   total,
@@ -215,7 +254,8 @@ export function LearnProgressShare({
 }: LearnProgressShareProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [exportPayload, setExportPayload] = useState<{
-    profileName: string;
+    quoteText: string;
+    quoteAttribution: string;
     examLabel: string;
     brushed: number;
     total: number;
@@ -241,9 +281,11 @@ export function LearnProgressShare({
         margin: 1,
         color: { dark: "#18181b", light: "#ffffff" },
       });
+      const { text: quoteText, attribution: quoteAttribution } = pickLearningQuote();
       flushSync(() => {
         setExportPayload({
-          profileName,
+          quoteText,
+          quoteAttribution,
           examLabel,
           brushed,
           total,
@@ -299,7 +341,6 @@ export function LearnProgressShare({
     isGenerating,
     progressLoading,
     disabled,
-    profileName,
     examLabel,
     brushed,
     total,
@@ -339,7 +380,8 @@ export function LearnProgressShare({
         >
           <LearnProgressShareCard
             ref={cardRef}
-            profileName={exportPayload.profileName}
+            quoteText={exportPayload.quoteText}
+            quoteAttribution={exportPayload.quoteAttribution}
             examLabel={exportPayload.examLabel}
             brushed={exportPayload.brushed}
             total={exportPayload.total}

@@ -95,7 +95,6 @@ export function LearnSettingsSheetContent({
         <div className="mb-6">
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">分享</h3>
           <LearnProgressShare
-            profileName={activeProfile?.name?.trim() || "学习者"}
             examLabel={shareExamMeta.label}
             brushed={shareExamMeta.brushed}
             total={shareExamMeta.total}
