@@ -8,7 +8,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Paginator } from "../components/Paginator";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { OperatorMain } from "../components/OperatorChrome";
 import { parseApiErrorResponse } from "@/lib/utils/apiError";
 
 const PER_PAGE = 20;
@@ -113,11 +113,6 @@ export default function LogsPage() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="操作日志"
-        description="运营操作审计记录"
-      />
-
       <DataTable
         data={logs}
         columns={columns}

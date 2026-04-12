@@ -11,7 +11,7 @@ import { Button } from "@/components/form/Button";
 import { downloadCSV } from "@/lib/utils/csv";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { OperatorMain } from "../components/OperatorChrome";
 
 const PER_PAGE = 20;
 
@@ -136,30 +136,30 @@ export default function OperatorOrdersPage() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="订单管理"
-        description="查看和筛选支付订单"
-      />
-
-      {!loading && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          <span>
-            当前筛选共{" "}
-            <strong className="font-medium text-foreground">{summary.count}</strong>{" "}
-            笔订单
-          </span>
-          <span>
-            收入合计{" "}
-            <strong className="font-medium tabular-nums text-foreground">
-              ¥{(summary.totalAmount / 100).toFixed(2)}
-            </strong>
-          </span>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <select
+      <DataTable
+        data={orders}
+        columns={columns}
+        loading={loading}
+        error={error}
+        toolbarLeft={
+          <>
+            {!loading && (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  共{" "}
+                  <strong className="font-medium text-foreground">{summary.count}</strong>{" "}
+                  笔 · 收入{" "}
+                  <strong className="font-medium tabular-nums text-foreground">
+                    ¥{(summary.totalAmount / 100).toFixed(2)}
+                  </strong>
+                </span>
+                <span
+                  className="hidden h-6 w-px shrink-0 bg-border sm:inline-block"
+                  aria-hidden
+                />
+              </>
+            )}
+            <select
           value={status}
           onChange={(e) => {
             setStatus(e.target.value as "pending" | "paid" | "failed" | "all");
@@ -219,7 +219,7 @@ export default function OperatorOrdersPage() {
         <Button
           variant="outline"
           size="sm"
-          disabled={orders.length === 0}
+          disabled={orders.length === 0 || loading}
           onClick={() =>
             downloadCSV(
               orders as unknown as Record<string, unknown>[],
@@ -238,13 +238,8 @@ export default function OperatorOrdersPage() {
         >
           导出 CSV
         </Button>
-      </div>
-
-      <DataTable
-        data={orders}
-        columns={columns}
-        loading={loading}
-        error={error}
+          </>
+        }
         pagination={{ enabled: false }}
         sorting={{ enabled: true }}
         emptyMessage="暂无订单"

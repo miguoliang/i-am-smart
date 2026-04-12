@@ -10,11 +10,7 @@ import { Textarea } from "@/components/form/Textarea";
 import { Label } from "@/components/form/Label";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { toast } from "sonner";
-import {
-  OperatorMain,
-  OperatorPageHeader,
-  OperatorPanel,
-} from "../components/OperatorChrome";
+import { OperatorMain, OperatorPanel } from "../components/OperatorChrome";
 
 export default function PushPage() {
   useOperatorAuth();
@@ -35,11 +31,6 @@ export default function PushPage() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="推送通知"
-        description="向所有已订阅用户发送推送通知"
-      />
-
       <OperatorPanel className="max-w-lg space-y-4 p-5">
         <div>
           <Label htmlFor="push-title">标题</Label>

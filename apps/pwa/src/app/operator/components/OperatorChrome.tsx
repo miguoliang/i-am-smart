@@ -11,36 +11,12 @@ export function OperatorMain({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[min(100%,1600px)] p-5 md:p-8",
+        "mx-auto w-full max-w-[min(100%,1600px)] px-4 py-4 md:px-6 md:py-6",
         className
       )}
     >
       {children}
     </div>
-  );
-}
-
-export function OperatorPageHeader({
-  title,
-  description,
-  actions,
-}: {
-  title: string;
-  description?: ReactNode;
-  actions?: ReactNode;
-}) {
-  return (
-    <header className="mb-8 flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">
-          {title}
-        </h1>
-        {description ? (
-          <div className="mt-1 text-sm text-muted-foreground">{description}</div>
-        ) : null}
-      </div>
-      {actions ? <div className="shrink-0">{actions}</div> : null}
-    </header>
   );
 }
 

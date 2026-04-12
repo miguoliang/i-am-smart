@@ -8,12 +8,7 @@ import {
 } from "@/lib/api/operator";
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import {
-  OperatorMain,
-  OperatorPageHeader,
-  OperatorPanel,
-  OperatorStatBlock,
-} from "./components/OperatorChrome";
+import { OperatorMain, OperatorPanel, OperatorStatBlock } from "./components/OperatorChrome";
 
 const METRIC_HELP: Record<string, string> = {
   今日注册: "今天（按本地时区）新注册的用户数，来源于 Supabase Auth 的 created_at 字段。",
@@ -72,7 +67,6 @@ export default function OperatorDashboard() {
   if (isLoading) {
     return (
       <OperatorMain>
-        <OperatorPageHeader title="仪表盘" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div
@@ -88,7 +82,6 @@ export default function OperatorDashboard() {
   if (error) {
     return (
       <OperatorMain>
-        <OperatorPageHeader title="仪表盘" />
         <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
       </OperatorMain>
     );
@@ -98,11 +91,6 @@ export default function OperatorDashboard() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="仪表盘"
-        description="核心运营数据 · 约每分钟自动刷新"
-      />
-
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <OperatorStatBlock label="今日注册" value={data.todayRegistrations} />
         <OperatorStatBlock label="总用户数" value={data.totalUsers} />

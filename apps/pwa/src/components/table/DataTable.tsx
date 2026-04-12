@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -27,12 +28,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table/Table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DataTableProps<TData> {
   data: TData[];
   columns: ColumnDef<TData>[];
   loading?: boolean;
   error?: string | null;
+  /** Renders on the left side of the toolbar row (search, filters, export, etc.). Refresh / 列设置 stay on the right. */
+  toolbarLeft?: ReactNode;
+  /** Skeleton body rows while `loading` (default 8). */
+  skeletonRows?: number;
   // 分页配置
   pagination?: {
     enabled: boolean;
@@ -64,6 +70,8 @@ export const DataTable = <TData,>({
   columns,
   loading = false,
   error = null,
+  toolbarLeft,
+  skeletonRows = 8,
   pagination = { enabled: true, pageSize: 10 },
   columnSettings,
   sorting = { enabled: true },
@@ -167,14 +175,6 @@ export const DataTable = <TData,>({
     manualPagination: false,
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-sm text-muted-foreground">加载中...</p>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -185,28 +185,45 @@ export const DataTable = <TData,>({
 
   const totalPages = Math.ceil(data.length / initialPageSize);
   const currentPage = paginationState.pageIndex + 1;
+  const showSkeleton = loading;
+  const colCount = Math.max(tableColumns.length, 1);
+  const showToolbarRow =
+    Boolean(toolbarLeft) || columnsEnabled || Boolean(refreshButton);
 
   return (
     <div className="space-y-4">
-      {(columnsEnabled || refreshButton) && (
-        <div className="flex justify-end gap-2">
-          {refreshButton && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshButton.onClick}
-              disabled={refreshButton.loading || loading}
-              className="gap-2"
+      {showToolbarRow && (
+        <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-2">
+          {toolbarLeft ? (
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{toolbarLeft}</div>
+          ) : null}
+          {(refreshButton || columnsEnabled) && (
+            <div
+              className={`flex shrink-0 flex-wrap items-center gap-2 ${
+                toolbarLeft ? "" : "ml-auto"
+              }`}
             >
-              <RefreshCw className={`h-4 w-4 ${refreshButton.loading || loading ? "animate-spin" : ""}`} />
-              刷新
-            </Button>
-          )}
-          {columnsEnabled && (
-            <ColumnSettings
-              columns={columnConfigs}
-              onColumnsChange={setColumnConfigs}
-            />
+              {refreshButton && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshButton.onClick}
+                  disabled={refreshButton.loading || loading}
+                  className="gap-2"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${refreshButton.loading || loading ? "animate-spin" : ""}`}
+                  />
+                  刷新
+                </Button>
+              )}
+              {columnsEnabled && (
+                <ColumnSettings
+                  columns={columnConfigs}
+                  onColumnsChange={setColumnConfigs}
+                />
+              )}
+            </div>
           )}
         </div>
       )}
@@ -260,7 +277,17 @@ export const DataTable = <TData,>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
+            {showSkeleton ? (
+              Array.from({ length: skeletonRows }).map((_, i) => (
+                <TableRow key={`sk-${i}`}>
+                  {Array.from({ length: colCount }).map((__, j) => (
+                    <TableCell key={j} className="px-6 py-4">
+                      <Skeleton className="h-4 w-full max-w-[12rem]" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={tableColumns.length}
@@ -291,6 +318,7 @@ export const DataTable = <TData,>({
         </Table>
       </div>
       {paginationEnabled &&
+        !showSkeleton &&
         data.length > 0 &&
         totalPages > 1 &&
         table.getPageCount() > 1 && (

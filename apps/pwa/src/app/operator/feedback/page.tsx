@@ -23,7 +23,7 @@ import {
   DialogFooter,
 } from "@/components/overlay/Dialog";
 import { toast } from "sonner";
-import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { OperatorMain } from "../components/OperatorChrome";
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "id", label: "ID", visible: false },
@@ -186,14 +186,16 @@ export default function FeedbackPage() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="用户反馈"
-        description="查看用户提交的反馈和建议"
-        actions={
+      <DataTable
+        data={feedbacks}
+        columns={columns}
+        loading={loading}
+        error={error}
+        toolbarLeft={
           <Button
             variant="outline"
             size="sm"
-            disabled={feedbacks.length === 0}
+            disabled={feedbacks.length === 0 || loading}
             onClick={() =>
               downloadCSV(
                 feedbacks.map((f) => ({
@@ -221,13 +223,6 @@ export default function FeedbackPage() {
             导出 CSV
           </Button>
         }
-      />
-
-      <DataTable
-        data={feedbacks}
-        columns={columns}
-        loading={loading}
-        error={error}
         pagination={{ enabled: false }}
         columnSettings={{
           enabled: true,

@@ -26,7 +26,7 @@ import { User, Ban, ShieldCheck } from "lucide-react";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { toast } from "sonner";
-import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { OperatorMain } from "../components/OperatorChrome";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EXAM_PICKER_ENTRIES, getExamTarget } from "@i-am-smart/shared/constants";
 
@@ -269,53 +269,49 @@ export default function AccountsPage() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="账户管理"
-        description="查看和管理所有用户账户"
-      />
-
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          type="search"
-          placeholder="按用户名或邮箱搜索..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={accounts.length === 0}
-          onClick={() =>
-            downloadCSV(
-              accounts.map((a) => ({
-                ...a,
-                plan_label: a.plan === "pro" ? "Pro" : "免费",
-                learning_vocab: learningVocabLabel(a.exam_target),
-              })) as unknown as Record<string, unknown>[],
-              [
-                { key: "id", label: "ID" },
-                { key: "username", label: "用户名" },
-                { key: "email", label: "邮箱" },
-                { key: "plan_label", label: "套餐" },
-                { key: "learning_vocab", label: "学习词库" },
-                { key: "dailyReviewCount", label: "今日复习" },
-                { key: "last_sign_in_at", label: "最后登录" },
-                { key: "created_at", label: "创建时间" },
-              ],
-              `accounts-${new Date().toISOString().slice(0, 10)}`
-            )
-          }
-        >
-          导出 CSV
-        </Button>
-      </div>
-
       <DataTable
         data={accounts}
         columns={columns}
         loading={loading}
         error={error}
+        toolbarLeft={
+          <>
+            <Input
+              type="search"
+              placeholder="按用户名或邮箱搜索..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="max-w-sm min-w-[12rem]"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={accounts.length === 0 || loading}
+              onClick={() =>
+                downloadCSV(
+                  accounts.map((a) => ({
+                    ...a,
+                    plan_label: a.plan === "pro" ? "Pro" : "免费",
+                    learning_vocab: learningVocabLabel(a.exam_target),
+                  })) as unknown as Record<string, unknown>[],
+                  [
+                    { key: "id", label: "ID" },
+                    { key: "username", label: "用户名" },
+                    { key: "email", label: "邮箱" },
+                    { key: "plan_label", label: "套餐" },
+                    { key: "learning_vocab", label: "学习词库" },
+                    { key: "dailyReviewCount", label: "今日复习" },
+                    { key: "last_sign_in_at", label: "最后登录" },
+                    { key: "created_at", label: "创建时间" },
+                  ],
+                  `accounts-${new Date().toISOString().slice(0, 10)}`
+                )
+              }
+            >
+              导出 CSV
+            </Button>
+          </>
+        }
         pagination={{ enabled: false }}
         columnSettings={{
           enabled: true,

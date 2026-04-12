@@ -25,7 +25,7 @@ import {
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { toast } from "sonner";
 import { Pencil, Trash2 } from "lucide-react";
-import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { OperatorMain } from "../components/OperatorChrome";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -256,18 +256,13 @@ export function KnowledgesPageClient() {
 
   return (
     <OperatorMain>
-      <OperatorPageHeader
-        title="词库管理"
-        description={
+      <DataTable
+        data={knowledges}
+        columns={columns}
+        loading={loading}
+        error={error}
+        toolbarLeft={
           <>
-            维护词条；用户在学习页按{" "}
-            <kbd className="rounded bg-muted px-1 font-mono text-xs">W</kbd>{" "}
-            提交的纠错会在下表「纠错」列显示为待处理，修改词条后可点「完成纠错」。
-          </>
-        }
-      />
-
-      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex rounded-md border border-border p-0.5">
           <button
             type="button"
@@ -314,13 +309,12 @@ export function KnowledgesPageClient() {
             </option>
           ))}
         </select>
-      </div>
-
-      <DataTable
-        data={knowledges}
-        columns={columns}
-        loading={loading}
-        error={error}
+        <span className="hidden text-xs text-muted-foreground lg:inline max-w-[14rem] leading-snug">
+          学习页按 <kbd className="rounded bg-muted px-1 font-mono">W</kbd>{" "}
+          纠错显示在「纠错」列
+        </span>
+          </>
+        }
         pagination={{ enabled: false }}
         columnSettings={{
           enabled: true,
