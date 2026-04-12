@@ -83,7 +83,7 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
         style={{
           width: CARD_PX,
           boxSizing: "border-box",
-          padding: "28px 24px 24px",
+          padding: "22px 22px 22px",
           borderRadius: CARD_RADIUS_PX,
           overflow: "hidden",
           backgroundColor: "#f4f4f5",
@@ -94,32 +94,36 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           color: "#18181b",
         }}
       >
-        <p
-          style={{
-            margin: 0,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "#71717a",
-          }}
-        >
-          {getBrandLine()}
-        </p>
-        <h2
-          style={{
-            margin: "12px 0 0",
-            fontSize: 22,
-            fontWeight: 800,
-            lineHeight: 1.2,
-            textAlign: "center",
-          }}
-        >
-          我的学习进度
-        </h2>
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 11,
+              lineHeight: 1.4,
+              color: "#71717a",
+            }}
+          >
+            <span style={{ fontWeight: 600, letterSpacing: "0.04em" }}>{getBrandLine()}</span>
+            <span style={{ color: "#d4d4d8", padding: "0 6px" }} aria-hidden>
+              ·
+            </span>
+            <span style={{ fontWeight: 600, color: "#52525b" }}>{examLabel}</span>
+          </p>
+          <h2
+            style={{
+              margin: "6px 0 0",
+              fontSize: 19,
+              fontWeight: 800,
+              lineHeight: 1.2,
+              color: "#18181b",
+            }}
+          >
+            学习进度
+          </h2>
+        </div>
         <div
           style={{
-            marginTop: 12,
+            marginTop: 10,
             paddingLeft: 11,
             borderLeft: "3px solid #d4d4d8",
           }}
@@ -127,9 +131,9 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           <p
             style={{
               margin: 0,
-              fontSize: 13,
+              fontSize: 12,
               color: "#3f3f46",
-              lineHeight: 1.55,
+              lineHeight: 1.5,
               fontStyle: "italic",
             }}
           >
@@ -137,8 +141,8 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           </p>
           <p
             style={{
-              margin: "6px 0 0",
-              fontSize: 11,
+              margin: "4px 0 0",
+              fontSize: 10,
               color: "#a1a1aa",
               lineHeight: 1.35,
               textAlign: "right",
@@ -147,20 +151,9 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
             — {quoteAttribution}
           </p>
         </div>
-        <p
-          style={{
-            margin: "12px 0 0",
-            fontSize: 14,
-            color: "#52525b",
-            lineHeight: 1.45,
-          }}
-        >
-          <span style={{ color: "#71717a" }}>当前词库</span>{" "}
-          <span style={{ fontWeight: 600, color: "#18181b" }}>{examLabel}</span>
-        </p>
         <div
           style={{
-            marginTop: 18,
+            marginTop: 14,
             padding: "16px 14px",
             borderRadius: 10,
             backgroundColor: "#fff",
