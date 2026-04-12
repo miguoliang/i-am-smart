@@ -1,6 +1,6 @@
 {
   "name": "i-am-smart",
-  "version": "1.12.14",
+  "version": "1.12.15",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",

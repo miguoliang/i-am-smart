@@ -2,8 +2,14 @@
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { EXAM_PICKER_ENTRIES, type ExamTargetId } from "@i-am-smart/shared/constants";
 import { Share2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  fetchExamVocabProgress,
+  type ExamVocabProgressItem,
+} from "@/lib/api/examVocabProgress";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { resolveShareLandingUrl } from "../lib/shareLandingUrl";
 
@@ -35,6 +41,23 @@ const LEARNING_QUOTES = [
 function pickLearningQuote(): { text: string; attribution: string } {
   const i = Math.floor(Math.random() * LEARNING_QUOTES.length);
   return LEARNING_QUOTES[i]!;
+}
+
+/** Same mapping as settings `shareExamMeta`: current exam → canonical row in API list. */
+function resolveShareSnapshot(
+  items: ExamVocabProgressItem[],
+  currentExamTarget: string
+): { examLabel: string; brushed: number; total: number } {
+  const entry = EXAM_PICKER_ENTRIES.find((e) =>
+    e.examTargetIds.includes(currentExamTarget as ExamTargetId)
+  );
+  const canonical = entry?.canonicalExamTargetId ?? "ket";
+  const row = items.find((p) => p.examId === canonical);
+  return {
+    examLabel: entry?.label ?? currentExamTarget,
+    brushed: row?.brushed ?? 0,
+    total: row?.total ?? 0,
+  };
 }
 
 interface LearnProgressShareCardProps {
@@ -219,12 +242,13 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
 LearnProgressShareCard.displayName = "LearnProgressShareCard";
 
 export interface LearnProgressShareProps {
-  examLabel: string;
-  brushed: number;
-  total: number;
-  progressLoading: boolean;
+  /** Required to fetch fresh词库进度 on share tap (before generating the image). */
+  profileId: string | undefined;
+  currentExamTarget: string;
   disabled?: boolean;
 }
+
+type SharePhase = "idle" | "fetching" | "capturing";
 
 async function waitForImagesInNode(node: HTMLElement): Promise<void> {
   const imgs = node.querySelectorAll("img");
@@ -244,13 +268,14 @@ async function waitForImagesInNode(node: HTMLElement): Promise<void> {
 }
 
 export function LearnProgressShare({
-  examLabel,
-  brushed,
-  total,
-  progressLoading,
+  profileId,
+  currentExamTarget,
   disabled = false,
 }: LearnProgressShareProps) {
+  const queryClient = useQueryClient();
   const cardRef = useRef<HTMLDivElement>(null);
+  const shareInFlight = useRef(false);
+  const [sharePhase, setSharePhase] = useState<SharePhase>("idle");
   const [exportPayload, setExportPayload] = useState<{
     quoteText: string;
     quoteAttribution: string;
@@ -260,7 +285,6 @@ export function LearnProgressShare({
     qrDataUrl: string;
   } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const closePreview = useCallback(() => {
     if (previewUrl?.startsWith("blob:")) {
@@ -270,10 +294,20 @@ export function LearnProgressShare({
   }, [previewUrl]);
 
   const handleShare = useCallback(async () => {
-    if (isGenerating || progressLoading || disabled) return;
-    setIsGenerating(true);
+    if (disabled || shareInFlight.current) return;
+    if (!profileId) {
+      toast.error("请先选择学习档案");
+      return;
+    }
+    shareInFlight.current = true;
+    setSharePhase("fetching");
     try {
-      // Load capture libs only after the user taps share (no prefetch on sheet open).
+      const items = await fetchExamVocabProgress(profileId);
+      queryClient.setQueryData(["exam-vocab-progress", profileId], items);
+      const { examLabel, brushed, total } = resolveShareSnapshot(items, currentExamTarget);
+
+      setSharePhase("capturing");
+      // Load capture libs only after progress is known (user already tapped share).
       const [{ toPng }, QRMod] = await Promise.all([
         import("html-to-image"),
         import("qrcode"),
@@ -340,16 +374,10 @@ export function LearnProgressShare({
       setExportPayload(null);
       toast.error(getErrorMessage(e));
     } finally {
-      setIsGenerating(false);
+      shareInFlight.current = false;
+      setSharePhase("idle");
     }
-  }, [
-    isGenerating,
-    progressLoading,
-    disabled,
-    examLabel,
-    brushed,
-    total,
-  ]);
+  }, [profileId, currentExamTarget, disabled, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -368,7 +396,13 @@ export function LearnProgressShare({
     return () => window.removeEventListener("keydown", onKey);
   }, [previewUrl, closePreview]);
 
-  const busy = progressLoading || isGenerating;
+  const busy = sharePhase !== "idle" || disabled || !profileId;
+  const phaseLabel =
+    sharePhase === "fetching"
+      ? "正在获取进度…"
+      : sharePhase === "capturing"
+        ? "正在生成图片…"
+        : "分享学习进度";
 
   return (
     <>
@@ -401,17 +435,15 @@ export function LearnProgressShare({
         disabled={busy || disabled}
         className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
         aria-label={
-          isGenerating ? "正在生成分享图片" : "分享学习进度图片"
+          sharePhase === "idle" ? "分享学习进度图片" : "正在准备分享图片"
         }
       >
-        {isGenerating ? (
+        {sharePhase !== "idle" ? (
           <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
         ) : (
           <Share2 className="h-5 w-5 shrink-0" aria-hidden />
         )}
-        <span className="flex-1 font-medium">
-          {isGenerating ? "正在生成图片…" : "分享学习进度"}
-        </span>
+        <span className="flex-1 font-medium">{phaseLabel}</span>
       </button>
 
       {previewUrl ? (
