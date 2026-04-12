@@ -1,9 +1,50 @@
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { AccountRepository } from '../account.repository';
 import { Account } from '@/lib/services/accountService';
+import { logger } from '@/lib/utils/logger';
 
 export class SupabaseAccountRepository implements AccountRepository {
   constructor(private adminClient: SupabaseClient) {}
+
+  /** Merge DB `accounts.plan` and default profile `exam_target` into listed users. */
+  private async enrichUsersWithDbFields(users: Account[]): Promise<Account[]> {
+    if (users.length === 0) return users;
+    const ids = users.map((u) => u.id);
+
+    const [accountsRes, profilesRes] = await Promise.all([
+      this.adminClient.from('accounts').select('id, plan').in('id', ids),
+      this.adminClient
+        .from('learner_profiles')
+        .select('account_id, exam_target')
+        .in('account_id', ids)
+        .eq('is_default', true),
+    ]);
+
+    if (accountsRes.error) {
+      logger.error('enrichUsersWithDbFields: accounts query failed', { message: accountsRes.error.message });
+    }
+    if (profilesRes.error) {
+      logger.error('enrichUsersWithDbFields: learner_profiles query failed', {
+        message: profilesRes.error.message,
+      });
+    }
+
+    const planMap = new Map(
+      (accountsRes.data ?? []).map((r: { id: string; plan: string }) => [r.id, r.plan as 'free' | 'pro'])
+    );
+    const examMap = new Map(
+      (profilesRes.data ?? []).map((r: { account_id: string; exam_target: string | null }) => [
+        r.account_id,
+        r.exam_target,
+      ])
+    );
+
+    return users.map((u) => ({
+      ...u,
+      plan: planMap.get(u.id) ?? 'free',
+      exam_target: examMap.get(u.id) ?? null,
+    }));
+  }
 
   /**
    * List users with optional search. Note: Supabase auth.admin.listUsers does not
@@ -33,7 +74,9 @@ export class SupabaseAccountRepository implements AccountRepository {
         throw new Error("无法获取用户列表");
       }
 
-      const users = usersResponse.users.map((u) => this.mapAuthUserToAccount(u));
+      const users = await this.enrichUsersWithDbFields(
+        usersResponse.users.map((u) => this.mapAuthUserToAccount(u))
+      );
       const hasMore = usersResponse.users.length === perPage;
       return { users, hasMore };
     }
@@ -67,7 +110,8 @@ export class SupabaseAccountRepository implements AccountRepository {
     }
 
     const start = (page - 1) * perPage;
-    const users = allFetched.slice(start, start + perPage);
+    const pageSlice = allFetched.slice(start, start + perPage);
+    const users = await this.enrichUsersWithDbFields(pageSlice);
     const hasMore = allFetched.length > start + perPage;
 
     return { users, hasMore };

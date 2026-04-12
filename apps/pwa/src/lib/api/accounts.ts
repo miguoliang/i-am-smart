@@ -10,6 +10,9 @@ export interface Account {
   updated_at: string;
   last_sign_in_at?: string | null;
   dailyReviewCount?: number;
+  plan?: "free" | "pro";
+  /** Default profile exam target id (词库档位) */
+  exam_target?: string | null;
 }
 
 export interface AccountsResponse {

@@ -28,6 +28,7 @@ import { formatDate } from "@/lib/utils/dateUtils";
 import { toast } from "sonner";
 import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EXAM_PICKER_ENTRIES, getExamTarget } from "@i-am-smart/shared/constants";
 
 const DEBOUNCE_MS = 300;
 
@@ -41,21 +42,34 @@ interface Account {
   last_sign_in_at?: string | null;
   banned_until?: string | null;
   dailyReviewCount?: number;
+  plan?: "free" | "pro";
+  exam_target?: string | null;
+}
+
+/** 与设置里「选择考试目标」合并行一致（如 PET/四级、雅思/托福） */
+function learningVocabLabel(examTargetId: string | null | undefined): string {
+  if (!examTargetId) return "—";
+  const entry = EXAM_PICKER_ENTRIES.find((e) =>
+    (e.examTargetIds as readonly string[]).includes(examTargetId)
+  );
+  if (entry) return entry.label;
+  return getExamTarget(examTargetId)?.name ?? examTargetId;
 }
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "id", label: "ID", visible: false },
   { key: "username", label: "用户名", visible: true },
-  { key: "email", label: "邮箱", visible: true },
-  { key: "role", label: "角色", visible: true },
+  { key: "email", label: "邮箱", visible: false },
+  { key: "plan", label: "套餐", visible: true },
+  { key: "exam_target", label: "学习词库", visible: true },
   { key: "dailyReviewCount", label: "今日复习", visible: true },
   { key: "last_sign_in_at", label: "最后登录", visible: true },
   { key: "created_at", label: "创建时间", visible: true },
   { key: "actions", label: "操作", visible: true },
 ];
 
-const STORAGE_KEY = "accounts_table_columns";
+const STORAGE_KEY = "accounts_table_columns_v2";
 
 export default function AccountsPage() {
   useOperatorAuth();
@@ -133,25 +147,42 @@ export default function AccountsPage() {
       {
         accessorKey: "email",
         header: "邮箱",
-        cell: ({ row }) => row.getValue("email") || "-",
+        cell: ({ row }) => {
+          const email = row.getValue("email") as string | undefined;
+          return email ? (
+            <span className="max-w-[14rem] truncate font-mono text-sm" title={email}>
+              {email}
+            </span>
+          ) : (
+            "-"
+          );
+        },
       },
       {
-        accessorKey: "role",
-        header: "角色",
+        accessorKey: "plan",
+        header: "套餐",
         cell: ({ row }) => {
-          const role = (row.getValue("role") as string)?.trim() || "learner";
+          const plan = row.getValue("plan") as string | undefined;
+          const isPro = plan === "pro";
           return (
             <span
-              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                role === "operator"
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-secondary text-secondary-foreground"
+              className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                isPro
+                  ? "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
-              {role}
+              {isPro ? "Pro" : "免费"}
             </span>
           );
         },
+      },
+      {
+        accessorKey: "exam_target",
+        header: "学习词库",
+        cell: ({ row }) => (
+          <span className="text-sm">{learningVocabLabel(row.getValue("exam_target") as string | null)}</span>
+        ),
       },
       {
         accessorKey: "dailyReviewCount",
@@ -257,12 +288,17 @@ export default function AccountsPage() {
           disabled={accounts.length === 0}
           onClick={() =>
             downloadCSV(
-              accounts as unknown as Record<string, unknown>[],
+              accounts.map((a) => ({
+                ...a,
+                plan_label: a.plan === "pro" ? "Pro" : "免费",
+                learning_vocab: learningVocabLabel(a.exam_target),
+              })) as unknown as Record<string, unknown>[],
               [
                 { key: "id", label: "ID" },
                 { key: "username", label: "用户名" },
                 { key: "email", label: "邮箱" },
-                { key: "role", label: "角色" },
+                { key: "plan_label", label: "套餐" },
+                { key: "learning_vocab", label: "学习词库" },
                 { key: "dailyReviewCount", label: "今日复习" },
                 { key: "last_sign_in_at", label: "最后登录" },
                 { key: "created_at", label: "创建时间" },

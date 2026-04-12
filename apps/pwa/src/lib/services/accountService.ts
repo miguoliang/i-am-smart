@@ -10,6 +10,10 @@ export interface Account {
   last_sign_in_at: string | null;
   banned_until?: string | null;
   dailyReviewCount?: number;
+  /** From `public.accounts.plan` */
+  plan?: 'free' | 'pro';
+  /** Default learner profile's `exam_target` (词库档位) */
+  exam_target?: string | null;
 }
 
 export interface PaginationResult<T> {
