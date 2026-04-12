@@ -464,13 +464,24 @@ export function LearnProgressShare({
           aria-label="分享图预览"
           onClick={closePreview}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- user-saved blob preview */}
-          <img
-            src={previewUrl}
-            alt="分享预览"
-            className="max-h-[min(78vh,720px)] w-auto max-w-full rounded-2xl shadow-2xl"
+          {/*
+            Clip with radius scaled to rendered width (same 16/360 as CARD_RADIUS_PX / CARD_PX).
+            Fixed rounded-2xl on <img> did not scale with max-h/max-w, so corners looked off vs the PNG.
+          */}
+          <div
+            className="mx-auto w-fit max-h-[min(78vh,720px)] max-w-full overflow-hidden shadow-2xl [container-type:inline-size]"
+            style={{
+              borderRadius: `calc(100cqw * ${CARD_RADIUS_PX} / ${CARD_PX})`,
+            }}
             onClick={(ev) => ev.stopPropagation()}
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- user-saved blob preview */}
+            <img
+              src={previewUrl}
+              alt="分享预览"
+              className="block h-auto max-h-[min(78vh,720px)] w-auto max-w-full"
+            />
+          </div>
           <p className="mt-4 max-w-sm text-center text-sm text-zinc-200">
             长按图片保存到相册，再到微信朋友圈发布。轻触空白处关闭。
           </p>
