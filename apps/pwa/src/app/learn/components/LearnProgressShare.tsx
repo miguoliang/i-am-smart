@@ -94,36 +94,53 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           color: "#18181b",
         }}
       >
-        <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            minHeight: 0,
+          }}
+        >
           <p
             style={{
               margin: 0,
+              flex: "1 1 auto",
+              minWidth: 0,
               fontSize: 11,
-              lineHeight: 1.4,
+              fontWeight: 600,
+              letterSpacing: "0.03em",
+              lineHeight: 1.35,
               color: "#71717a",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            <span style={{ fontWeight: 600, letterSpacing: "0.04em" }}>{getBrandLine()}</span>
-            <span style={{ color: "#d4d4d8", padding: "0 6px" }} aria-hidden>
+            {getBrandLine()}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              flexShrink: 0,
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: 1.3,
+              color: "#18181b",
+              textAlign: "right",
+            }}
+          >
+            <span style={{ fontWeight: 800 }}>学习进度</span>
+            <span style={{ color: "#d4d4d8", padding: "0 5px" }} aria-hidden>
               ·
             </span>
-            <span style={{ fontWeight: 600, color: "#52525b" }}>{examLabel}</span>
+            <span style={{ fontWeight: 600, color: "#3f3f46" }}>{examLabel}</span>
           </p>
-          <h2
-            style={{
-              margin: "6px 0 0",
-              fontSize: 19,
-              fontWeight: 800,
-              lineHeight: 1.2,
-              color: "#18181b",
-            }}
-          >
-            学习进度
-          </h2>
         </div>
         <div
           style={{
-            marginTop: 10,
+            marginTop: 8,
             paddingLeft: 11,
             borderLeft: "3px solid #d4d4d8",
           }}
