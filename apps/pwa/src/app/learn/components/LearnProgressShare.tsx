@@ -2,9 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { toPng } from "html-to-image";
-import QRCode from "qrcode";
-import { Share2 } from "lucide-react";
+import { Share2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { resolveShareLandingUrl } from "../lib/shareLandingUrl";
@@ -275,6 +273,13 @@ export function LearnProgressShare({
     if (isGenerating || progressLoading || disabled) return;
     setIsGenerating(true);
     try {
+      // Load capture libs only after the user taps share (no prefetch on sheet open).
+      const [{ toPng }, QRMod] = await Promise.all([
+        import("html-to-image"),
+        import("qrcode"),
+      ]);
+      const QRCode = QRMod.default;
+
       const landing = `${resolveShareLandingUrl()}/`;
       const qr = await QRCode.toDataURL(landing, {
         width: 160,
@@ -395,11 +400,17 @@ export function LearnProgressShare({
         onClick={handleShare}
         disabled={busy || disabled}
         className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
-        aria-label="分享学习进度图片"
+        aria-label={
+          isGenerating ? "正在生成分享图片" : "分享学习进度图片"
+        }
       >
-        <Share2 className="h-5 w-5 shrink-0" aria-hidden />
+        {isGenerating ? (
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+        ) : (
+          <Share2 className="h-5 w-5 shrink-0" aria-hidden />
+        )}
         <span className="flex-1 font-medium">
-          {progressLoading ? "加载进度…" : "分享学习进度"}
+          {isGenerating ? "正在生成图片…" : "分享学习进度"}
         </span>
       </button>
 
