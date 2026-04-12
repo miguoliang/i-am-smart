@@ -120,8 +120,8 @@ describe("Learn flow (integration)", () => {
       ).toBeInTheDocument();
     });
 
-    // Answer should not be visible until revealed
-    expect(screen.queryByText(/A greeting/)).not.toBeInTheDocument();
+    // Answer stays in layout but is masked until reveal (stable card size)
+    expect(screen.getByTestId("answer-mask")).toBeInTheDocument();
   });
 
   it("chooses 会了, shows answer and 下一个", async () => {
@@ -143,6 +143,7 @@ describe("Learn flow (integration)", () => {
       expect(
         within(screen.getByTestId("word-card")).getByText(/A greeting/)
       ).toBeInTheDocument();
+      expect(screen.queryByTestId("answer-mask")).not.toBeInTheDocument();
     });
 
     expect(screen.getByRole("button", { name: /记错了/ })).toBeInTheDocument();

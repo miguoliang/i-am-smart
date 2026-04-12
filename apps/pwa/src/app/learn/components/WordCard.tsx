@@ -14,13 +14,23 @@ export function WordCard({ knowledge, answerRevealed }: WordCardProps) {
     >
       <CardContent side="front" knowledge={knowledge} className="min-w-0 w-full" />
 
-      {answerRevealed && (
-        <div className="w-full min-w-0 mt-8">
-          <div className="border-t border-muted-foreground/15 pt-6">
+      <div className="w-full min-w-0 mt-8">
+        <div className="relative border-t border-muted-foreground/15 pt-6">
+          <div
+            className={answerRevealed ? undefined : "select-none"}
+            aria-hidden={!answerRevealed}
+          >
             <CardContent side="back" knowledge={knowledge} className="min-w-0 w-full" />
           </div>
+          {!answerRevealed && (
+            <div
+              data-testid="answer-mask"
+              className="absolute inset-0 z-10 rounded-2xl bg-card"
+              aria-hidden
+            />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
