@@ -10,8 +10,7 @@ import {
 } from "@/lib/api/operator";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
-import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { OperatorMain, OperatorPanel, OperatorStatBlock } from "../components/OperatorChrome";
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -176,16 +175,6 @@ export default function SaasMetricsPage() {
 
   return (
     <OperatorMain>
-      <div className="mb-4 flex justify-end">
-        <Link
-          href="/operator"
-          className="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <ArrowLeft size={18} strokeWidth={1.75} />
-          返回仪表盘
-        </Link>
-      </div>
-
       {completionLoading ? (
         <div className="mb-8 grid grid-cols-2 gap-3 md:gap-4">
           {[1, 2].map((i) => (

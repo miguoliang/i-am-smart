@@ -4,6 +4,22 @@
 
 ---
 
+## [1.12.5] - 2026-04-12
+
+### 运营
+
+- **SaaS 指标**：移除页面右上角「返回仪表盘」链接（侧栏仍可进入仪表盘）
+
+### 开发
+
+- 新增 Cursor 技能：`release-new-version`（发版流程）、`pwa-supabase-db-push-linked`（在 `apps/pwa` 执行 `supabase db push --linked`）
+
+### 发布
+
+- 版本号 **v1.12.5**（`NEXT_PUBLIC_APP_VERSION` 与 `apps/pwa`、仓库根 `package.json` 一致）；Git tag **`v1.12.5`**
+
+---
+
 ## [1.12.4] - 2026-04-12
 
 ### 数据库与学习
