@@ -4,6 +4,9 @@ import { logger } from './logger';
 
 export { ApiError, ApiErrorCode };
 
+/** Safe, user-facing copy for unexpected failures — never echo raw Error.message or DB text. */
+export const PUBLIC_INTERNAL_ERROR_MESSAGE = '服务暂时不可用，请稍后重试';
+
 export interface ApiResponse<T = unknown> {
   data?: T;
   error?: {
@@ -53,13 +56,12 @@ export function handleApiError(error: unknown) {
     );
   }
 
-  // Handle Supabase errors or other unknown errors
-  const message = error instanceof Error ? error.message : 'Unknown error occurred';
-  
-  // Try to map known Supabase errors to proper status codes
+  // Handle Supabase errors or other unknown errors — do not expose raw messages to clients
+  const rawMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
   if (
-    message.toLowerCase().includes('permission denied') ||
-    message.toLowerCase().includes('access denied')
+    rawMessage.toLowerCase().includes('permission denied') ||
+    rawMessage.toLowerCase().includes('access denied')
   ) {
     return NextResponse.json<ApiResponse>(
       { error: { code: ApiErrorCode.FORBIDDEN, message: 'Permission denied' } },
@@ -71,7 +73,7 @@ export function handleApiError(error: unknown) {
     {
       error: {
         code: ApiErrorCode.INTERNAL_ERROR,
-        message: message,
+        message: PUBLIC_INTERNAL_ERROR_MESSAGE,
       },
     },
     { status: 500 }

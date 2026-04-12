@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createServerClient } from "@supabase/ssr";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { logger } from "@/lib/utils/logger";
 
 const WECHAT_MINIPROGRAM_API_BASE = "https://api.weixin.qq.com";
@@ -261,14 +266,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (verifyError) {
-      logger.error("Miniprogram login: verifyOtp failed", { 
+      logger.error("Miniprogram login: verifyOtp failed", {
         error: verifyError.message,
         errorStatus: verifyError.status,
         errorName: verifyError.name,
         email,
         otpLength: emailOtp?.length,
       });
-      throw ApiError.internal(`验证登录凭证失败: ${verifyError.message}`);
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
     }
 
     if (!verifyData?.session?.access_token) {

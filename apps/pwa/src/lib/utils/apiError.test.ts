@@ -1,4 +1,4 @@
-import { handleApiError, apiSuccess } from './apiError';
+import { handleApiError, apiSuccess, PUBLIC_INTERNAL_ERROR_MESSAGE } from './apiError';
 import { ApiError, ApiErrorCode } from './apiErrorClasses';
 import { NextResponse } from 'next/server';
 
@@ -34,7 +34,7 @@ describe('apiError utils', () => {
       );
     });
 
-    it('should handle generic Error as INTERNAL_ERROR', () => {
+    it('should handle generic Error as INTERNAL_ERROR without leaking the raw message', () => {
       const error = new Error('Something went wrong');
       handleApiError(error);
 
@@ -42,7 +42,7 @@ describe('apiError utils', () => {
         {
           error: {
             code: ApiErrorCode.INTERNAL_ERROR,
-            message: 'Something went wrong',
+            message: PUBLIC_INTERNAL_ERROR_MESSAGE,
           },
         },
         { status: 500 }
@@ -56,7 +56,7 @@ describe('apiError utils', () => {
         {
           error: {
             code: ApiErrorCode.INTERNAL_ERROR,
-            message: 'Unknown error occurred',
+            message: PUBLIC_INTERNAL_ERROR_MESSAGE,
           },
         },
         { status: 500 }

@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { logger } from "@/lib/utils/logger";
 import { writeAuditLog } from "@/lib/utils/auditLog";
 
 /** POST: clear correction flag after operator edits the entry */
@@ -28,7 +34,10 @@ export async function POST(req: NextRequest) {
       .eq("needs_correction", true)
       .select("code");
 
-    if (error) throw ApiError.internal(error.message);
+    if (error) {
+      logger.error("Resolve knowledge error report failed", { message: error.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
 
     const resolvedCount = updated?.length ?? 0;
 

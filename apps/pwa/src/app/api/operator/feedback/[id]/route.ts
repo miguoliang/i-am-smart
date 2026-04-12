@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { logger } from "@/lib/utils/logger";
 
 const VALID_STATUSES = ["pending", "resolved"];
 
@@ -53,7 +59,8 @@ export async function PATCH(
       .single();
 
     if (error) {
-      throw ApiError.internal(error.message);
+      logger.error("Operator feedback PATCH failed", { message: error.message });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
     }
     if (!data) {
       throw ApiError.notFound("反馈不存在");

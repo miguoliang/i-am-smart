@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { logger } from "@/lib/utils/logger";
 
 export interface OrderRow {
   out_trade_no: string;
@@ -68,7 +74,8 @@ export async function GET(req: NextRequest) {
     const { data: orders, error: listError, count } = await query.range(from, to);
 
     if (listError) {
-      throw ApiError.internal(listError.message);
+      logger.error("Operator orders: list failed", { message: listError.message });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
     }
 
     const total = count ?? 0;
@@ -90,7 +97,8 @@ export async function GET(req: NextRequest) {
     const { data: paidRows, error: sumError } = await summaryQuery.limit(50000);
 
     if (sumError) {
-      throw ApiError.internal(sumError.message);
+      logger.error("Operator orders: summary query failed", { message: sumError.message });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
     }
 
     const totalAmount = (paidRows ?? []).reduce((acc, row) => acc + (row.amount_total ?? 0), 0);

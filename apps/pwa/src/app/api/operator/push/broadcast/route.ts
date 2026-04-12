@@ -1,9 +1,15 @@
 import { NextRequest } from "next/server";
 import webpush from "web-push";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
 import { writeAuditLog } from "@/lib/utils/auditLog";
+import { logger } from "@/lib/utils/logger";
 
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
   webpush.setVapidDetails(
@@ -44,7 +50,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: subscriptions, error } = await query;
-    if (error) throw ApiError.internal(error.message);
+    if (error) {
+      logger.error("Push broadcast: load subscriptions failed", { message: error.message });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
 
     if (!subscriptions || subscriptions.length === 0) {
       return apiSuccess({ sent: 0, total: 0, message: "没有可推送的订阅" });

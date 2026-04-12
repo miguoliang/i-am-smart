@@ -1,8 +1,14 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
 import { writeAuditLog } from "@/lib/utils/auditLog";
+import { logger } from "@/lib/utils/logger";
 
 function mapKnowledgeDbRowToApi(row: Record<string, unknown>) {
   return {
@@ -101,7 +107,10 @@ export async function PUT(
       .select()
       .single();
 
-    if (error) throw ApiError.internal(error.message);
+    if (error) {
+      logger.error("Knowledge PUT failed", { message: error.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
     if (!data) throw ApiError.notFound("知识条目不存在");
 
     const payload = mapKnowledgeDbRowToApi(data as Record<string, unknown>);
@@ -137,12 +146,18 @@ export async function DELETE(
       .eq("code", code)
       .maybeSingle();
 
-    if (selectError) throw ApiError.internal(selectError.message);
+    if (selectError) {
+      logger.error("Knowledge DELETE select failed", { message: selectError.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
     if (!row) throw ApiError.notFound("知识条目不存在");
 
     const { error: deleteError } = await admin.from("knowledge").delete().eq("code", code);
 
-    if (deleteError) throw ApiError.internal(deleteError.message);
+    if (deleteError) {
+      logger.error("Knowledge DELETE failed", { message: deleteError.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
 
     void writeAuditLog({
       operator_id: user.id,

@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireAuth, requireOperator } from "@/lib/middleware/auth";
 import { logger } from "@/lib/utils/logger";
 
@@ -16,7 +21,10 @@ export async function GET(req: NextRequest) {
       .eq("needs_correction", true)
       .order("updated_at", { ascending: false });
 
-    if (error) throw ApiError.internal(error.message);
+    if (error) {
+      logger.error("Knowledge error-reports GET failed", { message: error.message });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
 
     const mapped = (rows ?? []).map((r) => ({
       knowledge_code: r.code,
@@ -55,7 +63,10 @@ export async function POST(req: NextRequest) {
       .eq("code", code)
       .maybeSingle();
 
-    if (kErr) throw ApiError.internal(kErr.message);
+    if (kErr) {
+      logger.error("Knowledge error-reports POST select failed", { message: kErr.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
     if (!knowledgeRow) throw ApiError.validationError("词条不存在");
 
     if (knowledgeRow.needs_correction) {
@@ -70,7 +81,10 @@ export async function POST(req: NextRequest) {
       .update({ needs_correction: true })
       .eq("code", code);
 
-    if (updErr) throw ApiError.internal(updErr.message);
+    if (updErr) {
+      logger.error("Knowledge error-reports POST update failed", { message: updErr.message, code });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
+    }
 
     logger.info("Knowledge flagged for correction", { userId: user.id, knowledgeCode: code });
 

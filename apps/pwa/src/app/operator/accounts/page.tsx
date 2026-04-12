@@ -27,6 +27,7 @@ import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { toast } from "sonner";
 import { OperatorMain, OperatorPageHeader } from "../components/OperatorChrome";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DEBOUNCE_MS = 300;
 
@@ -314,12 +315,47 @@ export default function AccountsPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>用户详情</DialogTitle>
-            <DialogDescription>
-              {userDetail?.profile.username ?? "加载中..."}
+            <DialogDescription className="min-h-[1.25rem]">
+              {detailLoading ? (
+                <Skeleton className="h-4 w-40" aria-hidden />
+              ) : (
+                (userDetail?.profile.username ?? "—")
+              )}
             </DialogDescription>
           </DialogHeader>
 
-          {detailLoading && <p className="py-4 text-muted-foreground">加载中...</p>}
+          {detailLoading && (
+            <div
+              className="flex flex-col gap-6 py-4"
+              aria-busy="true"
+              aria-label="正在加载用户详情"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-full max-w-[14rem]" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-5 w-24" />
+                <div className="grid grid-cols-4 gap-3">
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <Skeleton key={i} className="h-[4.5rem] w-full rounded-lg" />
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-5 w-24" />
+                <div className="flex flex-col gap-2">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {userDetail && (
             <div className="space-y-6 py-4">

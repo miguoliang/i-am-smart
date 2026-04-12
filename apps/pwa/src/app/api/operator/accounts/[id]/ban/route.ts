@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
+import {
+  apiSuccess,
+  handleApiError,
+  ApiError,
+  PUBLIC_INTERNAL_ERROR_MESSAGE,
+} from "@/lib/utils/apiError";
 import { requireOperator } from "@/lib/middleware/auth";
+import { logger } from "@/lib/utils/logger";
 import { writeAuditLog } from "@/lib/utils/auditLog";
 
 interface BanBody {
@@ -39,7 +45,8 @@ export async function POST(
     });
 
     if (error) {
-      throw ApiError.internal(error.message);
+      logger.error("Operator ban user failed", { message: error.message, userId: id });
+      throw ApiError.internal(PUBLIC_INTERNAL_ERROR_MESSAGE);
     }
 
     void writeAuditLog({
