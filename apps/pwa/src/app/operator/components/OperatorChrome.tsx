@@ -1,6 +1,59 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+/** Section title for operator dashboard / SaaS pages (uppercase muted label). */
+export function OperatorSectionLabel({
+  id,
+  children,
+  className,
+}: {
+  id?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <h2
+      id={id}
+      className={cn(
+        "mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground",
+        className
+      )}
+    >
+      {children}
+    </h2>
+  );
+}
+
+/** Dashboard section: executive-facing title + one-line “what to read here”. */
+export function OperatorDashboardSectionHeader({
+  id,
+  title,
+  subtitle,
+  className,
+}: {
+  id: string;
+  title: string;
+  subtitle: string;
+  className?: string;
+}) {
+  return (
+    <header className={cn("mb-3", className)}>
+      <h2
+        id={id}
+        className="text-sm font-semibold tracking-tight text-foreground"
+      >
+        {title}
+      </h2>
+      <p
+        className="mt-1 text-xs leading-relaxed text-muted-foreground"
+        id={`${id}-desc`}
+      >
+        {subtitle}
+      </p>
+    </header>
+  );
+}
+
 export function OperatorMain({
   children,
   className,

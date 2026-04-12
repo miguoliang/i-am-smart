@@ -9,7 +9,12 @@ import {
 import { useOperatorAuth } from "./hooks/useOperatorAuth";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { OperatorMain, OperatorPanel, OperatorStatBlock } from "./components/OperatorChrome";
+import {
+  OperatorDashboardSectionHeader,
+  OperatorMain,
+  OperatorPanel,
+  OperatorStatBlock,
+} from "./components/OperatorChrome";
 
 const METRIC_HELP: Record<string, string> = {
   今日注册: "今天（按本地时区）新注册的用户数，来源于 Supabase Auth 的 created_at 字段。",
@@ -61,6 +66,129 @@ function MiniBarChart({
   );
 }
 
+function KpiSectionSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:gap-4">
+      {[1, 2].map((i) => (
+        <OperatorPanel key={i} className="p-4 md:p-5">
+          <Skeleton className="h-3 w-[5.5rem]" aria-hidden />
+          <Skeleton className="mt-2 h-8 w-24 md:h-9 md:w-28" aria-hidden />
+        </OperatorPanel>
+      ))}
+    </div>
+  );
+}
+
+function TrendCardSkeleton() {
+  return (
+    <OperatorPanel className="p-4 md:p-5">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <Skeleton className="h-3 w-36 max-w-[70%]" aria-hidden />
+        <Skeleton className="h-7 w-14 shrink-0" aria-hidden />
+      </div>
+      <Skeleton className="h-20 w-full rounded-sm" aria-hidden />
+      <div className="mt-2 flex justify-between">
+        <Skeleton className="h-3 w-9" aria-hidden />
+        <Skeleton className="h-3 w-9" aria-hidden />
+      </div>
+    </OperatorPanel>
+  );
+}
+
+function DashboardPageIntro() {
+  return (
+    <p className="mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+      本页聚焦<strong className="font-medium text-foreground">今日与近 30 天</strong>
+      ，一眼对齐：进账与付费、是否有人真在用、短期留不留。订阅盘子（MRR）、队列留存、词库掌握等
+      <strong className="font-medium text-foreground">周期与订阅健康</strong>
+      请见侧栏「SaaS 指标」。
+    </p>
+  );
+}
+
+function DashboardLoadingSkeleton() {
+  return (
+    <OperatorMain>
+      <DashboardPageIntro />
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-scale"
+        aria-describedby="kpi-scale-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-scale"
+          title="获客与盘子"
+          subtitle="今天进了多少人、存量用户有多少"
+        />
+        <KpiSectionSkeleton />
+      </section>
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-usage"
+        aria-describedby="kpi-usage-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-usage"
+          title="今天有人用吗"
+          subtitle="复习量与今日活跃人数，看真实使用"
+        />
+        <KpiSectionSkeleton />
+      </section>
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-revenue"
+        aria-describedby="kpi-revenue-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-revenue"
+          title="钱与付费"
+          subtitle="今日进账与付费转化占比"
+        />
+        <KpiSectionSkeleton />
+      </section>
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-retention"
+        aria-describedby="kpi-retention-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-retention"
+          title="用户留不留得住"
+          subtitle="注册后短期是否还会回来（次日 / 7 日）"
+        />
+        <KpiSectionSkeleton />
+      </section>
+
+      <section
+        className="mb-8"
+        aria-labelledby="trends-traffic"
+        aria-describedby="trends-traffic-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="trends-traffic"
+          title="近 30 天：使用侧"
+          subtitle="注册、活跃、复习是否同向变化"
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <TrendCardSkeleton />
+          <TrendCardSkeleton />
+          <TrendCardSkeleton />
+        </div>
+      </section>
+      <section aria-labelledby="trends-finance" aria-describedby="trends-finance-desc">
+        <OperatorDashboardSectionHeader
+          id="trends-finance"
+          title="近 30 天：收入"
+          subtitle="与上方「钱与付费」对照"
+        />
+        <div className="grid grid-cols-1 gap-4 md:max-w-xl">
+          <TrendCardSkeleton />
+        </div>
+      </section>
+    </OperatorMain>
+  );
+}
+
 export default function OperatorDashboard() {
   useOperatorAuth();
   const offset = new Date().getTimezoneOffset();
@@ -72,34 +200,7 @@ export default function OperatorDashboard() {
   });
 
   if (isLoading) {
-    return (
-      <OperatorMain>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <OperatorPanel key={i} className="p-4 md:p-5">
-              <Skeleton className="h-3 w-[5.5rem]" aria-hidden />
-              <Skeleton className="mt-2 h-8 w-24 md:h-9 md:w-28" aria-hidden />
-            </OperatorPanel>
-          ))}
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
-            <OperatorPanel key={i} className="p-4 md:p-5">
-              <div className="mb-4 flex items-baseline justify-between gap-3">
-                <Skeleton className="h-3 w-36 max-w-[70%]" aria-hidden />
-                <Skeleton className="h-7 w-14 shrink-0" aria-hidden />
-              </div>
-              <Skeleton className="h-20 w-full rounded-sm" aria-hidden />
-              <div className="mt-2 flex justify-between">
-                <Skeleton className="h-3 w-9" aria-hidden />
-                <Skeleton className="h-3 w-9" aria-hidden />
-              </div>
-            </OperatorPanel>
-          ))}
-        </div>
-      </OperatorMain>
-    );
+    return <DashboardLoadingSkeleton />;
   }
 
   if (error) {
@@ -114,72 +215,148 @@ export default function OperatorDashboard() {
 
   return (
     <OperatorMain>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        <OperatorStatBlock
-          label="今日注册"
-          value={data.todayRegistrations}
-          labelHint={METRIC_HELP["今日注册"]}
-        />
-        <OperatorStatBlock
-          label="总用户数"
-          value={data.totalUsers}
-          labelHint={METRIC_HELP["总用户数"]}
-        />
-        <OperatorStatBlock
-          label="今日复习量"
-          value={data.todayReviews}
-          labelHint={METRIC_HELP["今日复习量"]}
-        />
-        <OperatorStatBlock
-          label="今日收入"
-          value={`¥${(data.todayRevenue / 100).toFixed(2)}`}
-          labelHint={METRIC_HELP["今日收入"]}
-        />
-        <OperatorStatBlock
-          label="今日活跃"
-          value={data.todayDAU}
-          labelHint={METRIC_HELP["今日活跃"]}
-        />
-        <OperatorStatBlock
-          label="次日留存"
-          value={`${data.retention.nextDayRetention}%`}
-          labelHint={METRIC_HELP["次日留存"]}
-        />
-        <OperatorStatBlock
-          label="7日留存"
-          value={`${data.retention.sevenDayRetention}%`}
-          labelHint={METRIC_HELP["7日留存"]}
-        />
-        <OperatorStatBlock
-          label="付费转化"
-          value={`${data.retention.paidConversion}%`}
-          labelHint={METRIC_HELP["付费转化"]}
-        />
-      </div>
+      <DashboardPageIntro />
 
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TrendCard
-          title="注册趋势 (30天)"
-          data={data.trends.registrations}
-          valueKey="count"
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-scale"
+        aria-describedby="kpi-scale-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-scale"
+          title="获客与盘子"
+          subtitle="今天进了多少人、存量用户有多少"
         />
-        <TrendCard
-          title="DAU 趋势 (30天)"
-          data={data.trends.dau}
-          valueKey="count"
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <OperatorStatBlock
+            label="今日注册"
+            value={data.todayRegistrations}
+            labelHint={METRIC_HELP["今日注册"]}
+          />
+          <OperatorStatBlock
+            label="总用户数"
+            value={data.totalUsers}
+            labelHint={METRIC_HELP["总用户数"]}
+          />
+        </div>
+      </section>
+
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-usage"
+        aria-describedby="kpi-usage-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-usage"
+          title="今天有人用吗"
+          subtitle="复习量与今日活跃人数，看真实使用"
         />
-        <TrendCard
-          title="复习趋势 (30天)"
-          data={data.trends.reviews}
-          valueKey="count"
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <OperatorStatBlock
+            label="今日复习量"
+            value={data.todayReviews}
+            labelHint={METRIC_HELP["今日复习量"]}
+          />
+          <OperatorStatBlock
+            label="今日活跃"
+            value={data.todayDAU}
+            labelHint={METRIC_HELP["今日活跃"]}
+          />
+        </div>
+      </section>
+
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-revenue"
+        aria-describedby="kpi-revenue-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-revenue"
+          title="钱与付费"
+          subtitle="今日进账与付费转化占比"
         />
-        <TrendCard
-          title="收入趋势 (30天)"
-          data={data.trends.revenue}
-          valueKey="amount"
-          formatValue={(v) => `¥${(v / 100).toFixed(0)}`}
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <OperatorStatBlock
+            label="今日收入"
+            value={`¥${(data.todayRevenue / 100).toFixed(2)}`}
+            labelHint={METRIC_HELP["今日收入"]}
+          />
+          <OperatorStatBlock
+            label="付费转化"
+            value={`${data.retention.paidConversion}%`}
+            labelHint={METRIC_HELP["付费转化"]}
+          />
+        </div>
+      </section>
+
+      <section
+        className="mb-8"
+        aria-labelledby="kpi-retention"
+        aria-describedby="kpi-retention-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="kpi-retention"
+          title="用户留不留得住"
+          subtitle="注册后短期是否还会回来（次日 / 7 日）"
         />
-      </div>
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <OperatorStatBlock
+            label="次日留存"
+            value={`${data.retention.nextDayRetention}%`}
+            labelHint={METRIC_HELP["次日留存"]}
+          />
+          <OperatorStatBlock
+            label="7日留存"
+            value={`${data.retention.sevenDayRetention}%`}
+            labelHint={METRIC_HELP["7日留存"]}
+          />
+        </div>
+      </section>
+
+      <section
+        className="mb-8"
+        aria-labelledby="trends-traffic"
+        aria-describedby="trends-traffic-desc"
+      >
+        <OperatorDashboardSectionHeader
+          id="trends-traffic"
+          title="近 30 天：使用侧"
+          subtitle="注册、活跃、复习是否同向变化"
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <TrendCard
+            title="注册趋势 (30天)"
+            data={data.trends.registrations}
+            valueKey="count"
+          />
+          <TrendCard
+            title="DAU 趋势 (30天)"
+            data={data.trends.dau}
+            valueKey="count"
+          />
+          <TrendCard
+            title="复习趋势 (30天)"
+            data={data.trends.reviews}
+            valueKey="count"
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="trends-finance" aria-describedby="trends-finance-desc">
+        <OperatorDashboardSectionHeader
+          id="trends-finance"
+          title="近 30 天：收入"
+          subtitle="与上方「钱与付费」对照"
+        />
+        <div className="grid grid-cols-1 gap-4 md:max-w-xl">
+          <TrendCard
+            title="收入趋势 (30天)"
+            data={data.trends.revenue}
+            valueKey="amount"
+            formatValue={(v) => `¥${(v / 100).toFixed(0)}`}
+          />
+        </div>
+      </section>
     </OperatorMain>
   );
 }
