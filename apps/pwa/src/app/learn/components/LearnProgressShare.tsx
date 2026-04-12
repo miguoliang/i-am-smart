@@ -14,8 +14,6 @@ import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { resolveShareLandingUrl } from "../lib/shareLandingUrl";
 
 const CARD_PX = 360;
-/** Outer card radius; keep in sync with preview <img> rounding (e.g. rounded-2xl). */
-const CARD_RADIUS_PX = 16;
 const BRAND_FALLBACK = "聪明的背单词工具";
 
 function getBrandLine(): string {
@@ -84,10 +82,9 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           width: CARD_PX,
           boxSizing: "border-box",
           padding: "22px 22px 22px",
-          borderRadius: CARD_RADIUS_PX,
+          borderRadius: 0,
           overflow: "hidden",
           backgroundColor: "#f4f4f5",
-          // box-shadow avoids border+radius rasterization glitches in WebKit / html-to-image
           boxShadow: "0 0 0 1px #e4e4e7",
           fontFamily:
             'system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
@@ -172,7 +169,7 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           style={{
             marginTop: 14,
             padding: "16px 14px",
-            borderRadius: 10,
+            borderRadius: 0,
             backgroundColor: "#fff",
             boxShadow: "0 0 0 1px #e4e4e7",
             textAlign: "center",
@@ -228,7 +225,7 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
               height: 88,
               flexShrink: 0,
               background: "#fff",
-              borderRadius: 8,
+              borderRadius: 0,
               boxShadow: "0 0 0 1px #e4e4e7",
               display: "flex",
               alignItems: "center",
@@ -464,15 +461,8 @@ export function LearnProgressShare({
           aria-label="分享图预览"
           onClick={closePreview}
         >
-          {/*
-            Clip with radius scaled to rendered width (same 16/360 as CARD_RADIUS_PX / CARD_PX).
-            Fixed rounded-2xl on <img> did not scale with max-h/max-w, so corners looked off vs the PNG.
-          */}
           <div
-            className="mx-auto w-fit max-h-[min(78vh,720px)] max-w-full overflow-hidden shadow-2xl [container-type:inline-size]"
-            style={{
-              borderRadius: `calc(100cqw * ${CARD_RADIUS_PX} / ${CARD_PX})`,
-            }}
+            className="mx-auto w-fit max-h-[min(78vh,720px)] max-w-full shadow-2xl"
             onClick={(ev) => ev.stopPropagation()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- user-saved blob preview */}
