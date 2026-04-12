@@ -30,9 +30,12 @@ const METRIC_HELP: Record<string, string> = {
 function MiniBarChart({
   data,
   maxHeight = 80,
+  formatTooltip,
 }: {
   data: { date: string; value: number }[];
   maxHeight?: number;
+  /** Hover text for each bar; defaults to `日期: 数值`. */
+  formatTooltip?: (d: { date: string; value: number }) => string;
 }) {
   const values = data.map((d) => d.value);
   const max = Math.max(...values, 1);
@@ -41,12 +44,15 @@ function MiniBarChart({
     <div className="flex h-20 items-end gap-px">
       {data.map((d) => {
         const h = Math.max((d.value / max) * maxHeight, d.value > 0 ? 2 : 0);
+        const tip = formatTooltip
+          ? formatTooltip(d)
+          : `${d.date} · ${d.value}`;
         return (
           <div
             key={d.date}
-            className="min-w-0 flex-1 rounded-sm bg-primary/30 transition-colors hover:bg-primary/45"
+            className="min-w-0 flex-1 cursor-default rounded-sm bg-primary/30 transition-colors hover:bg-primary/45"
             style={{ height: `${h}px` }}
-            title={`${d.date}: ${d.value}`}
+            title={tip}
           />
         );
       })}
@@ -92,25 +98,45 @@ export default function OperatorDashboard() {
   return (
     <OperatorMain>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        <OperatorStatBlock label="今日注册" value={data.todayRegistrations} />
-        <OperatorStatBlock label="总用户数" value={data.totalUsers} />
-        <OperatorStatBlock label="今日复习量" value={data.todayReviews} />
+        <OperatorStatBlock
+          label="今日注册"
+          value={data.todayRegistrations}
+          labelHint={METRIC_HELP["今日注册"]}
+        />
+        <OperatorStatBlock
+          label="总用户数"
+          value={data.totalUsers}
+          labelHint={METRIC_HELP["总用户数"]}
+        />
+        <OperatorStatBlock
+          label="今日复习量"
+          value={data.todayReviews}
+          labelHint={METRIC_HELP["今日复习量"]}
+        />
         <OperatorStatBlock
           label="今日收入"
           value={`¥${(data.todayRevenue / 100).toFixed(2)}`}
+          labelHint={METRIC_HELP["今日收入"]}
         />
-        <OperatorStatBlock label="今日活跃" value={data.todayDAU} />
+        <OperatorStatBlock
+          label="今日活跃"
+          value={data.todayDAU}
+          labelHint={METRIC_HELP["今日活跃"]}
+        />
         <OperatorStatBlock
           label="次日留存"
           value={`${data.retention.nextDayRetention}%`}
+          labelHint={METRIC_HELP["次日留存"]}
         />
         <OperatorStatBlock
           label="7日留存"
           value={`${data.retention.sevenDayRetention}%`}
+          labelHint={METRIC_HELP["7日留存"]}
         />
         <OperatorStatBlock
           label="付费转化"
           value={`${data.retention.paidConversion}%`}
+          labelHint={METRIC_HELP["付费转化"]}
         />
       </div>
 
@@ -137,20 +163,6 @@ export default function OperatorDashboard() {
           formatValue={(v) => `¥${(v / 100).toFixed(0)}`}
         />
       </div>
-
-      <details className="mt-10 border-t border-border pt-6 text-sm">
-        <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
-          指标定义（说明文案）
-        </summary>
-        <dl className="mt-4 space-y-3 text-muted-foreground">
-          {Object.entries(METRIC_HELP).map(([name, text]) => (
-            <div key={name}>
-              <dt className="font-medium text-foreground">{name}</dt>
-              <dd className="mt-0.5 leading-relaxed">{text}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
     </OperatorMain>
   );
 }
@@ -194,7 +206,14 @@ function TrendCard({
           {displayTotal}
         </span>
       </div>
-      <MiniBarChart data={chartData} />
+      <MiniBarChart
+        data={chartData}
+        formatTooltip={(d) =>
+          formatValue
+            ? `${d.date} · ${formatValue(d.value)}`
+            : `${d.date} · ${d.value}`
+        }
+      />
       <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>{data[0]?.date.slice(5)}</span>
         <span>{data[data.length - 1]?.date.slice(5)}</span>

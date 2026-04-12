@@ -43,16 +43,25 @@ export function OperatorStatBlock({
   label,
   value,
   sub,
+  labelHint,
   className,
 }: {
   label: string;
   value: ReactNode;
   sub?: string;
+  /** Shown on hover over the metric title (native tooltip). */
+  labelHint?: string;
   className?: string;
 }) {
   return (
     <OperatorPanel className={cn("p-4 md:p-5", className)}>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p
+        className={cn(
+          "text-xs font-medium uppercase tracking-wide text-muted-foreground",
+          labelHint && "cursor-help"
+        )}
+        title={labelHint}
+      >
         {label}
       </p>
       <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-foreground md:text-3xl">
