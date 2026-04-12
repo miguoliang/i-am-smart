@@ -10,6 +10,8 @@ import { getErrorMessage } from "@/lib/utils/errorUtils";
 import { resolveShareLandingUrl } from "../lib/shareLandingUrl";
 
 const CARD_PX = 360;
+/** Outer card radius; keep in sync with preview <img> rounding (e.g. rounded-2xl). */
+const CARD_RADIUS_PX = 16;
 const BRAND_FALLBACK = "聪明的背单词工具";
 
 function getBrandLine(): string {
@@ -39,9 +41,11 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           width: CARD_PX,
           boxSizing: "border-box",
           padding: "28px 24px 24px",
-          borderRadius: 20,
+          borderRadius: CARD_RADIUS_PX,
+          overflow: "hidden",
           backgroundColor: "#f4f4f5",
-          border: "1px solid #e4e4e7",
+          // box-shadow avoids border+radius rasterization glitches in WebKit / html-to-image
+          boxShadow: "0 0 0 1px #e4e4e7",
           fontFamily:
             'system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
           color: "#18181b",
@@ -96,9 +100,9 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
           style={{
             marginTop: 18,
             padding: "16px 14px",
-            borderRadius: 12,
+            borderRadius: 10,
             backgroundColor: "#fff",
-            border: "1px solid #e4e4e7",
+            boxShadow: "0 0 0 1px #e4e4e7",
             textAlign: "center",
           }}
         >
@@ -153,7 +157,7 @@ const LearnProgressShareCard = forwardRef<HTMLDivElement, LearnProgressShareCard
               flexShrink: 0,
               background: "#fff",
               borderRadius: 8,
-              border: "1px solid #e4e4e7",
+              boxShadow: "0 0 0 1px #e4e4e7",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -369,7 +373,7 @@ export function LearnProgressShare({
           <img
             src={previewUrl}
             alt="分享预览"
-            className="max-h-[min(78vh,720px)] w-auto max-w-full rounded-lg shadow-2xl"
+            className="max-h-[min(78vh,720px)] w-auto max-w-full rounded-2xl shadow-2xl"
             onClick={(ev) => ev.stopPropagation()}
           />
           <p className="mt-4 max-w-sm text-center text-sm text-zinc-200">
