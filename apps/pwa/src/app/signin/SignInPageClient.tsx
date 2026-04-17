@@ -35,17 +35,6 @@ function detectMobileOrTablet(): boolean {
   return false;
 }
 
-/**
- * Detect if running in WeChat miniprogram environment.
- * WeChat miniprogram provides a global `wx` object.
- */
-function detectMiniprogram(): boolean {
-  if (typeof window === "undefined") return false;
-  // Check for WeChat miniprogram global object
-  // @ts-expect-error - wx is provided by WeChat miniprogram runtime
-  return typeof wx !== "undefined" && typeof wx.getSystemInfoSync === "function";
-}
-
 interface SignInState {
   autoSubmitted: boolean;
 }
@@ -101,12 +90,6 @@ function SignInContent({ deploymentSurface }: SignInContentProps) {
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   useEffect(() => {
     setIsMobileOrTablet(detectMobileOrTablet());
-  }, []);
-
-  // Detect WeChat miniprogram environment
-  const [isMiniprogram, setIsMiniprogram] = useState(false);
-  useEffect(() => {
-    setIsMiniprogram(detectMiniprogram());
   }, []);
 
   // In development, show WeChat login for testing even if env vars are not set
@@ -273,9 +256,7 @@ function SignInContent({ deploymentSurface }: SignInContentProps) {
   }, [countdownActive, handleResendPhoneOtp, resetCountdown]);
 
 
-  // Whether to show the OTP login form (phone only)
-  // Show in all environments except miniprogram
-  const showOtpLogin = !isMiniprogram;
+  const showOtpLogin = true;
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
@@ -295,7 +276,7 @@ function SignInContent({ deploymentSurface }: SignInContentProps) {
               role="alert"
             >
               {wechatError
-                ? (isMiniprogram ? "微信登录失败，请重试。" : "微信登录失败，请重试或使用其他方式登录。")
+                ? "微信登录失败，请重试或使用其他方式登录。"
                 : "登录失败，请重试。"}
             </p>
           )}

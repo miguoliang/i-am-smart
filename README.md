@@ -16,7 +16,7 @@
 ![Husky](https://img.shields.io/badge/husky-42b883?style=for-the-badge&logo=husky&logoColor=white)
 ![Day.js](https://img.shields.io/badge/Day.js-FB6052?style=for-the-badge&logo=javascript&logoColor=white)
 
-**聪明的背单词工具** is a SaaS to-C English vocabulary learning app for the China market. Available as PWA and WeChat miniprogram. Payments via WeChat Pay and Alipay. Built with spaced repetition (SM-2), it offers a zero-friction learning experience.
+**聪明的背单词工具** is a SaaS to-C English vocabulary learning app for the China market. Available as a PWA. Payments via WeChat Pay and Alipay. Built with spaced repetition (SM-2), it offers a zero-friction learning experience.
 
 ## 🚀 Key Features
 

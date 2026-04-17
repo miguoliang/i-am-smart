@@ -1,5 +1,5 @@
 /**
- * Shared user types for both Next.js web app and WeChat miniprogram
+ * Shared user types
  */
 
 import type { LearnerProfile } from './profile';

@@ -13,8 +13,7 @@
     "type-check": "tsc --noEmit",
     "verify:wechat-pay-key": "node scripts/verify-wechat-pay-key.mjs",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "build:miniprogram-config": "node scripts/build-miniprogram-config.mjs"
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

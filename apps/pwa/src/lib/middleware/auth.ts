@@ -13,7 +13,7 @@ export interface AuthContext {
 /**
  * Require authentication for API routes
  * Throws ApiError.unauthorized if user is not authenticated
- * Supports both cookie-based auth (web) and Authorization header (miniprogram/mobile)
+ * Supports both cookie-based auth (web) and Authorization header (non-browser clients)
  * @param req Optional NextRequest to read Authorization header from
  * @returns AuthContext with authenticated user and supabase client
  */
