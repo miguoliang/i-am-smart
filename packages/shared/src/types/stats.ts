@@ -1,5 +1,5 @@
 /**
- * Shared stats types for both Next.js web app and WeChat miniprogram
+ * Shared stats types
  */
 
 export interface UserStats {

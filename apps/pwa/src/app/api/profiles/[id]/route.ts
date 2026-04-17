@@ -34,7 +34,7 @@ export async function PATCH(
   }
 }
 
-// PUT delegates to PATCH (WeChat miniprogram doesn't support PATCH)
+// PUT delegates to PATCH (some clients don't support PATCH)
 export const PUT = PATCH;
 
 export async function DELETE(

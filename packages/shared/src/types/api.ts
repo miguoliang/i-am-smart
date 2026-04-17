@@ -1,5 +1,5 @@
 /**
- * Shared API response types for both Next.js web app and WeChat miniprogram
+ * Shared API response types
  */
 
 export interface ApiResponse<T = unknown> {

@@ -61,13 +61,6 @@ apps/pwa/public/sw 2.js
 storybook-static
 .aider*
 
-# WeChat miniprogram
-apps/miniprogram/node_modules
-apps/miniprogram/.tea
-apps/miniprogram/miniprogram_npm
-# Compiled JavaScript files (generated from TypeScript)
-apps/miniprogram/**/*.js
-!apps/miniprogram/node_modules/**/*.js
 e2e-test-results/
 
 # Supabase CLI local link cache (repo root `supabase link`)

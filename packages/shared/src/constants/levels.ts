@@ -1,5 +1,5 @@
 /**
- * Shared level constants for both Next.js web app and WeChat miniprogram
+ * Shared level constants
  */
 
 export const AVAILABLE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;

@@ -1,5 +1,5 @@
 /**
- * Shared card types for both Next.js web app and WeChat miniprogram
+ * Shared card types
  */
 
 export interface Knowledge {

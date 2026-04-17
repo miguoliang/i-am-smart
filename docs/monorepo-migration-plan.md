@@ -3,7 +3,6 @@
 ## 现状分析（已迁移）
 
 - Next.js PWA：`apps/pwa/`（含 `src/`, `public/`, `next.config.ts` 等）
-- 微信小程序：`apps/miniprogram/`
 - 共享代码：`packages/shared/`（types + constants）
 - 构建：pnpm + turbo + husky pre-commit hooks
 - 部署：GitHub Actions → SSH/SCP + PM2（自有服务器）
@@ -24,13 +23,6 @@ i-am-smart/
 │   │   ├── components.json     # shadcn 配置
 │   │   ├── tsconfig.json       # extends packages/tsconfig/next.json
 │   │   └── package.json
-│   ├── miniprogram/            # 微信小程序
-│   │   ├── pages/
-│   │   ├── utils/
-│   │   ├── app.ts / app.json
-│   │   ├── project.config.json
-│   │   ├── tsconfig.json       # extends packages/tsconfig/miniprogram.json
-│   │   └── package.json        # 新建，用于引用 @i-am-smart/shared
 │   └── mobile/                 # Capacitor iOS
 │       ├── ios/
 │       ├── capacitor.config.ts
@@ -54,7 +46,6 @@ i-am-smart/
 │   ├── tsconfig/               # 共享 TS 配置
 │   │   ├── base.json
 │   │   ├── next.json
-│   │   ├── miniprogram.json
 │   │   └── package.json        # @i-am-smart/tsconfig
 │   └── eslint-config/          # 共享 ESLint 配置
 │       ├── index.mjs           # 从根 eslint.config.mjs 提取
@@ -92,7 +83,6 @@ i-am-smart/
 3. **创建 `packages/tsconfig/`**
    - `base.json`：从现有 `tsconfig.json` 提取公共配置
    - `next.json`：Next.js 专用，extends base
-   - `miniprogram.json`：小程序专用，extends base
 
 4. **创建 `packages/eslint-config/`**
    - 从根 `eslint.config.mjs` 提取为可复用包
@@ -102,7 +92,6 @@ i-am-smart/
 5. **创建 `packages/shared/`**
    - 移动 `shared/types/` → `packages/shared/src/types/`
    - 移动 `shared/constants/` → `packages/shared/src/constants/`
-   - 删除 `miniprogram/shared/`（改为依赖 `@i-am-smart/shared`）
    - `package.json` name: `@i-am-smart/shared`
 
 6. **创建 `packages/api/`**
@@ -121,13 +110,7 @@ i-am-smart/
    - `tsconfig.json` extends `@i-am-smart/tsconfig/next.json`
    - 更新所有 `@/` 路径别名（应该不需要改，保持 `src/` 相对路径）
 
-8. **搬迁 `apps/miniprogram/`**
-   - 移动 `miniprogram/*` → `apps/miniprogram/`
-   - 新建 `package.json`，依赖 `@i-am-smart/shared`
-   - 配置小程序 npm 构建：`miniprogram_npm` 需要 `npm build` 把 node_modules 里的包构建到小程序可用格式
-   - 更新 `project.config.json` 的 `miniprogramRoot` 如果需要
-
-9. **创建 `apps/mobile/`**
+8. **创建 `apps/mobile/`**
    - `npm init @capacitor/app`
    - `capacitor.config.ts` 中 `webDir: '../pwa/out'`（或 `.next` 取决于导出方式）
    - `npx cap add ios`
@@ -145,12 +128,6 @@ i-am-smart/
 
 ## 关键注意事项
 
-### 小程序 npm 依赖
-微信小程序不支持标准 node_modules 解析。方案：
-- `packages/shared/` 构建出 `dist/`（CommonJS 格式）
-- 小程序 `package.json` 引用 `@i-am-smart/shared`
-- 微信开发者工具 → 工具 → 构建 npm，会把依赖打到 `miniprogram_npm/`
-
 ### packages/api 的导出策略
 `supabaseServer.ts` 依赖 `next/headers`，不能被小程序或 mobile 使用：
 ```json
@@ -163,7 +140,7 @@ i-am-smart/
   }
 }
 ```
-小程序和 mobile 只 import `@i-am-smart/api/client`。
+mobile 只 import `@i-am-smart/api/client`。
 
 ### 部署
 项目通过 GitHub Actions + SSH/SCP + PM2 部署到自有服务器，不使用 Vercel。
@@ -177,10 +154,9 @@ PWA 的 `@/` 别名指向 `apps/pwa/src/`，搬迁后 tsconfig paths 不需要�
 
 ## 风险点
 
-1. **小程序共享包构建** — 最容易出问题，需要验证 miniprogram_npm 构建流程
-2. **CI 适配** — deploy.yml 需要更新路径、pnpm 安装、turbo 构建命令
-3. **import 路径大量变更** — `packages/api` 提取后，PWA 里所有 `@/lib/supabase*` 引用都要改
-4. **测试** — jest 配置需要适配 monorepo 路径解析
+1. **CI 适配** — deploy.yml 需要更新路径、pnpm 安装、turbo 构建命令
+2. **import 路径大量变更** — `packages/api` 提取后，PWA 里所有 `@/lib/supabase*` 引用都要改
+3. **测试** — jest 配置需要适配 monorepo 路径解析
 
 ## 建议执行顺序
 

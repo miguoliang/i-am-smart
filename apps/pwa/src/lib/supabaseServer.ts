@@ -69,13 +69,13 @@ export async function createClient() {
 /**
  * Create a Supabase client for Route Handlers (with mutations)
  * Use this in API routes when you need to modify cookies
- * Supports both cookie-based auth (web) and Authorization header (miniprogram/mobile)
+ * Supports both cookie-based auth (web) and Authorization header (non-browser clients)
  */
 export async function createRouteHandlerClient(req?: NextRequest) {
   const cookieStore = await cookies()
   const { url, anonKey } = getSupabaseEnv();
   
-  // Check for Authorization header (for miniprogram/mobile clients)
+  // Check for Authorization header (for non-browser clients)
   const authHeader = req?.headers.get('authorization')
   const accessToken = authHeader?.startsWith('Bearer ') 
     ? authHeader.slice(7) 
