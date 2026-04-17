@@ -1,0 +1,9 @@
+# Default reviewers for everything in the repo.
+* @miguoliang
+
+# Review infra / automation changes.
+.github/** @miguoliang
+
+# Review app code changes.
+apps/pwa/** @miguoliang
+packages/** @miguoliang
