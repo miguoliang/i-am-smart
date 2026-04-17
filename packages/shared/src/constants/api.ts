@@ -4,9 +4,9 @@
 
 // API base URL - will be set from environment or default
 export const getApiBaseUrl = (): string => {
-  if (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_APP_ORIGIN) {
-    return process.env.NEXT_PUBLIC_APP_ORIGIN;
-  }
+  const appOrigin = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.NEXT_PUBLIC_APP_ORIGIN;
+  if (appOrigin) return appOrigin;
   return 'https://your-domain.com';
 };
 
