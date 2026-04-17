@@ -40,3 +40,30 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e:
+    name: E2E (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @i-am-smart/pwa exec playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: pnpm --filter @i-am-smart/pwa run test:e2e
