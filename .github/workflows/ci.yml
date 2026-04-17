@@ -47,7 +47,6 @@ jobs:
   e2e:
     name: E2E (optional)
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -69,4 +68,5 @@ jobs:
         run: pnpm --filter @i-am-smart/pwa exec playwright install --with-deps
 
       - name: Run Playwright tests
+        continue-on-error: true
         run: pnpm --filter @i-am-smart/pwa run test:e2e
