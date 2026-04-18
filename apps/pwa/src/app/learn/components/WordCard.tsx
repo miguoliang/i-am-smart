@@ -26,12 +26,10 @@ export function WordCard({ knowledge, answerRevealed }: WordCardProps) {
           {!answerRevealed && (
             <div
               data-testid="answer-mask"
-              className="absolute inset-0 z-10 flex flex-col justify-center gap-2.5 py-1"
+              className="absolute inset-0 z-10 flex flex-col justify-center py-1"
               aria-hidden
             >
-              <div className="h-3 w-[88%] max-w-full animate-pulse rounded-md bg-muted" />
-              <div className="h-3 w-[58%] animate-pulse rounded-md bg-muted" />
-              <div className="h-3 w-[72%] animate-pulse rounded-md bg-muted" />
+              <div className="h-10 w-full max-w-full animate-pulse rounded-xl bg-muted" />
             </div>
           )}
         </div>
