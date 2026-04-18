@@ -17,7 +17,7 @@ const MARKETING_ROUTES = [
 ];
 
 // User routes - no top nav (they have bottom nav footer)
-const USER_ROUTES = ["/learn", "/stats", "/feedback", "/signin"];
+const USER_ROUTES = ["/learn", "/stats", "/feedback", "/contact", "/signin"];
 
 export function ConditionalNavigation() {
   const pathname = usePathname();
