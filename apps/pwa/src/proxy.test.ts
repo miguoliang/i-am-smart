@@ -75,6 +75,15 @@ describe("proxy", () => {
       expect(location.searchParams.get("next")).toBe("/feedback");
     });
 
+    it("should redirect from /contact to /signin", async () => {
+      const res = await proxy(buildRequest("/contact"));
+
+      expect(res.status).toBe(307);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/signin");
+      expect(location.searchParams.get("next")).toBe("/contact");
+    });
+
     it("should redirect from /operator to /signin", async () => {
       const res = await proxy(buildRequest("/operator"));
 

@@ -11,6 +11,7 @@ import {
   Users,
   Bell,
   MessageSquare,
+  Mail,
   ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ const sidebarItems: SidebarItem[] = [
   { href: "/operator/accounts", label: "账户管理", icon: Users },
   { href: "/operator/push", label: "推送通知", icon: Bell },
   { href: "/operator/feedback", label: "用户反馈", icon: MessageSquare },
+  { href: "/operator/contact-messages", label: "用户留言", icon: Mail },
   { href: "/operator/logs", label: "操作日志", icon: ScrollText },
 ];
 

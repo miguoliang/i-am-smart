@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { NavigationFooter } from "./NavigationFooter";
 
 // Routes that should show the navigation footer
-const FOOTER_ROUTES = ["/learn", "/stats", "/feedback"];
+const FOOTER_ROUTES = ["/learn", "/stats", "/feedback", "/contact"];
 
 export function ConditionalFooter() {
   const pathname = usePathname();

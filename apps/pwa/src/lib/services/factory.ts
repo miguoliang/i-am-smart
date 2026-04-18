@@ -6,12 +6,14 @@ import { SupabaseCardRepository } from '@/lib/repositories/implementations/supab
 import { SupabaseAccountRepository } from '@/lib/repositories/implementations/supabase-account.repository';
 import { SupabaseKnowledgeRepository } from '@/lib/repositories/implementations/supabase-knowledge.repository';
 import { SupabaseFeedbackRepository } from '@/lib/repositories/implementations/supabase-feedback.repository';
+import { SupabaseContactMessageRepository } from '@/lib/repositories/implementations/supabase-contact-message.repository';
 import { SupabaseStatsRepository } from '@/lib/repositories/implementations/supabase-stats.repository';
 import { SupabaseProfileRepository } from '@/lib/repositories/implementations/supabase-profile.repository';
 import { CardService } from './cardService';
 import { AccountService } from './accountService';
 import { KnowledgeService } from './knowledgeService';
 import { FeedbackService } from './feedbackService';
+import { ContactMessageService } from './contactMessageService';
 import { StatsService } from './statsService';
 import { ProfileService } from './profileService';
 
@@ -56,6 +58,18 @@ export async function createFeedbackService(reqOrClient?: NextRequest | Supabase
   const supabase = await resolveClient(reqOrClient);
   const repo = new SupabaseFeedbackRepository(supabase);
   return new FeedbackService(repo);
+}
+
+/**
+ * Factory for ContactMessageService
+ * Uses Route Handler Client (User Context)
+ */
+export async function createContactMessageService(
+  reqOrClient?: NextRequest | SupabaseClient
+): Promise<ContactMessageService> {
+  const supabase = await resolveClient(reqOrClient);
+  const repo = new SupabaseContactMessageRepository(supabase);
+  return new ContactMessageService(repo);
 }
 
 /**
