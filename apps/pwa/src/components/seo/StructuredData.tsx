@@ -4,6 +4,10 @@ interface StructuredDataProps {
   data: WithContext<Thing>;
 }
 
+function serializeJsonLd(data: WithContext<Thing>): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 /**
  * Reusable component for injecting JSON-LD structured data
  * Used for SEO purposes (Organization, Website, Article, etc.)
@@ -13,7 +17,7 @@ export function StructuredData({ data }: StructuredDataProps) {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(data),
+        __html: serializeJsonLd(data),
       }}
     />
   );

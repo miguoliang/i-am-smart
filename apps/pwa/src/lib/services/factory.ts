@@ -20,11 +20,24 @@ import { ProfileService } from './profileService';
 /**
  * Resolve a Supabase user-context client: reuse if provided, otherwise create from request.
  */
+function isSupabaseClient(value: NextRequest | SupabaseClient | undefined): value is SupabaseClient {
+  return (
+    !!value &&
+    typeof (value as SupabaseClient).auth === 'object' &&
+    typeof (value as SupabaseClient).from === 'function' &&
+    typeof (value as SupabaseClient).rpc === 'function'
+  );
+}
+
+function isNextRequest(value: NextRequest | SupabaseClient | undefined): value is NextRequest {
+  return !!value && value instanceof NextRequest;
+}
+
 async function resolveClient(reqOrClient?: NextRequest | SupabaseClient): Promise<SupabaseClient> {
-  if (reqOrClient && 'auth' in reqOrClient && 'from' in reqOrClient) {
-    return reqOrClient as SupabaseClient;
+  if (isSupabaseClient(reqOrClient)) {
+    return reqOrClient;
   }
-  return createRouteHandlerClient(reqOrClient as NextRequest | undefined);
+  return createRouteHandlerClient(isNextRequest(reqOrClient) ? reqOrClient : undefined);
 }
 
 /**

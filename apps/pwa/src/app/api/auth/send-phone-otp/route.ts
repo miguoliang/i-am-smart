@@ -7,6 +7,30 @@ import {
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidPhone, sanitizePhone, formatPhoneForSupabase } from "@/lib/utils/phoneValidation";
 import { logger } from "@/lib/utils/logger";
+import { getTestPhoneWhitelist } from "@/lib/auth/testPhoneWhitelist";
+
+const OTP_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const OTP_RATE_LIMIT_MAX = 5;
+const otpAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(req: NextRequest): string {
+  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwardedFor || req.headers.get("x-real-ip") || "unknown";
+}
+
+function checkOtpRateLimit(key: string): boolean {
+  const now = Date.now();
+  const existing = otpAttempts.get(key);
+  if (!existing || existing.resetAt <= now) {
+    otpAttempts.set(key, { count: 1, resetAt: now + OTP_RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (existing.count >= OTP_RATE_LIMIT_MAX) {
+    return false;
+  }
+  existing.count += 1;
+  return true;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,11 +46,24 @@ export async function POST(req: NextRequest) {
       throw ApiError.validationError("手机号格式不正确");
     }
 
+    const clientIp = getClientIp(req);
+    if (
+      !checkOtpRateLimit(`ip:${clientIp}`) ||
+      !checkOtpRateLimit(`phone:${sanitized}`)
+    ) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "请求过于频繁，请稍后再试",
+          },
+        },
+        { status: 429 }
+      );
+    }
+
     // Whitelist check: skip real SMS for test phones (e.g. WeChat Pay review)
-    const whitelist = (process.env.TEST_PHONE_WHITELIST ?? "")
-      .split(",")
-      .map((p) => p.trim())
-      .filter(Boolean);
+    const whitelist = getTestPhoneWhitelist();
     if (whitelist.includes(sanitized)) {
       logger.info("[send-phone-otp] Whitelist phone, skipping SMS", { phone: sanitized });
       return apiSuccess({ success: true, message: "验证码已发送到您的手机" });

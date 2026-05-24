@@ -20,7 +20,7 @@ jobs:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST || vars.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER || vars.DEPLOY_USER }}
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH }}
-      DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -78,8 +78,8 @@ jobs:
             echo "::error::DEPLOY_USER is empty. Set Secret or Variable DEPLOY_USER."
             exit 1
           fi
-          if [ -z "$DEPLOY_SSH_PASSWORD" ]; then
-            echo "::error::DEPLOY_SSH_PASSWORD is empty. Must be a **Secret** (Settings → Actions → Secrets)."
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::DEPLOY_SSH_KEY is empty. Add the private SSH key under Settings → Secrets and variables → Actions → Secrets."
             exit 1
           fi
           if [ -z "$DEPLOY_PATH" ]; then
@@ -115,7 +115,6 @@ jobs:
           cp -r apps/pwa/public "$pkg/apps/pwa/public"
           mkdir -p "$pkg/apps/pwa/.next"
           cp -r apps/pwa/.next/static "$pkg/apps/pwa/.next/static"
-          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE AUTH_HOOK_SECRET TEST_PHONE_WHITELIST TEST_OTP_CODE; do [ -n "${!v}" ] && echo "$v=${!v}"; done > "$pkg/apps/pwa/.env"
           tar -czf ${{ env.PACKAGE_NAME }}.tar.gz -C deploy ${{ env.PACKAGE_NAME }}
 
       - name: Deploy to server
@@ -123,7 +122,7 @@ jobs:
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
-          password: ${{ env.DEPLOY_SSH_PASSWORD }}
+          key: ${{ env.DEPLOY_SSH_KEY }}
           source: ${{ env.PACKAGE_NAME }}.tar.gz
           target: /tmp
 
@@ -132,7 +131,8 @@ jobs:
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
-          password: ${{ env.DEPLOY_SSH_PASSWORD }}
+          key: ${{ env.DEPLOY_SSH_KEY }}
+          envs: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_VAPID_PUBLIC_KEY,VAPID_PRIVATE_KEY,VAPID_SUBJECT,NEXT_PUBLIC_BAIDU_ANALYTICS_ID,NEXT_PUBLIC_BAIDU_SITE_VERIFICATION,NEXT_PUBLIC_SITE_URL,WECHAT_OPEN_APP_ID,WECHAT_OPEN_APP_SECRET,NEXT_PUBLIC_WECHAT_OPEN_APP_ID,NEXT_PUBLIC_APP_ORIGIN,NEXT_PUBLIC_APPLE_CLIENT_ID,WECHAT_PAY_MCH_ID,WECHAT_PAY_APP_ID,WECHAT_PAY_MERCHANT_SERIAL_NO,WECHAT_PAY_PRIVATE_KEY,WECHAT_PAY_API_V3_KEY,ALIPAY_APP_ID,ALIPAY_PRIVATE_KEY,ALIPAY_PUBLIC_KEY,ALIPAY_GATEWAY,ALIYUN_SMS_ACCESS_KEY_ID,ALIYUN_SMS_ACCESS_KEY_SECRET,ALIYUN_SMS_SIGN_NAME,ALIYUN_SMS_TEMPLATE_CODE,AUTH_HOOK_SECRET,TEST_PHONE_WHITELIST,TEST_OTP_CODE
           script: |
             set -e
             DEPLOY_PATH='${{ env.DEPLOY_PATH }}'
@@ -141,6 +141,13 @@ jobs:
             TARBALL=$(find /tmp -name '${{ env.PACKAGE_NAME }}.tar.gz' -type f 2>/dev/null | head -1)
             tar -xzf "$TARBALL" -C "$DEPLOY_PATH" --strip-components=1
             rm -f "$TARBALL"
+            ENV_FILE="$DEPLOY_PATH/apps/pwa/.env"
+            : > "$ENV_FILE"
+            for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NEXT_PUBLIC_BAIDU_ANALYTICS_ID NEXT_PUBLIC_BAIDU_SITE_VERIFICATION NEXT_PUBLIC_SITE_URL WECHAT_OPEN_APP_ID WECHAT_OPEN_APP_SECRET NEXT_PUBLIC_WECHAT_OPEN_APP_ID NEXT_PUBLIC_APP_ORIGIN NEXT_PUBLIC_APPLE_CLIENT_ID WECHAT_PAY_MCH_ID WECHAT_PAY_APP_ID WECHAT_PAY_MERCHANT_SERIAL_NO WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_API_V3_KEY ALIPAY_APP_ID ALIPAY_PRIVATE_KEY ALIPAY_PUBLIC_KEY ALIPAY_GATEWAY ALIYUN_SMS_ACCESS_KEY_ID ALIYUN_SMS_ACCESS_KEY_SECRET ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE AUTH_HOOK_SECRET TEST_PHONE_WHITELIST TEST_OTP_CODE; do
+              value="$(printenv "$v" || true)"
+              [ -n "$value" ] && printf '%s=%s\n' "$v" "$value" >> "$ENV_FILE"
+            done
+            chmod 600 "$ENV_FILE"
             if command -v pm2 &>/dev/null; then
               cd "$DEPLOY_PATH/apps/pwa"
               PM2_NAME="be-it-forever"

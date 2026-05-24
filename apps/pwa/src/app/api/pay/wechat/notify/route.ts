@@ -72,8 +72,36 @@ export async function POST(req: NextRequest) {
     if (decrypted.trade_state !== "SUCCESS") {
       return NextResponse.json({ code: "FAIL", message: "trade not success" }, { status: 400 });
     }
+    const paidTotal = decrypted.amount?.total;
+    if (!Number.isInteger(paidTotal)) {
+      logger.warn("WeChat Pay notify: missing paid amount", {
+        out_trade_no: decrypted.out_trade_no,
+      });
+      return failResponse("missing amount");
+    }
 
     const admin = createSupabaseAdmin();
+    const { data: order, error: orderError } = await admin
+      .from("pay_orders")
+      .select("amount_total")
+      .eq("out_trade_no", decrypted.out_trade_no)
+      .eq("status", "pending")
+      .single();
+    if (orderError || !order) {
+      logger.warn("WeChat Pay notify: pending order not found", {
+        out_trade_no: decrypted.out_trade_no,
+      });
+      return failResponse("order not found");
+    }
+    if (order.amount_total !== paidTotal) {
+      logger.warn("WeChat Pay notify: amount mismatch", {
+        out_trade_no: decrypted.out_trade_no,
+        expected: order.amount_total,
+        paid: paidTotal,
+      });
+      return failResponse("amount mismatch");
+    }
+
     const { error } = await admin
       .from("pay_orders")
       .update({
@@ -83,6 +111,7 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("out_trade_no", decrypted.out_trade_no)
+      .eq("amount_total", paidTotal)
       .eq("status", "pending");
     if (error) {
       logger.error("WeChat Pay notify: update order failed", {

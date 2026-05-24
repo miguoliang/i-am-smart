@@ -19,14 +19,14 @@ import { logger } from "@/lib/utils/logger";
 function safePath(raw: string | null): string {
   if (!raw || typeof raw !== "string") return "/learn";
   if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes(":")) return "/learn";
+  if (/[\u0000-\u001F\u007F<>]/.test(raw)) return "/learn";
   if (raw.length > 500) return "/learn";
   return raw;
 }
 
 function buildSuccessHtml(origin: string, fallbackPath: string): string {
-  // Escape for safe embedding in a <script> string literal
-  const safeOrigin = origin.replace(/'/g, "\\'");
-  const safeFallback = fallbackPath.replace(/'/g, "\\'");
+  const encodedOrigin = JSON.stringify(origin);
+  const encodedFallback = JSON.stringify(fallbackPath);
 
   return `<!DOCTYPE html>
 <html lang="zh">
@@ -37,12 +37,12 @@ function buildSuccessHtml(origin: string, fallbackPath: string): string {
 (function(){
   try {
     if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({type:'OAUTH_COMPLETE',success:true},'${safeOrigin}');
+      window.opener.postMessage({type:'OAUTH_COMPLETE',success:true},${encodedOrigin});
       window.close();
       return;
     }
   } catch(e) {}
-  window.location.replace('${safeFallback}');
+  window.location.replace(${encodedFallback});
 })();
 </script>
 </body>
@@ -50,7 +50,7 @@ function buildSuccessHtml(origin: string, fallbackPath: string): string {
 }
 
 function buildErrorHtml(origin: string): string {
-  const safeOrigin = origin.replace(/'/g, "\\'");
+  const encodedOrigin = JSON.stringify(origin);
   return `<!DOCTYPE html>
 <html lang="zh">
 <head><meta charset="utf-8"><title>登录失败</title></head>
@@ -60,7 +60,7 @@ function buildErrorHtml(origin: string): string {
 (function(){
   try {
     if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({type:'OAUTH_COMPLETE',success:false},'${safeOrigin}');
+      window.opener.postMessage({type:'OAUTH_COMPLETE',success:false},${encodedOrigin});
       window.close();
       return;
     }

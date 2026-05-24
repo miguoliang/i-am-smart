@@ -45,7 +45,7 @@ function redirectWithCookies(
 ): NextResponse {
   const redirectRes = NextResponse.redirect(url);
   middlewareRes.cookies.getAll().forEach((cookie) => {
-    redirectRes.cookies.set(cookie.name, cookie.value);
+    redirectRes.cookies.set(cookie);
   });
   return redirectRes;
 }

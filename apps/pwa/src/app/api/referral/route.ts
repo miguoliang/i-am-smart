@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { randomInt } from "crypto";
 import { apiSuccess, handleApiError } from "@/lib/utils/apiError";
 import { requireAuth } from "@/lib/middleware/auth";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -7,7 +8,7 @@ function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomInt(chars.length)];
   }
   return code;
 }

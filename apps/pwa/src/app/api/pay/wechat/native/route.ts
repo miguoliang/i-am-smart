@@ -4,9 +4,7 @@ import { createNativeOrder } from "@/lib/wechatPay";
 import { apiSuccess, handleApiError, ApiError } from "@/lib/utils/apiError";
 import { requireAuth } from "@/lib/middleware/auth";
 import { logger } from "@/lib/utils/logger";
-
-const MIN_TOTAL_CENTS = 1;
-const MAX_TOTAL_CENTS = 99999999;
+import { getPayPlan } from "@/lib/payPlans";
 
 function getAppOrigin(): string {
   const origin = process.env.NEXT_PUBLIC_APP_ORIGIN;
@@ -24,21 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const totalCents =
-      typeof body.amount === "number"
-        ? body.amount
-        : Math.round(parseFloat(String(body.amount ?? 0)) * 100);
-    const description = typeof body.description === "string" ? body.description.trim() : "";
-
-    if (
-      !Number.isInteger(totalCents) ||
-      totalCents < MIN_TOTAL_CENTS ||
-      totalCents > MAX_TOTAL_CENTS
-    ) {
-      throw ApiError.validationError("金额无效，需在 0.01～999999.99 元之间");
-    }
-    if (!description || description.length > 127) {
-      throw ApiError.validationError("商品描述必填且不超过 127 字");
+    const plan = getPayPlan(body.plan_type);
+    if (!plan) {
+      throw ApiError.validationError(
+        "无效的套餐类型，请选择 monthly 或 yearly"
+      );
     }
 
     const { user } = await requireAuth(req);
@@ -50,20 +38,22 @@ export async function POST(req: NextRequest) {
     const { codeUrl } = await createNativeOrder({
       appId,
       mchId,
-      description,
+      description: plan.description,
       outTradeNo,
       notifyUrl,
-      totalCents,
-      attach: typeof body.attach === "string" ? body.attach.slice(0, 128) : undefined,
+      totalCents: plan.amountCents,
+      attach: plan.type,
     });
 
     const admin = createSupabaseAdmin();
     const { error } = await admin.from("pay_orders").insert({
       out_trade_no: outTradeNo,
       account_id: accountId,
-      amount_total: totalCents,
-      description,
+      amount_total: plan.amountCents,
+      description: plan.description,
       status: "pending",
+      pay_channel: "wechat_native",
+      plan_type: plan.type,
     });
     if (error) {
       logger.error("pay_orders insert failed", { error: error.message });

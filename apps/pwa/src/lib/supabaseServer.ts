@@ -14,7 +14,7 @@ function getSupabaseEnv() {
 
 /**
  * Create a Supabase client for Middleware
- * Use this in middleware.ts for session refresh
+ * Use this in src/proxy.ts for session refresh
  */
 export function createMiddlewareClient(req: NextRequest) {
   const res = NextResponse.next({ request: req })

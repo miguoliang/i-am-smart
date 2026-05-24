@@ -4,6 +4,7 @@ import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidPhone, sanitizePhone, formatPhoneForSupabase } from "@/lib/utils/phoneValidation";
 import { logger } from "@/lib/utils/logger";
+import { getTestOtpCode, getTestPhoneWhitelist } from "@/lib/auth/testPhoneWhitelist";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,13 +23,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Whitelist check
-    const whitelist = (process.env.TEST_PHONE_WHITELIST ?? "")
-      .split(",")
-      .map((p) => p.trim())
-      .filter(Boolean);
-    const testOtp = process.env.TEST_OTP_CODE ?? "123456";
+    const whitelist = getTestPhoneWhitelist();
+    const testOtp = getTestOtpCode();
 
-    if (whitelist.includes(sanitized)) {
+    if (testOtp && whitelist.includes(sanitized)) {
       if (token !== testOtp) {
         throw ApiError.validationError("验证码无效或已过期，请重新获取验证码");
       }
