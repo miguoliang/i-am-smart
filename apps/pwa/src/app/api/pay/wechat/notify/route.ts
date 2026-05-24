@@ -83,12 +83,11 @@ export async function POST(req: NextRequest) {
     const admin = createSupabaseAdmin();
     const { data: order, error: orderError } = await admin
       .from("pay_orders")
-      .select("amount_total")
+      .select("amount_total, status, wechat_transaction_id")
       .eq("out_trade_no", decrypted.out_trade_no)
-      .eq("status", "pending")
       .single();
     if (orderError || !order) {
-      logger.warn("WeChat Pay notify: pending order not found", {
+      logger.warn("WeChat Pay notify: order not found", {
         out_trade_no: decrypted.out_trade_no,
       });
       return failResponse("order not found");
@@ -100,6 +99,27 @@ export async function POST(req: NextRequest) {
         paid: paidTotal,
       });
       return failResponse("amount mismatch");
+    }
+    if (order.status === "paid") {
+      if (
+        order.wechat_transaction_id &&
+        order.wechat_transaction_id !== decrypted.transaction_id
+      ) {
+        logger.warn("WeChat Pay notify: paid order transaction mismatch", {
+          out_trade_no: decrypted.out_trade_no,
+          expected: order.wechat_transaction_id,
+          received: decrypted.transaction_id,
+        });
+        return failResponse("transaction mismatch");
+      }
+      return new NextResponse(null, { status: 200 });
+    }
+    if (order.status !== "pending") {
+      logger.warn("WeChat Pay notify: order not pending", {
+        out_trade_no: decrypted.out_trade_no,
+        status: order.status,
+      });
+      return failResponse("order not pending");
     }
 
     const { error } = await admin

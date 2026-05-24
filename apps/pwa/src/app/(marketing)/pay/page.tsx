@@ -9,12 +9,13 @@ import { logger } from "@/lib/utils/logger";
 import { useAuth } from "@/app/(marketing)/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PAY_PLANS, type PayPlan } from "@/lib/payPlans";
 
-type PlanType = "monthly" | "yearly";
+type PlanType = PayPlan["type"];
 
 const PLANS: Record<PlanType, { price: number; label: string; period: string }> = {
-  monthly: { price: 29, label: "月付", period: "/月" },
-  yearly: { price: 199, label: "年付", period: "/年" },
+  monthly: { price: PAY_PLANS.monthly.amountCents / 100, label: "月付", period: "/月" },
+  yearly: { price: PAY_PLANS.yearly.amountCents / 100, label: "年付", period: "/年" },
 };
 
 const POLL_INTERVAL_MS = 2000;

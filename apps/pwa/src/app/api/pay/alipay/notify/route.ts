@@ -50,12 +50,11 @@ export async function POST(req: NextRequest) {
     const admin = createSupabaseAdmin();
     const { data: order, error: orderError } = await admin
       .from("pay_orders")
-      .select("amount_total")
+      .select("amount_total, status, alipay_trade_no")
       .eq("out_trade_no", outTradeNo)
-      .eq("status", "pending")
       .single();
     if (orderError || !order) {
-      logger.warn("Alipay notify: pending order not found", { out_trade_no: outTradeNo });
+      logger.warn("Alipay notify: order not found", { out_trade_no: outTradeNo });
       return new NextResponse("fail", { status: 400 });
     }
     if (order.amount_total !== paidTotal) {
@@ -63,6 +62,24 @@ export async function POST(req: NextRequest) {
         out_trade_no: outTradeNo,
         expected: order.amount_total,
         paid: paidTotal,
+      });
+      return new NextResponse("fail", { status: 400 });
+    }
+    if (order.status === "paid") {
+      if (order.alipay_trade_no && order.alipay_trade_no !== tradeNo) {
+        logger.warn("Alipay notify: paid order trade number mismatch", {
+          out_trade_no: outTradeNo,
+          expected: order.alipay_trade_no,
+          received: tradeNo,
+        });
+        return new NextResponse("fail", { status: 400 });
+      }
+      return new NextResponse("success", { status: 200 });
+    }
+    if (order.status !== "pending") {
+      logger.warn("Alipay notify: order not pending", {
+        out_trade_no: outTradeNo,
+        status: order.status,
       });
       return new NextResponse("fail", { status: 400 });
     }

@@ -1,10 +1,36 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidPhone, sanitizePhone, formatPhoneForSupabase } from "@/lib/utils/phoneValidation";
 import { logger } from "@/lib/utils/logger";
 import { getTestOtpCode, getTestPhoneWhitelist } from "@/lib/auth/testPhoneWhitelist";
+import {
+  checkOtpRateLimit,
+  getClientIp,
+  getOtpRateLimitKeys,
+} from "@/lib/auth/otpRateLimit";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+async function findAuthUserByPhoneOrEmail(
+  admin: SupabaseClient,
+  phone: string,
+  email: string
+): Promise<string | null> {
+  const { data, error } = await admin.rpc("find_auth_user_by_phone_or_email", {
+    p_phone: phone,
+    p_email: email,
+  });
+
+  if (error) {
+    logger.error("[verify-phone-otp] Auth user lookup failed", {
+      error: error.message,
+    });
+    throw ApiError.internal("用户查询失败");
+  }
+
+  return typeof data === "string" && data.length > 0 ? data : null;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +46,22 @@ export async function POST(req: NextRequest) {
     const sanitized = sanitizePhone(phone);
     if (!isValidPhone(sanitized)) {
       throw ApiError.validationError("手机号格式不正确");
+    }
+
+    const clientIp = getClientIp(req);
+    const isAllowed = await checkOtpRateLimit(
+      getOtpRateLimitKeys({ action: "verify", phone: sanitized, ip: clientIp })
+    );
+    if (!isAllowed) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "请求过于频繁，请稍后再试",
+          },
+        },
+        { status: 429 }
+      );
     }
 
     // Whitelist check
@@ -38,18 +80,9 @@ export async function POST(req: NextRequest) {
       const phoneWithCode = formatPhoneForSupabase(sanitized);
       const email = `${sanitized}@test.iamsmart.top`;
 
-      // Upsert user via admin
-      const { data: userData, error: userError } = await admin.auth.admin.listUsers();
-      if (userError) throw ApiError.internal("用户查询失败");
+      let userId = await findAuthUserByPhoneOrEmail(admin, phoneWithCode, email);
 
-      let userId: string;
-      const existing = userData.users.find(
-        (u) => u.phone === phoneWithCode || u.email === email
-      );
-
-      if (existing) {
-        userId = existing.id;
-      } else {
+      if (!userId) {
         const { data: created, error: createError } = await admin.auth.admin.createUser({
           phone: phoneWithCode,
           email,

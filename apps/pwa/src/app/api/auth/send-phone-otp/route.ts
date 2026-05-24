@@ -8,29 +8,11 @@ import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 import { isValidPhone, sanitizePhone, formatPhoneForSupabase } from "@/lib/utils/phoneValidation";
 import { logger } from "@/lib/utils/logger";
 import { getTestPhoneWhitelist } from "@/lib/auth/testPhoneWhitelist";
-
-const OTP_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const OTP_RATE_LIMIT_MAX = 5;
-const otpAttempts = new Map<string, { count: number; resetAt: number }>();
-
-function getClientIp(req: NextRequest): string {
-  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwardedFor || req.headers.get("x-real-ip") || "unknown";
-}
-
-function checkOtpRateLimit(key: string): boolean {
-  const now = Date.now();
-  const existing = otpAttempts.get(key);
-  if (!existing || existing.resetAt <= now) {
-    otpAttempts.set(key, { count: 1, resetAt: now + OTP_RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (existing.count >= OTP_RATE_LIMIT_MAX) {
-    return false;
-  }
-  existing.count += 1;
-  return true;
-}
+import {
+  checkOtpRateLimit,
+  getClientIp,
+  getOtpRateLimitKeys,
+} from "@/lib/auth/otpRateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,10 +29,10 @@ export async function POST(req: NextRequest) {
     }
 
     const clientIp = getClientIp(req);
-    if (
-      !checkOtpRateLimit(`ip:${clientIp}`) ||
-      !checkOtpRateLimit(`phone:${sanitized}`)
-    ) {
+    const isAllowed = await checkOtpRateLimit(
+      getOtpRateLimitKeys({ action: "send", phone: sanitized, ip: clientIp })
+    );
+    if (!isAllowed) {
       return NextResponse.json(
         {
           error: {

@@ -6,12 +6,26 @@ import { NextRequest } from "next/server";
 
 // Mock supabaseServer
 const mockSignInWithOtp = jest.fn();
+const mockCheckOtpRateLimit = jest.fn();
 jest.mock("@/lib/supabaseServer", () => ({
   createRouteHandlerClient: jest.fn(() =>
     Promise.resolve({
       auth: { signInWithOtp: mockSignInWithOtp },
     })
   ),
+}));
+
+jest.mock("@/lib/auth/otpRateLimit", () => ({
+  checkOtpRateLimit: (keys: string[]) => mockCheckOtpRateLimit(keys),
+  getClientIp: jest.fn(() => "127.0.0.1"),
+  getOtpRateLimitKeys: jest.fn(({ action, phone, ip }: {
+    action: string;
+    phone: string;
+    ip: string;
+  }) => [
+    `otp:${action}:ip:${ip}`,
+    `otp:${action}:phone:${phone}`,
+  ]),
 }));
 
 // Mock next/headers (cookies)
@@ -33,6 +47,10 @@ function makeRequest(body: Record<string, unknown>) {
 }
 
 describe("POST /api/auth/send-phone-otp", () => {
+  beforeEach(() => {
+    mockCheckOtpRateLimit.mockResolvedValue(true);
+  });
+
   afterEach(() => jest.clearAllMocks());
 
   it("returns 200 on success", async () => {
@@ -66,6 +84,15 @@ describe("POST /api/auth/send-phone-otp", () => {
     expect(res.status).toBe(429);
     const body = await res.json();
     expect(body.error.code).toBe("RATE_LIMIT_EXCEEDED");
+  });
+
+  it("returns 429 when local OTP throttling blocks the request", async () => {
+    mockCheckOtpRateLimit.mockResolvedValue(false);
+    const res = await POST(makeRequest({ phone: "13800138000" }));
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error.code).toBe("RATE_LIMIT_EXCEEDED");
+    expect(mockSignInWithOtp).not.toHaveBeenCalled();
   });
 
   it("returns 500 with friendly message for hook authorization error", async () => {
