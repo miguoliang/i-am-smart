@@ -1,11 +1,8 @@
 ## Summary
-- 
+-
 
 ## Test plan
-- [ ] `pnpm lint`
-- [ ] `pnpm type-check`
-- [ ] `pnpm test`
-- [ ] `pnpm build` (if applicable)
+- [ ] `xcodebuild -scheme ShankaHero -destination 'platform=iOS Simulator,name=iPhone 17' build test`
 
 ## Notes (optional)
-- 
+-

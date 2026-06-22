@@ -1,77 +1,42 @@
-# 聪明的背单词工具
+# 闪卡英雄
 
-[![CI](https://github.com/miguoliang/i-am-smart/actions/workflows/deploy.yml/badge.svg)](https://github.com/miguoliang/i-am-smart/actions/workflows/deploy.yml)
-[![License](https://img.shields.io/github/license/miguoliang/i-am-smart)](LICENSE)
+原生 iOS 英语闪卡 App，基于 CEFR 词库与 SM-2 间隔重复算法。词库打包在 App 内，免登录，打开即用。
 
-<br/>
+## 功能
 
-![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Radix UI](https://img.shields.io/badge/Radix_UI-161618?style=for-the-badge&logo=radix-ui&logoColor=white)
-![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)
-![Jest](https://img.shields.io/badge/-Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
-![Husky](https://img.shields.io/badge/husky-42b883?style=for-the-badge&logo=husky&logoColor=white)
-![Day.js](https://img.shields.io/badge/Day.js-FB6052?style=for-the-badge&logo=javascript&logoColor=white)
+- **学习**：翻转闪卡，「不会 / 会了」两档评分，SM-2 自动调度复习
+- **统计**：总词量、已掌握、学习中、今日待复习、30 天热力图
+- **设置**：考试目标（KET / PET·四级 / 六级 / 雅思·托福）、每日复习上限、美音/英音
 
-**聪明的背单词工具** is a SaaS to-C English vocabulary learning app for the China market. Available as a PWA. Payments via WeChat Pay and Alipay. Built with spaced repetition (SM-2), it offers a zero-friction learning experience.
+## 技术栈
 
-## 🚀 Key Features
+- Swift 5.9+ / SwiftUI
+- SwiftData（本地持久化）
+- iOS 17.0+
+- 无第三方依赖
 
-*   **🧠 Spaced Repetition (SM-2)**: Optimize your learning with the proven Anki-based SM-2 algorithm.
-*   **🗣️ Text-to-Speech**: Integrated US and UK pronunciation support for immersive language learning.
-*   **📊 Visual Statistics**: Track your progress with heatmaps, mastery levels, and daily streaks.
-*   **🛠️ Operator Dashboard**: Powerful backend interface for content management, batch imports, and user administration.
-*   **📱 Responsive Design**: A beautiful, mobile-first interface built with Tailwind CSS and Radix UI.
-*   **🔐 Role-Based Access**: Secure authentication and authorization with Learner, Operator, and Manager roles.
+## 开发
 
-## 🛠️ Tech Stack
+```bash
+# 在 Xcode 中打开
+open ShankaHero.xcodeproj
 
-*   **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
-*   **Language**: [TypeScript](https://www.typescriptlang.org/)
-*   **Database & Auth**: [Supabase](https://supabase.com/)
-*   **State Management**: [TanStack Query](https://tanstack.com/query/latest)
-*   **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-*   **Utilities**: [Day.js](https://day.js.org/) (Date handling), [PapaParse](https://www.papaparse.com/) (CSV)
+# 命令行构建与测试
+xcodebuild -scheme ShankaHero \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  build test
+```
 
-## 📦 Getting Started
+## 项目结构
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/miguoliang/i-am-smart.git
-    cd i-am-smart
-    ```
+```
+ShankaHero/           # App 源码
+ShankaHeroTests/      # 单元测试（SM-2、待复习调度）
+ShankaHero.xcodeproj
+```
 
-2.  **Install dependencies**
-    ```bash
-    pnpm install
-    ```
+词库文件位于 `ShankaHero/Resources/Vocabulary/`（cefr-a1.json … cefr-c2.json，共 6784 词条）。
 
-3.  **Environment Setup**
-    Create `apps/pwa/.env.local` with your Supabase credentials:
-    ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-    ```
+## 许可证
 
-4.  **Run the development server**
-    ```bash
-    npm run dev
-    ```
-
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## 📝 更新日志
-
-查看 [CHANGELOG.md](./CHANGELOG.md) 了解详细的更新记录。
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
+MIT — 见 [LICENSE](LICENSE)

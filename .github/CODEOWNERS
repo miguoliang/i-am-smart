@@ -1,9 +1,6 @@
-# Default reviewers for everything in the repo.
+# Default reviewers
 * @miguoliang
 
-# Review infra / automation changes.
+ShankaHero/** @miguoliang
+ShankaHeroTests/** @miguoliang
 .github/** @miguoliang
-
-# Review app code changes.
-apps/pwa/** @miguoliang
-packages/** @miguoliang
