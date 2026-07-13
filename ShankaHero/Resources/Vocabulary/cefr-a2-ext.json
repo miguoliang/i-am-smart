@@ -1,0 +1,182 @@
+[
+  {
+    "englishWord": "hamster",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "仓鼠",
+    "exampleSentence": "My hamster sleeps in a little house.",
+    "selfExaminePrompt": "What small pet would you like to keep?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "shark",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "鲨鱼",
+    "exampleSentence": "The shark swims in the deep sea.",
+    "selfExaminePrompt": "What sea animal did you see in a book or film?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "hive",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "蜂箱；蜂巢",
+    "exampleSentence": "Bees live in a hive.",
+    "selfExaminePrompt": "Where do bees make honey?",
+    "theme": "Nature",
+    "imageName": null
+  },
+  {
+    "englishWord": "swimming pool",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "游泳池",
+    "exampleSentence": "We swim in the swimming pool every Saturday.",
+    "selfExaminePrompt": "Where can you swim indoors?",
+    "theme": "Sports",
+    "imageName": null
+  },
+  {
+    "englishWord": "puppy",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "小狗；幼犬",
+    "exampleSentence": "The puppy plays with a ball.",
+    "selfExaminePrompt": "What baby animal do you like?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "kitten",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "小猫",
+    "exampleSentence": "The kitten is sleeping on the sofa.",
+    "selfExaminePrompt": "What baby animal do you like?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "cub",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "幼兽（如幼狮、幼熊）",
+    "exampleSentence": "The lion cub stays close to its mother.",
+    "selfExaminePrompt": "What baby wild animal can you name?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "log",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "原木；木头",
+    "exampleSentence": "There is a big log by the fire.",
+    "selfExaminePrompt": "What can you burn to keep warm outdoors?",
+    "theme": "Nature",
+    "imageName": null
+  },
+  {
+    "englishWord": "province",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "省",
+    "exampleSentence": "Guangdong is a large province in China.",
+    "selfExaminePrompt": "Which province do you live in?",
+    "theme": "Places",
+    "imageName": null
+  },
+  {
+    "englishWord": "turtle",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "龟；海龟",
+    "exampleSentence": "The turtle walks very slowly.",
+    "selfExaminePrompt": "What animal has a hard shell on its back?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "bee",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "蜜蜂",
+    "exampleSentence": "A bee is flying near the flowers.",
+    "selfExaminePrompt": "Which insect makes honey?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "track and field",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "田径",
+    "exampleSentence": "She is good at track and field at school.",
+    "selfExaminePrompt": "What sports include running and jumping?",
+    "theme": "Sports",
+    "imageName": null
+  },
+  {
+    "englishWord": "basket",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "篮子",
+    "exampleSentence": "She puts the apples in a basket.",
+    "selfExaminePrompt": "What can you carry fruit in?",
+    "theme": "Daily Life",
+    "imageName": null
+  },
+  {
+    "englishWord": "sweet potato",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "红薯；地瓜",
+    "exampleSentence": "I like baked sweet potato for lunch.",
+    "selfExaminePrompt": "What orange vegetable is sweet when cooked?",
+    "theme": "Food & Drink",
+    "imageName": null
+  },
+  {
+    "englishWord": "parrot",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "鹦鹉",
+    "exampleSentence": "The parrot can say hello.",
+    "selfExaminePrompt": "Which colourful bird can copy speech?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "seal",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "海豹",
+    "exampleSentence": "The seal swims in cold water.",
+    "selfExaminePrompt": "What sea animal has flippers?",
+    "theme": "Animals",
+    "imageName": null
+  },
+  {
+    "englishWord": "root",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "根；根部",
+    "exampleSentence": "Tree roots grow under the ground.",
+    "selfExaminePrompt": "What part of a plant is under the soil?",
+    "theme": "Nature",
+    "imageName": null
+  },
+  {
+    "englishWord": "yard",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "院子",
+    "exampleSentence": "The children play in the yard.",
+    "selfExaminePrompt": "Where can you play outside near a house?",
+    "theme": "Home",
+    "imageName": null
+  }
+]

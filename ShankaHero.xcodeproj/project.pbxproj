@@ -10,6 +10,7 @@
 		0EDFC7E70FCE4E24BC984FB4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31B9FC486EDA4339A91C3873 /* SettingsView.swift */; };
 		13FDF06C2CFE4A1B9974DC06 /* WordCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72547930F8F34DA7A52B7DF8 /* WordCardView.swift */; };
 		194038F96DCB45F7B6E00759 /* cefr-a1.json in Resources */ = {isa = PBXBuildFile; fileRef = D65963A25F4C49D3A39EA020 /* cefr-a1.json */; };
+		AB99398FE1904A5293A32633 /* cefr-a2-ext.json in Resources */ = {isa = PBXBuildFile; fileRef = 75D6E2EEB9DC4DAE9F3CAE20 /* cefr-a2-ext.json */; };
 		2177DD9D2E324AD0880A7208 /* SM2EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91018DE330004267998B2932 /* SM2EngineTests.swift */; };
 		2677AF25A01C4BF1B47C8B3F /* BootstrapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A573F61B83740CB8368071D /* BootstrapView.swift */; };
 		34C948C95C5E45F8AEC8730C /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56730B23F0CC4B23BD0559BE /* SpeechService.swift */; };
@@ -87,6 +88,7 @@
 		CA937A8D6F894F0F843B928B /* cefr-c1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cefr-c1.json"; sourceTree = "<group>"; };
 		CFA745645EDF4215BD96347B /* cefr-b2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cefr-b2.json"; sourceTree = "<group>"; };
 		D50F87A36708478B9A5ACF2A /* RatingButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingButtonsView.swift; sourceTree = "<group>"; };
+		75D6E2EEB9DC4DAE9F3CAE20 /* cefr-a2-ext.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cefr-a2-ext.json"; sourceTree = "<group>"; };
 		D65963A25F4C49D3A39EA020 /* cefr-a1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cefr-a1.json"; sourceTree = "<group>"; };
 		D95D21CFB2BB49FF9BAD07D4 /* cefr-a2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cefr-a2.json"; sourceTree = "<group>"; };
 		DB760B3B59444930A4FB526C /* DueCardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DueCardService.swift; sourceTree = "<group>"; };
@@ -188,6 +190,7 @@
 			children = (
 				D65963A25F4C49D3A39EA020 /* cefr-a1.json */,
 				D95D21CFB2BB49FF9BAD07D4 /* cefr-a2.json */,
+				75D6E2EEB9DC4DAE9F3CAE20 /* cefr-a2-ext.json */,
 				804B75BA0A754FC6A927B47E /* cefr-b1.json */,
 				CFA745645EDF4215BD96347B /* cefr-b2.json */,
 				CA937A8D6F894F0F843B928B /* cefr-c1.json */,
@@ -358,6 +361,7 @@
 				B881D64246A74FDF91BAE0AE /* Assets.xcassets in Resources */,
 				194038F96DCB45F7B6E00759 /* cefr-a1.json in Resources */,
 				690811D2F48E4007803DD964 /* cefr-a2.json in Resources */,
+				AB99398FE1904A5293A32633 /* cefr-a2-ext.json in Resources */,
 				4AB8645682B74537B28A08C2 /* cefr-b1.json in Resources */,
 				9BE552558C2A41C9AA5436E0 /* cefr-b2.json in Resources */,
 				B79CB6F8B8CA4D7AA45C4052 /* cefr-c1.json in Resources */,
