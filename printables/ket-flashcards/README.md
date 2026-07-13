@@ -15,6 +15,7 @@
 | --- | --- |
 | `ket-flashcards-a4.pdf` | 完整 11 页打印稿（主文件，300 DPI） |
 | `ket-flashcards-a4-p01.png` … `p11.png` | 单页预览（已压缩，每张 &lt; 500KB） |
+| `cards/*.png` | 单张原图（按词名命名，每张 &lt; 500KB） |
 | `ket-flashcards-index.txt` | 每页词表索引 |
 
 打印时请选 **实际大小 / 100%**，不要“适应页面”。若打印机不支持无边距打印，贴边几毫米可能被裁掉。
