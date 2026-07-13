@@ -5,6 +5,7 @@ enum VocabularyImporter {
     private static let dataFiles = [
         "cefr-a1",
         "cefr-a2",
+        "cefr-a2-ext",
         "cefr-b1",
         "cefr-b2",
         "cefr-c1",
@@ -30,18 +31,21 @@ enum VocabularyImporter {
     @MainActor
     static func importIfNeeded(modelContext: ModelContext) throws {
         let settings = try fetchOrCreateSettings(modelContext: modelContext)
-        guard !settings.vocabularyImported else { return }
-
         let entries = try loadBundledEntries()
         let existing = try modelContext.fetch(FetchDescriptor<KnowledgeEntry>())
         let existingIDs = Set(existing.map(\.id))
 
+        var inserted = false
         for entry in entries where !existingIDs.contains(entry.stableID) {
             modelContext.insert(KnowledgeEntry(from: entry))
+            inserted = true
         }
 
-        settings.vocabularyImported = true
-        try modelContext.save()
+        // Always merge missing lemmas (e.g. a2-ext) even after the first import.
+        if inserted || !settings.vocabularyImported {
+            settings.vocabularyImported = true
+            try modelContext.save()
+        }
     }
 
     @MainActor
