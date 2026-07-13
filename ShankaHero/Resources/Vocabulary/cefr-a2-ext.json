@@ -178,5 +178,15 @@
     "selfExaminePrompt": "Where can you play outside near a house?",
     "theme": "Home",
     "imageName": null
+  },
+  {
+    "englishWord": "rainbow",
+    "pos": "n.",
+    "level": "A2",
+    "chineseTranslation": "彩虹",
+    "exampleSentence": "Look! There is a rainbow in the sky.",
+    "selfExaminePrompt": "What colourful arc can you see after rain?",
+    "theme": "Weather",
+    "imageName": null
   }
 ]

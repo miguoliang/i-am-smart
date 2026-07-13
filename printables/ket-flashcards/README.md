@@ -1,6 +1,6 @@
 # KET 名词闪卡（打印贴纸）
 
-从工程 KET 词库（A1/A2 具体名词）筛出的 **262** 张纯图像闪卡，用于实物贴纸效果预览。
+从工程 KET 词库（A1/A2 具体名词）筛出的 **284** 张纯图像闪卡，用于实物贴纸效果预览。
 
 ## 规格
 
@@ -13,8 +13,8 @@
 
 | 文件 | 说明 |
 | --- | --- |
-| `ket-flashcards-a4.pdf` | 完整 11 页打印稿（主文件，300 DPI） |
-| `ket-flashcards-a4-p01.png` … `p11.png` | 单页预览（已压缩，每张 &lt; 500KB） |
+| `ket-flashcards-a4.pdf` | 完整 12 页打印稿（主文件，300 DPI） |
+| `ket-flashcards-a4-p01.png` … `p12.png` | 单页预览（已压缩，每张 &lt; 500KB） |
 | `cards/*.png` | 单张原图（按词名命名，每张 &lt; 500KB） |
 | `ket-flashcards-index.txt` | 每页词表索引 |
 
