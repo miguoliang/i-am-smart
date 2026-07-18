@@ -25,12 +25,12 @@ final class KingdomViewModel {
             try KingdomService.ensureSeeded(modelContext: modelContext)
             balance = try KingdomService.walletBalance(modelContext: modelContext)
 
-            var plotDescriptor = FetchDescriptor<KingdomPlot>(
+            let plotDescriptor = FetchDescriptor<KingdomPlot>(
                 sortBy: [SortDescriptor(\.sortOrder)]
             )
             plots = try modelContext.fetch(plotDescriptor)
 
-            var buildingDescriptor = FetchDescriptor<KingdomBuilding>(
+            let buildingDescriptor = FetchDescriptor<KingdomBuilding>(
                 sortBy: [SortDescriptor(\.sortOrder)]
             )
             let buildings = try modelContext.fetch(buildingDescriptor)
