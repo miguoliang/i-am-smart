@@ -2,7 +2,7 @@
 -
 
 ## Test plan
-- [ ] `xcodebuild -scheme ShankaHero -destination 'platform=iOS Simulator,name=iPhone 17' build test`
+- [ ] Local Xcode build/test when UI or native code changes (no remote iOS CI)
 
 ## Notes (optional)
 -
