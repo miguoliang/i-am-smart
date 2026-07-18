@@ -16,6 +16,8 @@ final class LearnViewModel {
     var reviewedToday = 0
     var dailyDueLimit = SM2Constants.defaultDailyDueLimit
     var isLoading = true
+    var coinBalance = 0
+    var lastCoinReward: Int?
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -60,6 +62,7 @@ final class LearnViewModel {
             currentIndex = min(currentIndex, max(0, dueCards.count - 1))
             answerRevealed = false
             pendingQuality = nil
+            refreshCoinBalance()
         } catch {
             dueCards = []
         }
@@ -102,6 +105,15 @@ final class LearnViewModel {
             return
         }
 
+        do {
+            try KingdomService.ensureSeeded(modelContext: modelContext)
+            let rewarded = try KingdomService.awardReviewCoins(quality: quality, modelContext: modelContext)
+            lastCoinReward = rewarded
+            coinBalance = try KingdomService.walletBalance(modelContext: modelContext)
+        } catch {
+            lastCoinReward = nil
+        }
+
         dueCards.remove(at: currentIndex)
         if currentIndex >= dueCards.count {
             currentIndex = max(0, dueCards.count - 1)
@@ -114,6 +126,15 @@ final class LearnViewModel {
             reload()
         } else {
             refreshProgressCounts()
+        }
+    }
+
+    private func refreshCoinBalance() {
+        do {
+            try KingdomService.ensureSeeded(modelContext: modelContext)
+            coinBalance = try KingdomService.walletBalance(modelContext: modelContext)
+        } catch {
+            coinBalance = 0
         }
     }
 

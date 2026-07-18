@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FA82FFC045CE426A9E934338 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D7904BA754438BB88DD973 /* CoinWallet.swift */; };
+		FBD253CC3CAD42019262ECB4 /* KingdomPlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA76813DF1C47338956E401 /* KingdomPlot.swift */; };
+		3FED314D58F7444BA4DF4B72 /* KingdomBuilding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC33D626E2D4A019C0A4F46 /* KingdomBuilding.swift */; };
+		1684FC440003494793E686C6 /* KingdomCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C6BFC438FE4D2F994912B2 /* KingdomCatalog.swift */; };
+		AA45BAE1401C451C8B55D81F /* KingdomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DFADD58F6F478A98828451 /* KingdomService.swift */; };
+		9C65AE4D3E9B4D08A51DBA3C /* KingdomViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C85E7B6F50748189A149EC3 /* KingdomViewModel.swift */; };
+		B4124956B86C45E4B1F27D2C /* KingdomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6259EB3B5B47EA9E35709F /* KingdomView.swift */; };
+		F982DF3032594B568824A329 /* KingdomServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CABC18ADC3486195D55360 /* KingdomServiceTests.swift */; };
 		0EDFC7E70FCE4E24BC984FB4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31B9FC486EDA4339A91C3873 /* SettingsView.swift */; };
 		13FDF06C2CFE4A1B9974DC06 /* WordCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72547930F8F34DA7A52B7DF8 /* WordCardView.swift */; };
 		194038F96DCB45F7B6E00759 /* cefr-a1.json in Resources */ = {isa = PBXBuildFile; fileRef = D65963A25F4C49D3A39EA020 /* cefr-a1.json */; };
@@ -58,6 +66,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		65D7904BA754438BB88DD973 /* CoinWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinWallet.swift; sourceTree = "<group>"; };
+		1CA76813DF1C47338956E401 /* KingdomPlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomPlot.swift; sourceTree = "<group>"; };
+		7AC33D626E2D4A019C0A4F46 /* KingdomBuilding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomBuilding.swift; sourceTree = "<group>"; };
+		F4C6BFC438FE4D2F994912B2 /* KingdomCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomCatalog.swift; sourceTree = "<group>"; };
+		19DFADD58F6F478A98828451 /* KingdomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomService.swift; sourceTree = "<group>"; };
+		2C85E7B6F50748189A149EC3 /* KingdomViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomViewModel.swift; sourceTree = "<group>"; };
+		EA6259EB3B5B47EA9E35709F /* KingdomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomView.swift; sourceTree = "<group>"; };
+		51CABC18ADC3486195D55360 /* KingdomServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KingdomServiceTests.swift; sourceTree = "<group>"; };
 		0186485B4E404FDBAEB526BC /* CardProgressSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardProgressSeeder.swift; sourceTree = "<group>"; };
 		0225EADA008949EFB439851E /* SM2Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SM2Engine.swift; sourceTree = "<group>"; };
 		0CDE2C850C28485181401311 /* StatsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsService.swift; sourceTree = "<group>"; };
@@ -118,6 +134,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3240AF6D34394EB0915CC257 /* Kingdom */ = {
+			isa = PBXGroup;
+			children = (
+				EA6259EB3B5B47EA9E35709F /* KingdomView.swift */,
+			);
+			path = Kingdom;
+			sourceTree = "<group>";
+		};
 		2D3CCF64A50D4345A17FB256 /* Learn */ = {
 			isa = PBXGroup;
 			children = (
@@ -167,6 +191,9 @@
 		B1BCA7D2A6C04899925B57F5 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				65D7904BA754438BB88DD973 /* CoinWallet.swift */,
+				1CA76813DF1C47338956E401 /* KingdomPlot.swift */,
+				7AC33D626E2D4A019C0A4F46 /* KingdomBuilding.swift */,
 				475E642B78A649D8BC6FC626 /* VocabEntry.swift */,
 				2ACDE1E4907244C39B9D983B /* KnowledgeEntry.swift */,
 				13B8B4157D974B21BEF543DE /* CardProgress.swift */,
@@ -211,6 +238,7 @@
 		D693C61E77784FBEBBF75800 /* ShankaHeroTests */ = {
 			isa = PBXGroup;
 			children = (
+				51CABC18ADC3486195D55360 /* KingdomServiceTests.swift */,
 				91018DE330004267998B2932 /* SM2EngineTests.swift */,
 				E69DC7B2F514472C9702BE2F /* DueCardServiceTests.swift */,
 			);
@@ -220,6 +248,7 @@
 		E93805542ECB42ED80C733F3 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				2C85E7B6F50748189A149EC3 /* KingdomViewModel.swift */,
 				15ADB86CE78D45E99E682DC4 /* LearnViewModel.swift */,
 				5AA172F1DB634C9783D45773 /* SettingsViewModel.swift */,
 				3054E816712A4DDB868E41D8 /* StatsViewModel.swift */,
@@ -230,6 +259,8 @@
 		E96C16683B72419E9748ED06 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				F4C6BFC438FE4D2F994912B2 /* KingdomCatalog.swift */,
+				19DFADD58F6F478A98828451 /* KingdomService.swift */,
 				0D445FC63106415FAA4A3D42 /* ExamScope.swift */,
 				B93222DF748A4E95A6AC2D10 /* SM2Constants.swift */,
 				0225EADA008949EFB439851E /* SM2Engine.swift */,
@@ -247,6 +278,7 @@
 			isa = PBXGroup;
 			children = (
 				AA90B01122874E22B0698257 /* Bootstrap */,
+				3240AF6D34394EB0915CC257 /* Kingdom */,
 				2D3CCF64A50D4345A17FB256 /* Learn */,
 				6A0CB88C1DD44D5F97FBE7C9 /* Settings */,
 				CDBF83EA18EF416899792FB5 /* Stats */,
@@ -383,6 +415,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA82FFC045CE426A9E934338 /* CoinWallet.swift in Sources */,
+				FBD253CC3CAD42019262ECB4 /* KingdomPlot.swift in Sources */,
+				3FED314D58F7444BA4DF4B72 /* KingdomBuilding.swift in Sources */,
+				1684FC440003494793E686C6 /* KingdomCatalog.swift in Sources */,
+				AA45BAE1401C451C8B55D81F /* KingdomService.swift in Sources */,
+				9C65AE4D3E9B4D08A51DBA3C /* KingdomViewModel.swift in Sources */,
+				B4124956B86C45E4B1F27D2C /* KingdomView.swift in Sources */,
 				7C039B5F1CDE4E459A6442C9 /* ShankaHeroApp.swift in Sources */,
 				567F0DD9325E4A11B2C99434 /* MainTabView.swift in Sources */,
 				A280EC91CFC24B29A9C468C7 /* VocabEntry.swift in Sources */,
@@ -418,6 +457,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F982DF3032594B568824A329 /* KingdomServiceTests.swift in Sources */,
 				2177DD9D2E324AD0880A7208 /* SM2EngineTests.swift in Sources */,
 				4DCF17E9E45846FABC4DEA2A /* DueCardServiceTests.swift in Sources */,
 			);

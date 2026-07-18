@@ -9,6 +9,9 @@ struct ShankaHeroApp: App {
             CardProgress.self,
             AppSettings.self,
             ReviewRecord.self,
+            CoinWallet.self,
+            KingdomPlot.self,
+            KingdomBuilding.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
