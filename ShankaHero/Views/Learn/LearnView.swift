@@ -18,6 +18,15 @@ struct LearnView: View {
             .navigationTitle("闪卡英雄")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let viewModel {
+                        Label("\(viewModel.coinBalance)", systemImage: "bitcoinsign.circle.fill")
+                            .labelStyle(.titleAndIcon)
+                            .foregroundStyle(.yellow)
+                            .font(.subheadline.weight(.semibold))
+                            .contentTransition(.numericText())
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     if let viewModel {
                         ExamVocabProgressLabel(brushed: viewModel.brushed, total: viewModel.total)
@@ -46,6 +55,14 @@ struct LearnView: View {
         } else if let card = viewModel.currentCard {
             ScrollView {
                 VStack(spacing: 24) {
+                    if let reward = viewModel.lastCoinReward {
+                        Text("+\(reward) 金币")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.yellow)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
                     WordCardView(
                         englishWord: card.knowledge.englishWord,
                         chineseTranslation: card.knowledge.chineseTranslation,
@@ -85,6 +102,7 @@ struct LearnView: View {
                     }
                 }
                 .padding()
+                .animation(.easeInOut(duration: 0.25), value: viewModel.lastCoinReward)
             }
             .background(Color(.systemGroupedBackground))
         } else {
