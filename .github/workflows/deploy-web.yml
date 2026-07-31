@@ -1,3 +1,8 @@
+# Deploy the Vite web game to GitHub Pages.
+#
+# If deploy fails with Pages 404, a repo admin must once:
+#   Settings → Pages → Source → GitHub Actions
+# Private repos need GitHub Pro/Team, or make the repo public.
 name: Deploy web game to GitHub Pages
 
 on:
@@ -14,25 +19,58 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-web
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure GitHub Pages is enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "GitHub Pages already enabled."
+            gh api "repos/${GITHUB_REPOSITORY}/pages" \
+              --jq '"build_type=\(.build_type // "unknown") url=\(.html_url // "n/a")"'
+            exit 0
+          fi
+
+          echo "Pages site missing; trying to enable (build_type=workflow)..."
+          if gh api -X POST "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow; then
+            echo "Enabled GitHub Pages via API."
+            exit 0
+          fi
+
+          echo "::error::Could not enable GitHub Pages automatically."
+          echo "::error::Open https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+          echo "::error::Set Source to “GitHub Actions”, then re-run this workflow."
+          echo "::error::Private repositories need GitHub Pro/Team — or make the repo public for free Pages."
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Install and build
         working-directory: web
         run: |
           npm ci
           npm run build
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
 
@@ -43,5 +81,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4

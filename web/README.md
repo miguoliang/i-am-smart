@@ -19,6 +19,8 @@ npm run build
 
 产物在 `web/dist/`。GitHub Pages 的 `base` 已设为 `/i-am-smart/`（见 `vite.config.ts`）。
 
+首次部署前需在仓库 Settings → Pages 将 Source 设为 **GitHub Actions**（private 仓库还需 Pro/Team，或改为 public）。详见根目录 `README.md`。
+
 ## 玩法（MVP）
 
 - 主题：食物（8 词）

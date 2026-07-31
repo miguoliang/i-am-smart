@@ -26,7 +26,16 @@ cd web
 npm run build
 ```
 
-产物在 `web/dist/`。推到 `main` 后由 `.github/workflows/deploy-web.yml` 部署到 GitHub Pages（仓库 Settings → Pages → Source 选 **GitHub Actions**）。
+产物在 `web/dist/`。推到 `main`（或手动 Run workflow）后由 `.github/workflows/deploy-web.yml` 部署。
+
+### 首次启用 GitHub Pages（必做一次）
+
+当前仓库若未开启 Pages，部署会在 deploy 阶段 404。请仓库管理员：
+
+1. 打开 [Settings → Pages](https://github.com/miguoliang/i-am-smart/settings/pages)
+2. **Build and deployment → Source** 选 **GitHub Actions**
+3. 若仓库是 **private**：需要 GitHub Pro/Team，或把仓库改为 **public**（免费可用 Pages）
+4. 到 Actions 里重新运行 **Deploy web game to GitHub Pages**
 
 预期地址：`https://miguoliang.github.io/i-am-smart/`（若配置了自定义域名则走该域名）。
 
