@@ -825,34 +825,77 @@ function applyClearing(clearing: Set<number>): void {
   }
 }
 
-function waitForClearAnim(fallbackMs: number): Promise<void> {
-  const clearingEls = [...boardEl.querySelectorAll('.tile.clearing')]
-  if (clearingEls.length === 0) return wait(fallbackMs)
+/** Wait until CSS tile animations finish (or fallback). Handles already-finished. */
+function waitForTileAnims(selector: string, fallbackMs: number): Promise<void> {
+  const els = [...boardEl.querySelectorAll(selector)] as HTMLElement[]
+  if (els.length === 0) return Promise.resolve()
 
   return new Promise((resolve) => {
     let settled = false
-    let remaining = clearingEls.length
+    let remaining = els.length
     const finish = () => {
       if (settled) return
       settled = true
       resolve()
     }
     const timer = window.setTimeout(finish, fallbackMs)
-    for (const el of clearingEls) {
+    const markDone = () => {
+      remaining -= 1
+      if (remaining <= 0) {
+        window.clearTimeout(timer)
+        finish()
+      }
+    }
+
+    for (const el of els) {
+      const running = el.getAnimations().filter((a) => a.playState !== 'finished')
+      if (running.length === 0) {
+        markDone()
+        continue
+      }
       el.addEventListener(
         'animationend',
         (event) => {
           if (event.target !== el) return
-          remaining -= 1
-          if (remaining <= 0) {
-            window.clearTimeout(timer)
-            finish()
-          }
+          markDone()
         },
         { once: true },
       )
     }
   })
+}
+
+function waitForClearAnim(fallbackMs: number): Promise<void> {
+  return waitForTileAnims('.tile.clearing', fallbackMs)
+}
+
+/**
+ * After falls/spawns land, drop motion classes at the resting pose so the next
+ * cascade/final paint does not cancel a still-running translate (visual snap).
+ */
+function bakeBoardAfterSettle(): void {
+  const slots = ensureBoardSlots()
+  for (const btn of slots) {
+    if (!btn.classList.contains('falling') && !btn.classList.contains('spawning')) {
+      continue
+    }
+    btn.style.transition = 'none'
+    for (const anim of btn.getAnimations()) {
+      try {
+        if (anim.playState !== 'finished') anim.finish()
+      } catch {
+        // ignore
+      }
+      anim.cancel()
+    }
+    btn.style.transform = ''
+    btn.style.opacity = ''
+    btn.style.removeProperty('--fall')
+    btn.style.removeProperty('--drop')
+    btn.classList.remove('falling', 'spawning')
+    btn.style.removeProperty('will-change')
+  }
+  void boardEl.offsetWidth
 }
 
 function runTranslate(
@@ -934,7 +977,10 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
       }
     }
 
-    await wait(560)
+    // Fall/spawn CSS is 550ms — waiting shorter cancels mid-move and looks like
+    // a second local rearrange after tiles already settled.
+    await waitForTileAnims('.tile.falling, .tile.spawning', 650)
+    bakeBoardAfterSettle()
     matches = engine.findMatches()
   }
 
