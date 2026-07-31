@@ -102,7 +102,7 @@ function layoutBoard(): void {
     goals.clientHeight -
     footer.clientHeight -
     gap * 3
-  const side = Math.max(240, Math.floor(Math.min(playfieldEl.clientWidth, availH)))
+  const side = Math.max(260, Math.floor(Math.min(playfieldEl.clientWidth, availH)))
   boardWrapEl.style.width = `${side}px`
   boardWrapEl.style.height = `${side}px`
 }
@@ -226,6 +226,7 @@ function renderBoard(opts: RenderOptions = {}): void {
 
       btn.dataset.uid = String(tile.uid)
       if (tile.kind === 'word') btn.classList.add('word')
+      else btn.classList.add('image')
       if (opts.clearing?.has(i)) btn.classList.add('clearing')
       const fall = opts.fallRows?.get(tile.uid)
       if (fall != null && fall > 0) {
