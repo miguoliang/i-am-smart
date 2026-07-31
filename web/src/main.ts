@@ -7,6 +7,15 @@ import {
   registerServiceWorker,
   unlockAudio,
 } from './game/feel'
+import {
+  getNextStep,
+  loadProgress,
+  markLevelCleared,
+  saveProgress,
+  type PlaySetup,
+  type ProgressState,
+  unlockWord,
+} from './game/progress'
 import { speakEnglish } from './game/tts'
 import type { CellPos, GameSnapshot, MatchGroup, Tile } from './game/types'
 
@@ -16,13 +25,21 @@ registerServiceWorker()
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('#app missing')
 
+const ALL_WORD_IDS = FOOD_WORDS.map((w) => w.id)
+
+let progress: ProgressState = loadProgress()
+let currentSetup: PlaySetup | null = null
+
 const engine = new Match3Engine({
-  wordIds: FOOD_WORDS.map((w) => w.id),
+  wordIds: ALL_WORD_IDS,
   cols: 6,
   rows: 8,
   moves: 28,
-  maxGoals: 4,
+  maxGoals: 3,
   goalPerWord: 3,
+  textWordIds: [],
+  wordTileChance: 0,
+  goalFocusIds: ALL_WORD_IDS,
 })
 
 let busy = false
@@ -46,6 +63,7 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
+        <div class="hud-level" id="level-chip">热身 1/5</div>
         <section class="goals-bar" aria-label="收集目标">
           <div class="goal-grid" id="goals"></div>
         </section>
@@ -73,7 +91,17 @@ app.innerHTML = `
         <h2 class="end-title" id="overlay-title"></h2>
         <p class="end-meta" id="end-meta"></p>
         <div class="end-goals" id="end-goals"></div>
-        <button class="btn end-btn" type="button" id="overlay-btn">再来一局</button>
+        <button class="btn end-btn" type="button" id="overlay-btn">下一关</button>
+      </div>
+    </div>
+    <div class="learn" id="learn">
+      <div class="learn-card">
+        <p class="learn-kicker">新单词</p>
+        <img class="learn-img" id="learn-img" alt="" />
+        <h2 class="learn-en" id="learn-en"></h2>
+        <p class="learn-zh" id="learn-zh"></p>
+        <button class="btn learn-speak" type="button" id="learn-speak">听发音</button>
+        <button class="btn end-btn" type="button" id="learn-go">开始复习</button>
       </div>
     </div>
   </div>
@@ -84,16 +112,27 @@ const boardWrapEl = app.querySelector<HTMLDivElement>('.board-wrap')!
 const playfieldEl = app.querySelector<HTMLDivElement>('.playfield')!
 const goalsEl = app.querySelector<HTMLDivElement>('#goals')!
 const movesEl = app.querySelector<HTMLSpanElement>('#moves')!
+const levelChipEl = app.querySelector<HTMLDivElement>('#level-chip')!
 const toastEl = app.querySelector<HTMLDivElement>('#toast')!
 const toastEn = app.querySelector<HTMLSpanElement>('#toast-en')!
 const toastZh = app.querySelector<HTMLSpanElement>('#toast-zh')!
 const overlayEl = app.querySelector<HTMLDivElement>('#overlay')!
 const overlayTitle = app.querySelector<HTMLHeadingElement>('#overlay-title')!
+const overlayBtn = app.querySelector<HTMLButtonElement>('#overlay-btn')!
 const endBadgeEl = app.querySelector<HTMLSpanElement>('#end-badge')!
 const endMetaEl = app.querySelector<HTMLParagraphElement>('#end-meta')!
 const endGoalsEl = app.querySelector<HTMLDivElement>('#end-goals')!
 const endFxEl = app.querySelector<HTMLDivElement>('#end-fx')!
 const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
+const learnEl = app.querySelector<HTMLDivElement>('#learn')!
+const learnImg = app.querySelector<HTMLImageElement>('#learn-img')!
+const learnEn = app.querySelector<HTMLHeadingElement>('#learn-en')!
+const learnZh = app.querySelector<HTMLParagraphElement>('#learn-zh')!
+const learnSpeakBtn = app.querySelector<HTMLButtonElement>('#learn-speak')!
+const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
+
+let pendingLearnWordId: string | null = null
+let overlayMode: 'win' | 'lose' | 'complete' | null = null
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
@@ -450,33 +489,163 @@ function hideOverlay(): void {
   overlayEl.classList.remove('show', 'is-win', 'is-lose')
   endFxEl.replaceChildren()
   endGoalsEl.replaceChildren()
+  overlayMode = null
+}
+
+function hideLearn(): void {
+  learnEl.classList.remove('show')
+  pendingLearnWordId = null
 }
 
 function syncOverlay(snap: GameSnapshot): void {
   if (snap.won) {
-    clearHint()
-    endBadgeEl.textContent = 'CLEAR'
-    overlayTitle.textContent = '过关'
-    endMetaEl.textContent =
-      snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步` : '完美通关'
-    renderEndGoals(snap)
-    spawnEndFx('win')
-    overlayEl.classList.remove('is-lose')
-    overlayEl.classList.add('show', 'is-win')
-    haptic([10, 40, 18, 40, 24])
+    // Only fire the win celebration once per clear.
+    if (overlayMode !== 'win') {
+      clearHint()
+      progress = markLevelCleared(progress)
+      overlayMode = 'win'
+      endBadgeEl.textContent = 'CLEAR'
+      overlayTitle.textContent = '过关'
+      endMetaEl.textContent =
+        snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步` : '完美通关'
+      overlayBtn.textContent = '下一关'
+      renderEndGoals(snap)
+      spawnEndFx('win')
+      overlayEl.classList.remove('is-lose')
+      overlayEl.classList.add('show', 'is-win')
+      haptic([10, 40, 18, 40, 24])
+    }
   } else if (snap.lost) {
-    clearHint()
-    endBadgeEl.textContent = 'RETRY'
-    overlayTitle.textContent = '失败'
-    endMetaEl.textContent = '步数用尽'
-    renderEndGoals(snap)
-    spawnEndFx('lose')
-    overlayEl.classList.remove('is-win')
-    overlayEl.classList.add('show', 'is-lose')
-    haptic([20, 50, 20])
-  } else {
+    if (overlayMode !== 'lose') {
+      clearHint()
+      overlayMode = 'lose'
+      endBadgeEl.textContent = 'RETRY'
+      overlayTitle.textContent = '失败'
+      endMetaEl.textContent = '步数用尽'
+      overlayBtn.textContent = '再试一次'
+      renderEndGoals(snap)
+      spawnEndFx('lose')
+      overlayEl.classList.remove('is-win')
+      overlayEl.classList.add('show', 'is-lose')
+      haptic([20, 50, 20])
+    }
+  } else if (overlayMode !== 'complete') {
     hideOverlay()
   }
+}
+
+function showComplete(): void {
+  clearHint()
+  hideLearn()
+  overlayMode = 'complete'
+  endBadgeEl.textContent = 'MASTER'
+  overlayTitle.textContent = '全部学会'
+  endMetaEl.textContent = '食物词都学完啦'
+  overlayBtn.textContent = '再玩热身'
+  endGoalsEl.innerHTML = progress.learnOrder
+    .map((id) => {
+      const word = wordById(id)!
+      return `
+        <div class="end-goal is-done" title="${word.english}">
+          <img src="${assetUrl(word.image)}" alt="${word.english}" />
+          <span class="end-goal-mark">✓</span>
+        </div>
+      `
+    })
+    .join('')
+  spawnEndFx('win')
+  overlayEl.classList.remove('is-lose')
+  overlayEl.classList.add('show', 'is-win')
+}
+
+function showLearn(wordId: string): void {
+  const word = wordById(wordId)
+  if (!word) return
+  hideOverlay()
+  clearHint()
+  busy = true
+  pendingLearnWordId = wordId
+  learnImg.src = assetUrl(word.image)
+  learnImg.alt = word.english
+  learnEn.textContent = word.english
+  learnZh.textContent = word.chinese
+  learnEl.classList.add('show')
+  window.setTimeout(() => speakEnglish(word.english), 280)
+}
+
+function startPlay(setup: PlaySetup): void {
+  hideOverlay()
+  hideLearn()
+  currentSetup = setup
+  busy = false
+  drag = null
+  boardEl.classList.remove('is-dragging')
+  clearHint()
+
+  const textWordIds = setup.textWordIds
+  engine.configureRound({
+    wordIds: ALL_WORD_IDS,
+    textWordIds,
+    wordTileChance: setup.phase === 'warmup' ? 0 : 0.48,
+    goalFocusIds: setup.goalFocusIds,
+    moves: 28,
+    maxGoals: setup.phase === 'warmup' ? 3 : Math.min(3, Math.max(2, textWordIds.length)),
+    goalPerWord: 3,
+  })
+
+  levelChipEl.textContent = setup.label
+  renderBoard({ enter: true })
+  updateHud(true)
+  renderGoals()
+  layoutBoard()
+  scheduleHint(1800)
+}
+
+function continueCampaign(): void {
+  const step = getNextStep(progress)
+  if (step.kind === 'learn') {
+    showLearn(step.wordId)
+    return
+  }
+  if (step.kind === 'complete') {
+    showComplete()
+    return
+  }
+  startPlay(step.setup)
+}
+
+function retryCurrentLevel(): void {
+  if (!currentSetup) {
+    continueCampaign()
+    return
+  }
+  startPlay(currentSetup)
+}
+
+function onOverlayAction(): void {
+  if (overlayMode === 'lose') {
+    retryCurrentLevel()
+    return
+  }
+  if (overlayMode === 'complete') {
+    progress = {
+      clearedLevels: 0,
+      unlockedWords: [],
+      learnOrder: progress.learnOrder,
+    }
+    saveProgress(progress)
+    continueCampaign()
+    return
+  }
+  // win -> next campaign step
+  continueCampaign()
+}
+
+function onLearnConfirm(): void {
+  if (!pendingLearnWordId) return
+  progress = unlockWord(progress, pendingLearnWordId)
+  hideLearn()
+  continueCampaign()
 }
 
 function renderBoard(opts: RenderOptions = {}): void {
@@ -816,27 +985,22 @@ boardEl.addEventListener('pointermove', onPointerMove)
 boardEl.addEventListener('pointerup', onPointerUp)
 boardEl.addEventListener('pointercancel', onPointerCancel)
 
-function restart(): void {
-  drag = null
-  busy = false
-  boardEl.classList.remove('is-dragging')
-  clearHint()
-  engine.reset()
-  hideOverlay()
-  renderBoard({ enter: true })
-  updateHud(true)
-  renderGoals()
-  scheduleHint(1600)
-}
+overlayBtn.addEventListener('click', onOverlayAction)
+learnGoBtn.addEventListener('click', onLearnConfirm)
+learnSpeakBtn.addEventListener('click', () => {
+  if (pendingLearnWordId) {
+    const word = wordById(pendingLearnWordId)
+    if (word) speakEnglish(word.english)
+  }
+})
 
-app.querySelector('#overlay-btn')?.addEventListener('click', restart)
-// Long-press moves badge to restart without a permanent footer button.
+// Long-press moves badge to retry the current level.
 const movesBadgeEl = app.querySelector('#moves-badge')
 let restartTimer = 0
 movesBadgeEl?.addEventListener('pointerdown', () => {
   restartTimer = window.setTimeout(() => {
     haptic(16)
-    restart()
+    retryCurrentLevel()
   }, 650)
 })
 movesBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
@@ -852,10 +1016,7 @@ const armAudio = () => {
 }
 window.addEventListener('pointerdown', armAudio, { once: true })
 
-renderBoard({ enter: true })
-renderGoals()
-layoutBoard()
-scheduleHint(1800)
+continueCampaign()
 
 const boot = document.querySelector('#boot')
 requestAnimationFrame(() => {

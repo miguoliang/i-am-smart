@@ -28,22 +28,35 @@ function randomChoice<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
-function pickGoals(wordIds: readonly string[], maxGoals: number): string[] {
+function shuffleIds(wordIds: readonly string[]): string[] {
   const copy = [...wordIds]
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[copy[i], copy[j]] = [copy[j]!, copy[i]!]
   }
-  return copy.slice(0, Math.min(maxGoals, copy.length))
+  return copy
+}
+
+function pickGoals(
+  wordIds: readonly string[],
+  maxGoals: number,
+  preferIds: readonly string[] = [],
+): string[] {
+  const prefer = shuffleIds(preferIds.filter((id) => wordIds.includes(id)))
+  const rest = shuffleIds(wordIds.filter((id) => !prefer.includes(id)))
+  return [...prefer, ...rest].slice(0, Math.min(maxGoals, wordIds.length))
 }
 
 export class Match3Engine {
   readonly cols: number
   readonly rows: number
-  readonly wordIds: readonly string[]
-  readonly goalPerWord: number
-  readonly maxGoals: number
-  readonly startingMoves: number
+  wordIds: readonly string[]
+  textWordIds: readonly string[]
+  wordTileChance: number
+  goalFocusIds: readonly string[]
+  goalPerWord: number
+  maxGoals: number
+  startingMoves: number
   cells: Array<Tile | null>
   score = 0
   movesLeft: number
@@ -55,6 +68,9 @@ export class Match3Engine {
     cols?: number
     rows?: number
     wordIds: string[]
+    textWordIds?: string[]
+    wordTileChance?: number
+    goalFocusIds?: string[]
     moves?: number
     goalPerWord?: number
     maxGoals?: number
@@ -62,6 +78,9 @@ export class Match3Engine {
     this.cols = options.cols ?? 8
     this.rows = options.rows ?? 8
     this.wordIds = options.wordIds
+    this.textWordIds = options.textWordIds ?? []
+    this.wordTileChance = options.wordTileChance ?? 0
+    this.goalFocusIds = options.goalFocusIds ?? this.textWordIds
     this.startingMoves = options.moves ?? 28
     this.movesLeft = this.startingMoves
     this.goalPerWord = options.goalPerWord ?? 2
@@ -72,11 +91,31 @@ export class Match3Engine {
   }
 
   private buildGoals(): LevelGoal[] {
-    return pickGoals(this.wordIds, this.maxGoals).map((wordId) => ({
+    return pickGoals(this.wordIds, this.maxGoals, this.goalFocusIds).map((wordId) => ({
       wordId,
       target: this.goalPerWord,
       current: 0,
     }))
+  }
+
+  /** Reconfigure the board for the next campaign round. */
+  configureRound(options: {
+    wordIds?: string[]
+    textWordIds?: string[]
+    wordTileChance?: number
+    goalFocusIds?: string[]
+    moves?: number
+    goalPerWord?: number
+    maxGoals?: number
+  }): void {
+    if (options.wordIds) this.wordIds = options.wordIds
+    if (options.textWordIds) this.textWordIds = options.textWordIds
+    if (options.wordTileChance != null) this.wordTileChance = options.wordTileChance
+    if (options.goalFocusIds) this.goalFocusIds = options.goalFocusIds
+    if (options.moves != null) this.startingMoves = options.moves
+    if (options.goalPerWord != null) this.goalPerWord = options.goalPerWord
+    if (options.maxGoals != null) this.maxGoals = options.maxGoals
+    this.reset()
   }
 
   snapshot(): GameSnapshot {
@@ -92,14 +131,26 @@ export class Match3Engine {
     }
   }
 
+  private pickKind(wordId: string): TileKind {
+    if (
+      this.wordTileChance > 0 &&
+      this.textWordIds.includes(wordId) &&
+      Math.random() < this.wordTileChance
+    ) {
+      return 'word'
+    }
+    return 'image'
+  }
+
   private randomTile(avoid?: { wordId: string; kind: TileKind }[]): Tile {
     for (let attempt = 0; attempt < 40; attempt++) {
       const wordId = randomChoice(this.wordIds)
-      const kind: TileKind = Math.random() < 0.55 ? 'image' : 'word'
+      const kind = this.pickKind(wordId)
       if (avoid?.some((a) => a.wordId === wordId && a.kind === kind)) continue
       return makeTile(wordId, kind)
     }
-    return makeTile(randomChoice(this.wordIds), Math.random() < 0.5 ? 'image' : 'word')
+    const wordId = randomChoice(this.wordIds)
+    return makeTile(wordId, this.pickKind(wordId))
   }
 
   private get(row: number, col: number): Tile | null {
