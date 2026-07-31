@@ -46,16 +46,16 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
-        <div class="badge score-badge" aria-label="分数" id="score-badge">
-          <span class="badge-label">分数</span>
-          <span class="badge-value" id="score">0</span>
+        <div class="hud-stat" aria-label="分数" id="score-badge">
+          <span class="hud-label">分数</span>
+          <span class="hud-value" id="score">0</span>
         </div>
         <section class="goals-bar" aria-label="收集目标">
           <div class="goal-grid" id="goals"></div>
         </section>
-        <div class="badge moves-badge" aria-label="剩余步数">
-          <span class="badge-label">步数</span>
-          <span class="badge-value" id="moves">24</span>
+        <div class="hud-stat" aria-label="剩余步数">
+          <span class="hud-label">步数</span>
+          <span class="hud-value" id="moves">24</span>
         </div>
       </header>
 
