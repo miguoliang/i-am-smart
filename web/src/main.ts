@@ -42,7 +42,7 @@ app.innerHTML = `
     <section class="panel goals">
       <h2 class="goals-title">食物关 · 收集目标</h2>
       <div class="goal-grid" id="goals"></div>
-      <p class="hint">点两格相邻交换。三个相同单词（图或英文）连成一线即可消除。</p>
+      <p class="hint">先点一格再点相邻格交换；连成 3 个同词会放大消失、掉落补位。</p>
     </section>
 
     <div class="board-wrap">
@@ -241,7 +241,33 @@ function renderBoard(opts: RenderOptions = {}): void {
   }
 }
 
+function clearSelectionStyles(): void {
+  boardEl.querySelectorAll('.tile.selected').forEach((el) => {
+    el.classList.remove('selected')
+    ;(el as HTMLElement).style.transform = ''
+    ;(el as HTMLElement).style.animation = 'none'
+  })
+}
+
+function runTranslate(
+  el: HTMLElement,
+  from: string,
+  to: string,
+  ms: number,
+): Promise<void> {
+  el.classList.add('swapping')
+  const anim = el.animate(
+    [
+      { transform: from },
+      { transform: to },
+    ],
+    { duration: ms, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' },
+  )
+  return anim.finished.then(() => undefined)
+}
+
 async function animateSwap(a: CellPos, b: CellPos): Promise<void> {
+  clearSelectionStyles()
   const aEl = tileEl(a.row, a.col)
   const bEl = tileEl(b.row, b.col)
   if (!aEl || !bEl) return
@@ -252,11 +278,10 @@ async function animateSwap(a: CellPos, b: CellPos): Promise<void> {
   const dx = (b.col - a.col) * step
   const dy = (b.row - a.row) * step
 
-  aEl.classList.add('swapping')
-  bEl.classList.add('swapping')
-  aEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`
-  bEl.style.transform = `translate(${-dx}px, ${-dy}px) scale(1.04)`
-  await wait(180)
+  await Promise.all([
+    runTranslate(aEl, 'translate(0,0) scale(1)', `translate(${dx}px, ${dy}px) scale(1.08)`, 220),
+    runTranslate(bEl, 'translate(0,0) scale(1)', `translate(${-dx}px, ${-dy}px) scale(1.08)`, 220),
+  ])
 }
 
 async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
@@ -264,17 +289,26 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   const bEl = tileEl(b.row, b.col)
   if (!aEl || !bEl) return
 
-  // Snap back from the speculative swap pose, then shake.
-  aEl.classList.add('swapping')
-  bEl.classList.add('swapping')
-  aEl.style.transform = ''
-  bEl.style.transform = ''
-  await wait(160)
+  const size = cellSize()
+  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
+  const step = size + gap
+  const dx = (b.col - a.col) * step
+  const dy = (b.row - a.row) * step
+
+  // Return from speculative swap pose, then shake.
+  await Promise.all([
+    runTranslate(aEl, `translate(${dx}px, ${dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 180),
+    runTranslate(bEl, `translate(${-dx}px, ${-dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 180),
+  ])
+  aEl.getAnimations().forEach((x) => x.cancel())
+  bEl.getAnimations().forEach((x) => x.cancel())
   aEl.classList.remove('swapping')
   bEl.classList.remove('swapping')
+  aEl.style.transform = ''
+  bEl.style.transform = ''
   aEl.classList.add('shake')
   bEl.classList.add('shake')
-  await wait(300)
+  await wait(380)
 }
 
 async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
@@ -292,8 +326,10 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     )
 
     renderBoard({ clearing })
+    // Next frame so CSS clear animation definitely starts on mounted nodes.
+    await wait(32)
     spawnBursts(matches)
-    await wait(260)
+    await wait(420)
 
     const cleared = engine.clearMatches(matches)
     for (const wordId of cleared) {
@@ -312,7 +348,7 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
     renderBoard({ fallRows, spawnUids })
     updateHud(true)
-    await wait(340)
+    await wait(450)
 
     matches = engine.findMatches()
   }
@@ -347,8 +383,8 @@ async function onTileClick(row: number, col: number): Promise<void> {
 
   busy = true
   selected = null
+  clearSelectionStyles()
 
-  // Peek: temporarily swap in engine to test, but we want visual first then commit.
   // Visual swap first on current board, then commitSwap mutates state.
   await animateSwap(from, to)
   const result = engine.commitSwap(from, to)
