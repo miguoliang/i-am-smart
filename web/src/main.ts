@@ -9,9 +9,9 @@ if (!app) throw new Error('#app missing')
 
 const engine = new Match3Engine({
   wordIds: FOOD_WORDS.map((w) => w.id),
-  cols: 8,
-  rows: 8,
-  moves: 28,
+  cols: 6,
+  rows: 6,
+  moves: 24,
   goalPerWord: 2,
 })
 
@@ -34,46 +34,38 @@ let drag: DragState | null = null
 
 app.innerHTML = `
   <div class="shell">
-    <header class="hero">
-      <h1 class="brand">词图三消</h1>
-      <p class="tagline">同词条可互消：图片和英文是一家。</p>
+    <header class="topbar">
+      <div class="brand-block">
+        <h1 class="brand">词图三消</h1>
+        <p class="score-line">分数 <span id="score">0</span></p>
+      </div>
+      <button class="btn icon-btn" type="button" id="restart" aria-label="重新开始">↻</button>
+      <div class="moves-bubble" aria-label="剩余步数">
+        <span class="moves-label">步数</span>
+        <span class="moves-value" id="moves">24</span>
+      </div>
     </header>
 
-    <div class="hud">
-      <div class="stat">
-        <span class="stat-label">分数</span>
-        <span class="stat-value" id="score">0</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">步数</span>
-        <span class="stat-value" id="moves">28</span>
-      </div>
-    </div>
-
-    <section class="panel goals">
-      <h2 class="goals-title">食物关 · 收集目标</h2>
+    <section class="goals-bar" aria-label="收集目标">
       <div class="goal-grid" id="goals"></div>
-      <p class="hint">按住格子向上下左右滑一下即可交换；连成 3 个同词会消除补位。</p>
     </section>
 
-    <div class="board-wrap">
-      <div class="board" id="board" aria-label="三消棋盘"></div>
-      <div class="burst-layer" id="bursts" aria-hidden="true"></div>
-      <div class="toast" id="toast" aria-live="polite">
-        <span class="toast-en" id="toast-en"></span>
-        <span class="toast-zh" id="toast-zh"></span>
-      </div>
-      <div class="overlay" id="overlay">
-        <div class="overlay-card">
-          <h2 id="overlay-title"></h2>
-          <p id="overlay-body"></p>
-          <button class="btn" type="button" id="overlay-btn">再来一局</button>
+    <div class="board-stage">
+      <div class="board-wrap">
+        <div class="board" id="board" aria-label="三消棋盘"></div>
+        <div class="burst-layer" id="bursts" aria-hidden="true"></div>
+        <div class="toast" id="toast" aria-live="polite">
+          <span class="toast-en" id="toast-en"></span>
+          <span class="toast-zh" id="toast-zh"></span>
+        </div>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <h2 id="overlay-title"></h2>
+            <p id="overlay-body"></p>
+            <button class="btn" type="button" id="overlay-btn">再来一局</button>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn secondary" type="button" id="restart">重新开始</button>
     </div>
   </div>
 `
@@ -93,15 +85,22 @@ const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
 
-function cellSize(): number {
+function boardMetrics(): { size: number; gap: number; pad: number } {
   const styles = getComputedStyle(boardEl)
-  const gap = parseFloat(styles.gap) || 6
-  return (boardEl.clientWidth - gap * (engine.cols - 1)) / engine.cols
+  const gap = parseFloat(styles.gap) || 5
+  const pad = parseFloat(styles.paddingLeft) || 0
+  const inner = boardEl.clientWidth - pad * 2
+  const size = (inner - gap * (engine.cols - 1)) / engine.cols
+  return { size, gap, pad }
+}
+
+function cellSize(): number {
+  return boardMetrics().size
 }
 
 function stepSize(): number {
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
-  return cellSize() + gap
+  const { size, gap } = boardMetrics()
+  return size + gap
 }
 
 function tileEl(row: number, col: number): HTMLElement | null {
@@ -112,6 +111,15 @@ function pulseStat(el: HTMLElement): void {
   el.classList.remove('pulse')
   void el.offsetWidth
   el.classList.add('pulse')
+}
+
+// Keep score pulse subtle via parent line when value changes.
+function pulseScore(): void {
+  const line = scoreEl.parentElement
+  if (!line) return
+  line.classList.remove('pulse')
+  void line.offsetWidth
+  line.classList.add('pulse')
 }
 
 function showToast(wordId: string): void {
@@ -128,15 +136,16 @@ function showToast(wordId: string): void {
 }
 
 function spawnBursts(matches: MatchGroup[]): void {
-  const size = cellSize()
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
+  const { size, gap, pad } = boardMetrics()
   const boardRect = boardEl.getBoundingClientRect()
   const wrapRect = burstsEl.getBoundingClientRect()
 
   for (const group of matches) {
     for (const c of group.cells) {
-      const x = boardRect.left - wrapRect.left + c.col * (size + gap) + size / 2
-      const y = boardRect.top - wrapRect.top + c.row * (size + gap) + size / 2
+      const x =
+        boardRect.left - wrapRect.left + pad + c.col * (size + gap) + size / 2
+      const y =
+        boardRect.top - wrapRect.top + pad + c.row * (size + gap) + size / 2
       const burst = document.createElement('span')
       burst.className = 'burst'
       burst.style.left = `${x}px`
@@ -153,11 +162,12 @@ function renderGoals(prevDone?: Set<string>): void {
     .map((g) => {
       const word = wordById(g.wordId)!
       const done = g.current >= g.target
+      const left = Math.max(0, g.target - g.current)
       const justDone = done && prevDone && !prevDone.has(g.wordId)
       return `
         <div class="goal ${done ? 'done' : ''} ${justDone ? 'pop' : ''}" title="${word.english}">
           <img src="${assetUrl(word.image)}" alt="${word.english}" />
-          <span class="goal-count">${g.current}/${g.target}</span>
+          <span class="goal-count">${done ? '✓' : left}</span>
         </div>
       `
     })
@@ -170,7 +180,7 @@ function updateHud(animate = false): void {
   const prevMoves = movesEl.textContent
   scoreEl.textContent = String(snap.score)
   movesEl.textContent = String(snap.movesLeft)
-  if (animate && prevScore !== scoreEl.textContent) pulseStat(scoreEl)
+  if (animate && prevScore !== scoreEl.textContent) pulseScore()
   if (animate && prevMoves !== movesEl.textContent) pulseStat(movesEl)
 }
 
