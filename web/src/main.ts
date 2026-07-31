@@ -62,16 +62,18 @@ app.innerHTML = `
           <span class="toast-en" id="toast-en"></span>
           <span class="toast-zh" id="toast-zh"></span>
         </div>
-        <div class="overlay" id="overlay">
-          <div class="end-sheet">
-            <div class="end-fx" id="end-fx" aria-hidden="true"></div>
-            <span class="end-badge" id="end-badge"></span>
-            <h2 class="end-title" id="overlay-title"></h2>
-            <p class="end-meta" id="end-meta"></p>
-            <div class="end-goals" id="end-goals"></div>
-            <button class="btn end-btn" type="button" id="overlay-btn">再来一局</button>
-          </div>
-        </div>
+      </div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="end-sky" aria-hidden="true"></div>
+      <div class="end-rays" aria-hidden="true"></div>
+      <div class="end-fx" id="end-fx" aria-hidden="true"></div>
+      <div class="end-content">
+        <span class="end-badge" id="end-badge"></span>
+        <h2 class="end-title" id="overlay-title"></h2>
+        <p class="end-meta" id="end-meta"></p>
+        <div class="end-goals" id="end-goals"></div>
+        <button class="btn end-btn" type="button" id="overlay-btn">再来一局</button>
       </div>
     </div>
   </div>
@@ -400,17 +402,47 @@ function renderEndGoals(snap: GameSnapshot): void {
     .join('')
 }
 
+const WIN_CONFETTI = ['#ffd36a', '#fff6c8', '#7dcea0', '#ff9f68', '#ffe08a', '#5fb396', '#fffaf0']
+
 function spawnEndFx(kind: 'win' | 'lose'): void {
   endFxEl.replaceChildren()
-  const count = kind === 'win' ? 16 : 8
-  for (let i = 0; i < count; i++) {
-    const spark = document.createElement('span')
-    spark.className = kind === 'win' ? 'end-spark' : 'end-ember'
-    spark.style.setProperty('--x', `${8 + Math.random() * 84}%`)
-    spark.style.setProperty('--delay', `${Math.random() * 0.5}s`)
-    spark.style.setProperty('--dur', `${0.95 + Math.random() * 0.8}s`)
-    spark.style.setProperty('--drift', `${(Math.random() * 40 - 20).toFixed(1)}px`)
-    endFxEl.appendChild(spark)
+
+  if (kind === 'lose') {
+    for (let i = 0; i < 10; i++) {
+      const spark = document.createElement('span')
+      spark.className = 'end-ember'
+      spark.style.setProperty('--x', `${10 + Math.random() * 80}%`)
+      spark.style.setProperty('--delay', `${Math.random() * 0.6}s`)
+      spark.style.setProperty('--dur', `${1.1 + Math.random() * 0.9}s`)
+      spark.style.setProperty('--drift', `${(Math.random() * 36 - 18).toFixed(1)}px`)
+      endFxEl.appendChild(spark)
+    }
+    return
+  }
+
+  for (let i = 0; i < 42; i++) {
+    const piece = document.createElement('span')
+    const shape = i % 4 === 0 ? 'ribbon' : i % 4 === 1 ? 'star' : 'dot'
+    piece.className = `confetti confetti-${shape}`
+    piece.style.setProperty('--x', `${Math.random() * 100}%`)
+    piece.style.setProperty('--delay', `${Math.random() * 1.35}s`)
+    piece.style.setProperty('--dur', `${2 + Math.random() * 2.2}s`)
+    piece.style.setProperty('--rot', `${Math.floor(Math.random() * 720 - 360)}deg`)
+    piece.style.setProperty('--drift', `${(Math.random() * 120 - 60).toFixed(1)}px`)
+    piece.style.setProperty('--scale', `${(0.65 + Math.random() * 1.1).toFixed(2)}`)
+    piece.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
+    endFxEl.appendChild(piece)
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const burst = document.createElement('span')
+    burst.className = 'end-burst'
+    const angle = (i / 12) * Math.PI * 2
+    burst.style.setProperty('--dx', `${Math.cos(angle) * (90 + Math.random() * 70)}px`)
+    burst.style.setProperty('--dy', `${Math.sin(angle) * (90 + Math.random() * 70)}px`)
+    burst.style.setProperty('--delay', `${0.05 + Math.random() * 0.18}s`)
+    burst.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
+    endFxEl.appendChild(burst)
   }
 }
 
