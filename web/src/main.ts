@@ -35,9 +35,6 @@ type DragState = {
   from: CellPos
   startX: number
   startY: number
-  dx: number
-  dy: number
-  axis: 'x' | 'y' | null
 }
 
 let drag: DragState | null = null
@@ -279,8 +276,6 @@ function renderBoard(opts: RenderOptions = {}): void {
         'enter',
         'shake',
         'swapping',
-        'dragging',
-        'drag-pair',
         'word',
         'image',
         'empty',
@@ -415,8 +410,8 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
 }
 
 function neighborToward(from: CellPos, dx: number, dy: number): CellPos | null {
-  const step = stepSize()
-  const threshold = step * 0.28
+  // Direction-only: a short swipe is enough; no finger tracking.
+  const threshold = Math.max(18, stepSize() * 0.16)
   if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return null
 
   if (Math.abs(dx) >= Math.abs(dy)) {
@@ -429,60 +424,16 @@ function neighborToward(from: CellPos, dx: number, dy: number): CellPos | null {
   return { row, col: from.col }
 }
 
-function clearDragTransforms(): void {
-  boardEl.querySelectorAll('.tile.dragging, .tile.drag-pair').forEach((node) => {
-    const el = node as HTMLElement
-    el.classList.remove('dragging', 'drag-pair')
-    el.style.transform = ''
-  })
-}
-
-function applyDragVisual(state: DragState): void {
-  const aEl = tileEl(state.from.row, state.from.col)
-  if (!aEl) return
-
-  let dx = state.dx
-  let dy = state.dy
-  const step = stepSize()
-
-  // Lock to one axis after a short move for cleaner swipe feel.
-  if (!state.axis) {
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      state.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'
-    }
+function endPointerGesture(pointerId: number): void {
+  boardEl.classList.remove('is-dragging')
+  try {
+    boardEl.releasePointerCapture(pointerId)
+  } catch {
+    // already released
   }
-  if (state.axis === 'x') dy = 0
-  if (state.axis === 'y') dx = 0
-
-  dx = Math.max(-step, Math.min(step, dx))
-  dy = Math.max(-step, Math.min(step, dy))
-
-  aEl.classList.add('dragging')
-  aEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.06)`
-
-  // Preview the neighbor sliding the opposite way.
-  boardEl.querySelectorAll('.tile.drag-pair').forEach((node) => {
-    const el = node as HTMLElement
-    if (el !== aEl) {
-      el.classList.remove('drag-pair')
-      el.style.transform = ''
-    }
-  })
-
-  const to = neighborToward(state.from, dx, dy)
-  if (!to) return
-  const bEl = tileEl(to.row, to.col)
-  if (!bEl) return
-  bEl.classList.add('drag-pair')
-  bEl.style.transform = `translate(${-dx}px, ${-dy}px)`
 }
 
-async function finishSwipeTo(
-  from: CellPos,
-  to: CellPos,
-  currentDx: number,
-  currentDy: number,
-): Promise<void> {
+async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
   const aEl = tileEl(from.row, from.col)
   const bEl = tileEl(to.row, to.col)
   if (!aEl || !bEl) return
@@ -491,41 +442,18 @@ async function finishSwipeTo(
   const dx = (to.col - from.col) * step
   const dy = (to.row - from.row) * step
 
-  // Continue from the finger pose to a full swap pose.
-  let fromDx = currentDx
-  let fromDy = currentDy
-  if (to.col !== from.col) fromDy = 0
-  if (to.row !== from.row) fromDx = 0
-  fromDx = Math.max(-step, Math.min(step, fromDx))
-  fromDy = Math.max(-step, Math.min(step, fromDy))
-
   aEl.classList.add('swapping')
   bEl.classList.add('swapping')
   await Promise.all([
-    runTranslate(
-      aEl,
-      `translate(${fromDx}px, ${fromDy}px) scale(1.06)`,
-      `translate(${dx}px, ${dy}px) scale(1.08)`,
-      140,
-    ),
-    runTranslate(
-      bEl,
-      `translate(${-fromDx}px, ${-fromDy}px)`,
-      `translate(${-dx}px, ${-dy}px) scale(1.08)`,
-      140,
-    ),
+    runTranslate(aEl, 'translate(0,0)', `translate(${dx}px, ${dy}px)`, 150),
+    runTranslate(bEl, 'translate(0,0)', `translate(${-dx}px, ${-dy}px)`, 150),
   ])
 }
 
-async function trySwipeSwap(
-  from: CellPos,
-  to: CellPos,
-  currentDx: number,
-  currentDy: number,
-): Promise<void> {
+async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
   busy = true
 
-  await finishSwipeTo(from, to, currentDx, currentDy)
+  await animateSwapTo(from, to)
   const result = engine.commitSwap(from, to)
 
   if (!result.ok) {
@@ -539,6 +467,17 @@ async function trySwipeSwap(
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false
+}
+
+async function commitSwipeIfReady(state: DragState, dx: number, dy: number): Promise<boolean> {
+  const to = neighborToward(state.from, dx, dy)
+  if (!to || !engine.areAdjacent(state.from, to)) return false
+
+  drag = null
+  endPointerGesture(state.pointerId)
+  haptic(10)
+  await trySwipeSwap(state.from, to)
+  return true
 }
 
 function posFromEventTarget(target: EventTarget | null): CellPos | null {
@@ -562,23 +501,19 @@ function onPointerDown(e: PointerEvent): void {
     from,
     startX: e.clientX,
     startY: e.clientY,
-    dx: 0,
-    dy: 0,
-    axis: null,
   }
 
   boardEl.setPointerCapture(e.pointerId)
   boardEl.classList.add('is-dragging')
-  const aEl = tileEl(from.row, from.col)
-  aEl?.classList.add('dragging')
   e.preventDefault()
 }
 
 function onPointerMove(e: PointerEvent): void {
-  if (!drag || e.pointerId !== drag.pointerId) return
-  drag.dx = e.clientX - drag.startX
-  drag.dy = e.clientY - drag.startY
-  applyDragVisual(drag)
+  if (!drag || e.pointerId !== drag.pointerId || busy) return
+  const state = drag
+  const dx = e.clientX - state.startX
+  const dy = e.clientY - state.startY
+  void commitSwipeIfReady(state, dx, dy)
   e.preventDefault()
 }
 
@@ -586,37 +521,19 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
   if (!drag || e.pointerId !== drag.pointerId) return
 
   const state = drag
+  const dx = e.clientX - state.startX
+  const dy = e.clientY - state.startY
+
+  if (await commitSwipeIfReady(state, dx, dy)) return
+
   drag = null
-  boardEl.classList.remove('is-dragging')
-  try {
-    boardEl.releasePointerCapture(e.pointerId)
-  } catch {
-    // ignore if already released
-  }
-
-  const to = neighborToward(state.from, state.dx, state.dy)
-
-  if (!to || !engine.areAdjacent(state.from, to)) {
-    clearDragTransforms()
-    haptic(8)
-    const aEl = tileEl(state.from.row, state.from.col)
-    if (aEl) {
-      aEl.classList.add('shake')
-      await wait(220)
-      aEl.classList.remove('shake')
-    }
-    return
-  }
-
-  haptic(10)
-  await trySwipeSwap(state.from, to, state.dx, state.dy)
+  endPointerGesture(state.pointerId)
 }
 
 function onPointerCancel(e: PointerEvent): void {
   if (!drag || e.pointerId !== drag.pointerId) return
   drag = null
-  boardEl.classList.remove('is-dragging')
-  clearDragTransforms()
+  endPointerGesture(e.pointerId)
 }
 
 boardEl.addEventListener('pointerdown', onPointerDown)
