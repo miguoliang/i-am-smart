@@ -32,3 +32,22 @@ export interface GameSnapshot {
   won: boolean
   lost: boolean
 }
+
+export interface TileFall {
+  uid: number
+  col: number
+  fromRow: number
+  toRow: number
+}
+
+export interface TileSpawn {
+  uid: number
+  row: number
+  col: number
+  dropRows: number
+}
+
+export interface SettleResult {
+  falls: TileFall[]
+  spawns: TileSpawn[]
+}

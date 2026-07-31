@@ -15,6 +15,8 @@
   --radius: 18px;
   --font-display: 'Baloo 2', 'Noto Sans SC', sans-serif;
   --font-body: 'Nunito', 'Noto Sans SC', sans-serif;
+  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-pop: cubic-bezier(0.34, 1.45, 0.64, 1);
   color: var(--ink);
   font-family: var(--font-body);
   font-synthesis: none;
@@ -64,12 +66,14 @@ body {
   line-height: 1;
   letter-spacing: 0.02em;
   color: var(--board-deep);
+  animation: brand-in 0.55s var(--ease-snap) both;
 }
 
 .tagline {
   margin: 0;
   color: var(--muted);
   font-size: 0.98rem;
+  animation: fade-up 0.5s 0.08s var(--ease-snap) both;
 }
 
 .hud {
@@ -89,6 +93,7 @@ body {
 
 .stat {
   padding: 12px 14px;
+  animation: fade-up 0.45s 0.12s var(--ease-snap) both;
 }
 
 .stat-label {
@@ -103,12 +108,18 @@ body {
   font-family: var(--font-display);
   font-size: 1.7rem;
   line-height: 1.1;
+  display: inline-block;
+}
+
+.stat-value.pulse {
+  animation: stat-pulse 0.42s var(--ease-pop);
 }
 
 .goals {
   padding: 12px;
   display: grid;
   gap: 10px;
+  animation: fade-up 0.45s 0.16s var(--ease-snap) both;
 }
 
 .goals-title {
@@ -130,11 +141,18 @@ body {
   padding: 8px 4px;
   border-radius: 14px;
   background: rgba(47, 111, 94, 0.06);
+  transition:
+    background 0.25s ease,
+    transform 0.25s var(--ease-pop);
 }
 
 .goal.done {
   background: rgba(63, 157, 106, 0.18);
   outline: 2px solid rgba(63, 157, 106, 0.35);
+}
+
+.goal.pop {
+  animation: goal-pop 0.5s var(--ease-pop);
 }
 
 .goal img {
@@ -161,6 +179,7 @@ body {
   background:
     linear-gradient(160deg, var(--board) 0%, var(--board-deep) 100%);
   box-shadow: var(--shadow);
+  animation: board-in 0.55s 0.1s var(--ease-snap) both;
 }
 
 .board {
@@ -170,6 +189,32 @@ body {
   aspect-ratio: 1;
   touch-action: none;
   user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+.burst-layer {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  z-index: 4;
+  overflow: hidden;
+}
+
+.burst {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #ffe08a;
+  box-shadow:
+    0 0 0 0 rgba(255, 224, 138, 0.7),
+    14px -10px 0 -2px #ffb14a,
+    -12px -8px 0 -2px #fff6c8,
+    10px 12px 0 -2px #ffd36a,
+    -14px 8px 0 -1px #fff;
+  animation: burst-pop 0.5s var(--ease-snap) forwards;
 }
 
 .tile {
@@ -185,7 +230,15 @@ body {
   transition:
     transform 0.14s ease,
     box-shadow 0.14s ease,
-    opacity 0.18s ease;
+    opacity 0.18s ease,
+    background 0.15s ease;
+  will-change: transform, opacity;
+}
+
+.tile.empty {
+  background: rgba(255, 253, 248, 0.08);
+  box-shadow: none;
+  cursor: default;
 }
 
 .tile.word {
@@ -193,16 +246,41 @@ body {
 }
 
 .tile.selected {
-  transform: scale(1.06);
+  transform: scale(1.08);
   box-shadow:
     0 0 0 3px var(--accent),
     0 8px 16px var(--glow);
   z-index: 2;
+  animation: select-bob 0.9s ease-in-out infinite;
+}
+
+.tile.swapping {
+  transition: transform 0.18s var(--ease-snap);
+  z-index: 3;
+  box-shadow: 0 10px 18px rgba(31, 42, 36, 0.18);
 }
 
 .tile.clearing {
-  opacity: 0;
-  transform: scale(0.55);
+  animation: tile-clear 0.28s var(--ease-snap) forwards;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.tile.falling {
+  animation: tile-fall 0.3s var(--ease-snap) both;
+}
+
+.tile.spawning {
+  animation: tile-spawn 0.34s var(--ease-snap) both;
+  --drop: 1;
+}
+
+.tile.enter {
+  animation: tile-enter 0.4s calc(var(--stagger, 0) * 28ms) var(--ease-snap) both;
+}
+
+.tile.shake {
+  animation: tile-shake 0.3s ease;
 }
 
 .tile img {
@@ -228,7 +306,7 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%) scale(0.92);
+  transform: translate(-50%, -40%) scale(0.86);
   opacity: 0;
   pointer-events: none;
   padding: 14px 18px;
@@ -236,16 +314,12 @@ body {
   background: rgba(255, 253, 248, 0.96);
   box-shadow: var(--shadow);
   text-align: center;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
   z-index: 5;
   min-width: 180px;
 }
 
 .toast.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  animation: toast-in 1.15s var(--ease-pop) both;
 }
 
 .toast-en {
@@ -307,6 +381,11 @@ button.btn.secondary {
 
 .overlay.show {
   display: grid;
+  animation: overlay-in 0.28s ease both;
+}
+
+.overlay-card {
+  animation: overlay-card-in 0.4s var(--ease-pop) both;
 }
 
 .overlay h2 {
@@ -320,6 +399,197 @@ button.btn.secondary {
   opacity: 0.92;
 }
 
+@keyframes brand-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes board-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes select-bob {
+  0%,
+  100% {
+    transform: scale(1.08);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes tile-clear {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  55% {
+    transform: scale(1.18);
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: scale(0.2);
+    opacity: 0;
+    filter: brightness(1.4);
+  }
+}
+
+@keyframes tile-fall {
+  from {
+    transform: translateY(calc(-1 * var(--fall, 1) * (100% + 6px)));
+    opacity: 0.9;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes tile-spawn {
+  from {
+    transform: translateY(calc(-1 * var(--drop, 1) * (100% + 6px)));
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes tile-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tile-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(5px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes burst-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.86);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  32% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(0.96);
+  }
+}
+
+@keyframes stat-pulse {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.18);
+    color: var(--accent-deep);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes goal-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (max-width: 520px) {
   .goal-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -327,5 +597,15 @@ button.btn.secondary {
 
   .tile {
     border-radius: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
