@@ -2,7 +2,7 @@ import './style.css'
 import { FOOD_WORDS, assetUrl, wordById } from './data/words'
 import { Match3Engine } from './game/engine'
 import { speakEnglish } from './game/tts'
-import type { CellPos } from './game/types'
+import type { CellPos, MatchGroup } from './game/types'
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('#app missing')
@@ -18,6 +18,8 @@ const engine = new Match3Engine({
 let selected: CellPos | null = null
 let busy = false
 let toastTimer = 0
+
+const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
 
 app.innerHTML = `
   <div class="shell">
@@ -45,12 +47,13 @@ app.innerHTML = `
 
     <div class="board-wrap">
       <div class="board" id="board" aria-label="三消棋盘"></div>
+      <div class="burst-layer" id="bursts" aria-hidden="true"></div>
       <div class="toast" id="toast" aria-live="polite">
         <span class="toast-en" id="toast-en"></span>
         <span class="toast-zh" id="toast-zh"></span>
       </div>
       <div class="overlay" id="overlay">
-        <div>
+        <div class="overlay-card">
           <h2 id="overlay-title"></h2>
           <p id="overlay-body"></p>
           <button class="btn" type="button" id="overlay-btn">再来一局</button>
@@ -74,29 +77,70 @@ const toastZh = app.querySelector<HTMLSpanElement>('#toast-zh')!
 const overlayEl = app.querySelector<HTMLDivElement>('#overlay')!
 const overlayTitle = app.querySelector<HTMLHeadingElement>('#overlay-title')!
 const overlayBody = app.querySelector<HTMLParagraphElement>('#overlay-body')!
+const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
+
+function cellSize(): number {
+  const styles = getComputedStyle(boardEl)
+  const gap = parseFloat(styles.gap) || 6
+  return (boardEl.clientWidth - gap * (engine.cols - 1)) / engine.cols
+}
+
+function tileEl(row: number, col: number): HTMLElement | null {
+  return boardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`)
+}
+
+function pulseStat(el: HTMLElement): void {
+  el.classList.remove('pulse')
+  // restart animation
+  void el.offsetWidth
+  el.classList.add('pulse')
+}
 
 function showToast(wordId: string): void {
   const word = wordById(wordId)
   if (!word) return
   toastEn.textContent = word.english
   toastZh.textContent = word.chinese
+  toastEl.classList.remove('show')
+  void toastEl.offsetWidth
   toastEl.classList.add('show')
   speakEnglish(word.english)
   window.clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1100)
+  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1200)
 }
 
-function renderGoals(): void {
+function spawnBursts(matches: MatchGroup[]): void {
+  const size = cellSize()
+  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
+  const boardRect = boardEl.getBoundingClientRect()
+  const wrapRect = burstsEl.getBoundingClientRect()
+
+  for (const group of matches) {
+    for (const c of group.cells) {
+      const x = boardRect.left - wrapRect.left + c.col * (size + gap) + size / 2
+      const y = boardRect.top - wrapRect.top + c.row * (size + gap) + size / 2
+      const burst = document.createElement('span')
+      burst.className = 'burst'
+      burst.style.left = `${x}px`
+      burst.style.top = `${y}px`
+      burstsEl.appendChild(burst)
+      window.setTimeout(() => burst.remove(), 520)
+    }
+  }
+}
+
+function renderGoals(prevDone?: Set<string>): void {
   const snap = engine.snapshot()
   goalsEl.innerHTML = snap.goals
     .map((g) => {
       const word = wordById(g.wordId)!
       const done = g.current >= g.target
+      const justDone = done && prevDone && !prevDone.has(g.wordId)
       return `
-        <div class="goal ${done ? 'done' : ''}" title="${word.english}">
+        <div class="goal ${done ? 'done' : ''} ${justDone ? 'pop' : ''}" title="${word.english}">
           <img src="${assetUrl(word.image)}" alt="${word.english}" />
           <span class="goal-count">${g.current}/${g.target}</span>
         </div>
@@ -105,10 +149,26 @@ function renderGoals(): void {
     .join('')
 }
 
-function renderBoard(clearing: Set<number> = new Set()): void {
+function updateHud(animate = false): void {
   const snap = engine.snapshot()
+  const prevScore = scoreEl.textContent
+  const prevMoves = movesEl.textContent
   scoreEl.textContent = String(snap.score)
   movesEl.textContent = String(snap.movesLeft)
+  if (animate && prevScore !== scoreEl.textContent) pulseStat(scoreEl)
+  if (animate && prevMoves !== movesEl.textContent) pulseStat(movesEl)
+}
+
+type RenderOptions = {
+  clearing?: Set<number>
+  fallRows?: Map<number, number>
+  spawnUids?: Map<number, number>
+  enter?: boolean
+}
+
+function renderBoard(opts: RenderOptions = {}): void {
+  const snap = engine.snapshot()
+  updateHud(false)
   renderGoals()
 
   boardEl.innerHTML = ''
@@ -124,15 +184,30 @@ function renderBoard(clearing: Set<number> = new Set()): void {
 
       if (!tile) {
         btn.disabled = true
+        btn.classList.add('empty')
         boardEl.appendChild(btn)
         continue
       }
 
+      btn.dataset.uid = String(tile.uid)
       if (tile.kind === 'word') btn.classList.add('word')
       if (selected && selected.row === row && selected.col === col) {
         btn.classList.add('selected')
       }
-      if (clearing.has(i)) btn.classList.add('clearing')
+      if (opts.clearing?.has(i)) btn.classList.add('clearing')
+      const fall = opts.fallRows?.get(tile.uid)
+      if (fall != null && fall > 0) {
+        btn.classList.add('falling')
+        btn.style.setProperty('--fall', String(fall))
+      }
+      const drop = opts.spawnUids?.get(tile.uid)
+      if (drop != null) {
+        btn.classList.add('spawning')
+        btn.style.setProperty('--drop', String(drop))
+      } else if (opts.enter && fall == null) {
+        btn.classList.add('enter')
+        btn.style.setProperty('--stagger', String((row + col) % 8))
+      }
 
       const word = wordById(tile.wordId)
       if (tile.kind === 'image' && word) {
@@ -166,6 +241,86 @@ function renderBoard(clearing: Set<number> = new Set()): void {
   }
 }
 
+async function animateSwap(a: CellPos, b: CellPos): Promise<void> {
+  const aEl = tileEl(a.row, a.col)
+  const bEl = tileEl(b.row, b.col)
+  if (!aEl || !bEl) return
+
+  const size = cellSize()
+  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
+  const step = size + gap
+  const dx = (b.col - a.col) * step
+  const dy = (b.row - a.row) * step
+
+  aEl.classList.add('swapping')
+  bEl.classList.add('swapping')
+  aEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`
+  bEl.style.transform = `translate(${-dx}px, ${-dy}px) scale(1.04)`
+  await wait(180)
+}
+
+async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
+  const aEl = tileEl(a.row, a.col)
+  const bEl = tileEl(b.row, b.col)
+  if (!aEl || !bEl) return
+
+  // Snap back from the speculative swap pose, then shake.
+  aEl.classList.add('swapping')
+  bEl.classList.add('swapping')
+  aEl.style.transform = ''
+  bEl.style.transform = ''
+  await wait(160)
+  aEl.classList.remove('swapping')
+  bEl.classList.remove('swapping')
+  aEl.classList.add('shake')
+  bEl.classList.add('shake')
+  await wait(300)
+}
+
+async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
+  let matches = firstMatches
+  const seenToast = new Set<string>()
+
+  while (matches.length > 0) {
+    const clearing = new Set<number>()
+    for (const g of matches) {
+      for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
+    }
+
+    const prevDone = new Set(
+      engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
+    )
+
+    renderBoard({ clearing })
+    spawnBursts(matches)
+    await wait(260)
+
+    const cleared = engine.clearMatches(matches)
+    for (const wordId of cleared) {
+      if (!seenToast.has(wordId)) {
+        seenToast.add(wordId)
+        showToast(wordId)
+      }
+    }
+    updateHud(true)
+    renderGoals(prevDone)
+
+    const settle = engine.settle()
+    const fallRows = new Map(
+      settle.falls.map((f) => [f.uid, f.toRow - f.fromRow] as const),
+    )
+    const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
+    renderBoard({ fallRows, spawnUids })
+    updateHud(true)
+    await wait(340)
+
+    matches = engine.findMatches()
+  }
+
+  engine.checkEnd()
+  renderBoard()
+}
+
 async function onTileClick(row: number, col: number): Promise<void> {
   if (busy || engine.won || engine.lost) return
 
@@ -183,7 +338,6 @@ async function onTileClick(row: number, col: number): Promise<void> {
 
   const from = selected
   const to = { row, col }
-  selected = null
 
   if (!engine.areAdjacent(from, to)) {
     selected = to
@@ -192,22 +346,22 @@ async function onTileClick(row: number, col: number): Promise<void> {
   }
 
   busy = true
-  const result = engine.trySwap(from, to)
+  selected = null
+
+  // Peek: temporarily swap in engine to test, but we want visual first then commit.
+  // Visual swap first on current board, then commitSwap mutates state.
+  await animateSwap(from, to)
+  const result = engine.commitSwap(from, to)
+
   if (!result.ok) {
-    // Brief shake feedback via reselect
+    await animateSwapReject(from, to)
     renderBoard()
     busy = false
     return
   }
 
-  // Show first cleared word learning toast; cascade already applied in engine.
-  const unique = [...new Set(result.clearedWords)]
-  if (unique[0]) showToast(unique[0]!)
-  if (unique[1]) {
-    window.setTimeout(() => showToast(unique[1]!), 700)
-  }
-
-  renderBoard()
+  updateHud(true)
+  await resolveWithAnimation(result.matches)
   busy = false
 }
 
@@ -216,10 +370,10 @@ function restart(): void {
   busy = false
   engine.reset()
   overlayEl.classList.remove('show')
-  renderBoard()
+  renderBoard({ enter: true })
 }
 
 app.querySelector('#restart')?.addEventListener('click', restart)
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
 
-renderBoard()
+renderBoard({ enter: true })
