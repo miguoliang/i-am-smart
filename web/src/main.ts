@@ -8,7 +8,7 @@ import {
   unlockAudio,
 } from './game/feel'
 import { speakEnglish } from './game/tts'
-import type { CellPos, MatchGroup } from './game/types'
+import type { CellPos, MatchGroup, Tile } from './game/types'
 
 bindNativeChrome()
 registerServiceWorker()
@@ -196,63 +196,121 @@ type RenderOptions = {
   enter?: boolean
 }
 
+function ensureBoardSlots(): HTMLButtonElement[] {
+  const n = engine.rows * engine.cols
+  while (boardEl.children.length < n) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'tile empty'
+    btn.disabled = true
+    boardEl.appendChild(btn)
+  }
+  while (boardEl.children.length > n) {
+    boardEl.lastElementChild?.remove()
+  }
+  return [...boardEl.children] as HTMLButtonElement[]
+}
+
+function paintTile(btn: HTMLButtonElement, tile: Tile): void {
+  const same =
+    btn.dataset.uid === String(tile.uid) &&
+    btn.dataset.kind === tile.kind &&
+    btn.dataset.wordId === tile.wordId
+  if (same) return
+
+  btn.dataset.uid = String(tile.uid)
+  btn.dataset.kind = tile.kind
+  btn.dataset.wordId = tile.wordId
+
+  const word = wordById(tile.wordId)
+  if (tile.kind === 'image' && word) {
+    let img = btn.querySelector('img')
+    if (!img) {
+      btn.replaceChildren()
+      img = document.createElement('img')
+      img.draggable = false
+      img.decoding = 'async'
+      btn.appendChild(img)
+    }
+    const src = assetUrl(word.image)
+    if (img.getAttribute('src') !== src) img.src = src
+    img.alt = word.english
+  } else if (word) {
+    let label = btn.querySelector('.tile-word-label') as HTMLSpanElement | null
+    if (!label) {
+      btn.replaceChildren()
+      label = document.createElement('span')
+      label.className = 'tile-word-label'
+      btn.appendChild(label)
+    }
+    label.textContent = word.english
+  }
+}
+
+function clearTilePaint(btn: HTMLButtonElement): void {
+  delete btn.dataset.uid
+  delete btn.dataset.kind
+  delete btn.dataset.wordId
+  if (btn.childNodes.length) btn.replaceChildren()
+}
+
 function renderBoard(opts: RenderOptions = {}): void {
   const snap = engine.snapshot()
   updateHud(false)
-  renderGoals()
-  layoutBoard()
+  const slots = ensureBoardSlots()
 
-  boardEl.innerHTML = ''
   for (let row = 0; row < snap.rows; row++) {
     for (let col = 0; col < snap.cols; col++) {
       const i = row * snap.cols + col
       const tile = snap.cells[i]
-      const btn = document.createElement('button')
-      btn.type = 'button'
-      btn.className = 'tile'
+      const btn = slots[i]
+
+      btn.getAnimations().forEach((anim) => anim.cancel())
+      btn.style.transform = ''
+      btn.style.opacity = ''
+      btn.style.removeProperty('--fall')
+      btn.style.removeProperty('--drop')
+      btn.style.removeProperty('--stagger')
       btn.dataset.row = String(row)
       btn.dataset.col = String(col)
+      btn.classList.remove(
+        'clearing',
+        'falling',
+        'spawning',
+        'enter',
+        'shake',
+        'swapping',
+        'dragging',
+        'drag-pair',
+        'word',
+        'image',
+        'empty',
+      )
 
       if (!tile) {
         btn.disabled = true
         btn.classList.add('empty')
-        boardEl.appendChild(btn)
+        clearTilePaint(btn)
         continue
       }
 
-      btn.dataset.uid = String(tile.uid)
-      if (tile.kind === 'word') btn.classList.add('word')
-      else btn.classList.add('image')
-      if (opts.clearing?.has(i)) btn.classList.add('clearing')
+      btn.disabled = false
+      paintTile(btn, tile)
+      btn.classList.add(tile.kind === 'word' ? 'word' : 'image')
+
       const fall = opts.fallRows?.get(tile.uid)
-      if (fall != null && fall > 0) {
-        btn.classList.add('falling')
-        btn.style.setProperty('--fall', String(fall))
-      }
       const drop = opts.spawnUids?.get(tile.uid)
-      if (drop != null) {
-        btn.classList.add('spawning')
+      if (opts.clearing?.has(i)) btn.classList.add('clearing')
+      if (fall != null && fall > 0) {
+        btn.style.setProperty('--fall', String(fall))
+        btn.classList.add('falling')
+      } else if (drop != null) {
         btn.style.setProperty('--drop', String(drop))
-      } else if (opts.enter && fall == null) {
-        btn.classList.add('enter')
+        btn.classList.add('spawning')
+      } else if (opts.enter) {
         btn.style.setProperty('--stagger', String((row + col) % 8))
+        btn.classList.add('enter')
       }
-
-      const word = wordById(tile.wordId)
-      if (tile.kind === 'image' && word) {
-        const img = document.createElement('img')
-        img.src = assetUrl(word.image)
-        img.alt = word.english
-        img.draggable = false
-        btn.appendChild(img)
-      } else if (word) {
-        const label = document.createElement('span')
-        label.className = 'tile-word-label'
-        label.textContent = word.english
-        btn.appendChild(label)
-      }
-
-      boardEl.appendChild(btn)
     }
   }
 
@@ -325,13 +383,10 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     )
 
     renderBoard({ clearing })
-    boardWrapEl.classList.remove('punch')
-    void boardWrapEl.offsetWidth
-    boardWrapEl.classList.add('punch')
     haptic([8, 30, 12])
-    await wait(32)
+    await wait(16)
     spawnBursts(matches)
-    await wait(420)
+    await wait(360)
 
     const cleared = engine.clearMatches(matches)
     for (const wordId of cleared) {
@@ -350,13 +405,14 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
     renderBoard({ fallRows, spawnUids })
     updateHud(true)
-    await wait(450)
+    await wait(400)
 
     matches = engine.findMatches()
   }
 
   engine.checkEnd()
   renderBoard()
+  renderGoals()
 }
 
 function neighborToward(from: CellPos, dx: number, dy: number): CellPos | null {
@@ -576,6 +632,7 @@ function restart(): void {
   engine.reset()
   overlayEl.classList.remove('show')
   renderBoard({ enter: true })
+  renderGoals()
 }
 
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
@@ -602,6 +659,7 @@ const armAudio = () => {
 window.addEventListener('pointerdown', armAudio, { once: true })
 
 renderBoard({ enter: true })
+renderGoals()
 layoutBoard()
 
 const boot = document.querySelector('#boot')

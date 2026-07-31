@@ -274,22 +274,6 @@ body {
   transform: translateZ(0);
 }
 
-.board-wrap.punch {
-  animation: board-punch 0.28s var(--ease-snap);
-}
-
-@keyframes board-punch {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(0.985);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 .board {
   display: grid;
   gap: var(--gap);
@@ -320,18 +304,16 @@ body {
 
 .burst {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  margin: -8px 0 0 -8px;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
   border-radius: 50%;
   background: #ffe08a;
   box-shadow:
-    0 0 14px 5px rgba(255, 210, 100, 0.55),
-    18px -12px 0 -1px #ffb14a,
-    -16px -10px 0 -1px #fff6c8,
-    14px 16px 0 -1px #ffd36a,
-    -18px 12px 0 0 #fff;
-  animation: burst-pop 0.55s var(--ease-snap) forwards;
+    14px -10px 0 -2px #ffb14a,
+    -12px -8px 0 -2px #fff6c8,
+    10px 12px 0 -2px #ffd36a;
+  animation: burst-pop 0.45s var(--ease-snap) forwards;
 }
 
 .tile {
@@ -347,9 +329,8 @@ body {
   cursor: grab;
   transition:
     transform 0.14s ease,
-    box-shadow 0.14s ease,
-    opacity 0.18s ease;
-  will-change: transform, opacity;
+    box-shadow 0.14s ease;
+  backface-visibility: hidden;
 }
 
 .tile.empty {
@@ -400,18 +381,23 @@ body {
 }
 
 .tile.clearing {
-  animation: tile-clear 0.42s var(--ease-snap) forwards;
+  animation: tile-clear 0.34s var(--ease-snap) forwards;
   pointer-events: none;
   z-index: 3;
+  transition: none;
 }
 
 .tile.falling {
-  animation: tile-fall 0.42s var(--ease-snap) both;
+  animation: tile-fall 0.38s var(--ease-snap) both;
+  transition: none;
+  z-index: 2;
 }
 
 .tile.spawning {
-  animation: tile-spawn 0.45s var(--ease-snap) both;
+  animation: tile-spawn 0.4s var(--ease-snap) both;
   --drop: 1;
+  transition: none;
+  z-index: 2;
 }
 
 .tile.enter {
@@ -530,30 +516,25 @@ button.btn:active {
 
 @keyframes tile-clear {
   0% {
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
     opacity: 1;
-    filter: brightness(1);
   }
-  40% {
-    transform: scale(1.28) rotate(-4deg);
-    opacity: 1;
-    filter: brightness(1.35);
+  70% {
+    transform: scale(0.85);
+    opacity: 0.55;
   }
   100% {
-    transform: scale(0.15) rotate(8deg);
+    transform: scale(0.4);
     opacity: 0;
-    filter: brightness(1.6);
   }
 }
 
 @keyframes tile-fall {
   from {
     transform: translateY(calc(-1 * var(--fall, 1) * (100% + var(--gap))));
-    opacity: 0.9;
   }
   to {
     transform: none;
-    opacity: 1;
   }
 }
 
