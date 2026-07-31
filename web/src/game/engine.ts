@@ -284,13 +284,11 @@ export class Match3Engine {
     return { ok: true, matches }
   }
 
-  /** Clear current matches and update score/goals. */
+  /** Clear current matches and update collection goals. */
   clearMatches(matches: MatchGroup[]): string[] {
     const cleared: string[] = []
     for (const group of matches) {
       cleared.push(group.wordId)
-      const points = group.cells.length * 10 + (group.cells.length > 3 ? 20 : 0)
-      this.score += points
       this.bumpGoal(group.wordId, 1)
       for (const c of group.cells) this.set(c.row, c.col, null)
     }
