@@ -152,7 +152,7 @@ function spawnBursts(matches: MatchGroup[]): void {
       burst.style.left = `${x}px`
       burst.style.top = `${y}px`
       burstsEl.appendChild(burst)
-      window.setTimeout(() => burst.remove(), 520)
+      window.setTimeout(() => burst.remove(), 620)
     }
   }
 }
@@ -333,7 +333,7 @@ function runTranslate(
       { transform: from },
       { transform: to },
     ],
-    { duration: ms, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' },
+    { duration: ms, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' },
   )
   return anim.finished.then(() => undefined)
 }
@@ -348,8 +348,8 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   const dy = (b.row - a.row) * step
 
   await Promise.all([
-    runTranslate(aEl, `translate(${dx}px, ${dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 160),
-    runTranslate(bEl, `translate(${-dx}px, ${-dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 160),
+    runTranslate(aEl, `translate(${dx}px, ${dy}px)`, 'translate(0,0)', 220),
+    runTranslate(bEl, `translate(${-dx}px, ${-dy}px)`, 'translate(0,0)', 220),
   ])
   aEl.getAnimations().forEach((x) => x.cancel())
   bEl.getAnimations().forEach((x) => x.cancel())
@@ -359,7 +359,7 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   bEl.style.transform = ''
   aEl.classList.add('shake')
   bEl.classList.add('shake')
-  await wait(360)
+  await wait(460)
 }
 
 async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
@@ -378,9 +378,9 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
 
     renderBoard({ clearing })
     haptic([8, 30, 12])
-    await wait(16)
+    await wait(24)
     spawnBursts(matches)
-    await wait(360)
+    await wait(500)
 
     const cleared = engine.clearMatches(matches)
     for (const wordId of cleared) {
@@ -399,7 +399,7 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
     renderBoard({ fallRows, spawnUids })
     updateHud(true)
-    await wait(400)
+    await wait(560)
 
     matches = engine.findMatches()
   }
@@ -445,8 +445,8 @@ async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
   aEl.classList.add('swapping')
   bEl.classList.add('swapping')
   await Promise.all([
-    runTranslate(aEl, 'translate(0,0)', `translate(${dx}px, ${dy}px)`, 150),
-    runTranslate(bEl, 'translate(0,0)', `translate(${-dx}px, ${-dy}px)`, 150),
+    runTranslate(aEl, 'translate(0,0)', `translate(${dx}px, ${dy}px)`, 210),
+    runTranslate(bEl, 'translate(0,0)', `translate(${-dx}px, ${-dy}px)`, 210),
   ])
 }
 
