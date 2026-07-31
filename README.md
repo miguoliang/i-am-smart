@@ -33,9 +33,21 @@ xcodebuild -scheme ShankaHero \
 ShankaHero/           # App 源码
 ShankaHeroTests/      # 单元测试（SM-2、待复习调度）
 ShankaHero.xcodeproj
+web/                  # 纯前端「词图三消」网页游戏（GitHub Pages）
+printables/           # KET 闪卡打印贴纸素材
 ```
 
 词库文件位于 `ShankaHero/Resources/Vocabulary/`（cefr-a1.json … cefr-c2.json，共 6784 词条）。
+
+## 网页游戏（词图三消）
+
+用 KET 贴纸图 + 英文单词做的学习向三消：同一词条的图片格与英文格可互消。
+
+```bash
+cd web && npm install && npm run dev
+```
+
+合并到 `main` 后可由 `.github/workflows/deploy-web.yml` 部署到 GitHub Pages（需在仓库 Settings → Pages 选择 GitHub Actions）。详见 `web/README.md`。
 
 ## 许可证
 
