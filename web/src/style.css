@@ -400,13 +400,15 @@ body {
   animation: tile-fall 0.55s var(--ease-soft) both;
   transition: none;
   z-index: 2;
+  will-change: transform;
 }
 
 .tile.spawning {
-  animation: tile-spawn 0.58s var(--ease-soft) both;
+  animation: tile-spawn 0.55s var(--ease-soft) both;
   --drop: 1;
   transition: none;
   z-index: 2;
+  will-change: transform, opacity;
 }
 
 .tile.enter {
