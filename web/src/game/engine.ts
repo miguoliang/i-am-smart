@@ -27,11 +27,21 @@ function randomChoice<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
+function pickGoals(wordIds: readonly string[], maxGoals: number): string[] {
+  const copy = [...wordIds]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j]!, copy[i]!]
+  }
+  return copy.slice(0, Math.min(maxGoals, copy.length))
+}
+
 export class Match3Engine {
   readonly cols: number
   readonly rows: number
   readonly wordIds: readonly string[]
   readonly goalPerWord: number
+  readonly maxGoals: number
   readonly startingMoves: number
   cells: Array<Tile | null>
   score = 0
@@ -46,6 +56,7 @@ export class Match3Engine {
     wordIds: string[]
     moves?: number
     goalPerWord?: number
+    maxGoals?: number
   }) {
     this.cols = options.cols ?? 8
     this.rows = options.rows ?? 8
@@ -53,13 +64,18 @@ export class Match3Engine {
     this.startingMoves = options.moves ?? 28
     this.movesLeft = this.startingMoves
     this.goalPerWord = options.goalPerWord ?? 2
-    this.goals = this.wordIds.map((wordId) => ({
+    this.maxGoals = options.maxGoals ?? 3
+    this.goals = this.buildGoals()
+    this.cells = new Array(this.cols * this.rows).fill(null)
+    this.rebuildBoard()
+  }
+
+  private buildGoals(): LevelGoal[] {
+    return pickGoals(this.wordIds, this.maxGoals).map((wordId) => ({
       wordId,
       target: this.goalPerWord,
       current: 0,
     }))
-    this.cells = new Array(this.cols * this.rows).fill(null)
-    this.rebuildBoard()
   }
 
   snapshot(): GameSnapshot {
@@ -288,11 +304,7 @@ export class Match3Engine {
     this.movesLeft = this.startingMoves
     this.won = false
     this.lost = false
-    this.goals = this.wordIds.map((wordId) => ({
-      wordId,
-      target: this.goalPerWord,
-      current: 0,
-    }))
+    this.goals = this.buildGoals()
     this.rebuildBoard()
   }
 }
