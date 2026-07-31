@@ -17,7 +17,7 @@ import {
   unlockWord,
 } from './game/progress'
 import { speakEnglish } from './game/tts'
-import type { CellPos, GameSnapshot, MatchGroup, Tile } from './game/types'
+import type { CellPos, GameSnapshot, MatchGroup, SettleResult, Tile } from './game/types'
 
 bindNativeChrome()
 registerServiceWorker()
@@ -351,10 +351,31 @@ function updateHud(animate = false): void {
 }
 
 type RenderOptions = {
-  clearing?: Set<number>
-  fallRows?: Map<number, number>
-  spawnUids?: Map<number, number>
   enter?: boolean
+}
+
+const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+const SWAP_MS = 200
+const CLEAR_MS = 400
+const FALL_MS = 520
+
+function playMotion(
+  el: HTMLElement,
+  keyframes: Keyframe[],
+  ms: number,
+): Animation {
+  return el.animate(keyframes, {
+    duration: ms,
+    easing: MOTION_EASE,
+    // both: from-state applies immediately — no rest-frame flash before play
+    fill: 'both',
+  })
+}
+
+async function finishMotion(anims: Animation[]): Promise<void> {
+  if (anims.length === 0) return
+  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
+  for (const anim of anims) anim.cancel()
 }
 
 function ensureBoardSlots(): HTMLButtonElement[] {
@@ -415,35 +436,13 @@ function clearTilePaint(btn: HTMLButtonElement): void {
   if (btn.childNodes.length) btn.replaceChildren()
 }
 
-function resetTileMotion(btn: HTMLButtonElement): void {
-  // Kill WAAPI first while transitions are disabled by motion classes / CSS.
-  btn.style.transition = 'none'
+/** Cancel WAAPI / decorative motion and restore resting pose. */
+function clearMotion(btn: HTMLElement): void {
   btn.getAnimations().forEach((anim) => anim.cancel())
   btn.style.transform = ''
   btn.style.opacity = ''
-  btn.style.removeProperty('--fall')
-  btn.style.removeProperty('--drop')
   btn.style.removeProperty('--stagger')
-  btn.classList.remove(
-    'clearing',
-    'falling',
-    'spawning',
-    'enter',
-    'shake',
-    'swapping',
-    'hint',
-  )
-  // Clear the inline transition override on the next frame.
-  requestAnimationFrame(() => {
-    if (
-      !btn.classList.contains('swapping') &&
-      !btn.classList.contains('clearing') &&
-      !btn.classList.contains('falling') &&
-      !btn.classList.contains('spawning')
-    ) {
-      btn.style.transition = ''
-    }
-  })
+  btn.classList.remove('enter', 'shake', 'swapping', 'hint')
 }
 
 function renderEndGoals(snap: GameSnapshot): void {
@@ -689,6 +688,7 @@ function onLearnConfirm(): void {
   continueCampaign()
 }
 
+/** Sync DOM slots to engine state. Motion is handled separately via WAAPI. */
 function renderBoard(opts: RenderOptions = {}): void {
   const snap = engine.snapshot()
   const slots = ensureBoardSlots()
@@ -700,38 +700,14 @@ function renderBoard(opts: RenderOptions = {}): void {
       const btn = slots[i]!
       btn.dataset.row = String(row)
       btn.dataset.col = String(col)
-
-      const fall = tile ? opts.fallRows?.get(tile.uid) : undefined
-      const drop = tile ? opts.spawnUids?.get(tile.uid) : undefined
-      const wantsFall = fall != null && fall > 0
-      const wantsSpawn = drop != null
-      const wantsEnter = Boolean(opts.enter && !wantsFall && !wantsSpawn)
-      const wantsClear = Boolean(opts.clearing?.has(i))
-      const wantsMotion = wantsClear || wantsFall || wantsSpawn || wantsEnter
-      const sameUid =
-        !!tile &&
-        btn.dataset.uid === String(tile.uid) &&
-        btn.dataset.kind === tile.kind &&
-        btn.dataset.wordId === tile.wordId
-      const busyMotion = btn.classList.contains('swapping') ||
-        btn.classList.contains('clearing') ||
-        btn.classList.contains('falling') ||
-        btn.classList.contains('spawning') ||
-        btn.classList.contains('shake')
+      clearMotion(btn)
 
       if (!tile) {
-        if (!btn.classList.contains('empty') || btn.dataset.uid) {
-          resetTileMotion(btn)
-          btn.disabled = true
-          btn.classList.remove('word', 'image')
-          btn.classList.add('empty')
-          clearTilePaint(btn)
-        }
+        btn.disabled = true
+        btn.classList.remove('word', 'image')
+        btn.classList.add('empty')
+        clearTilePaint(btn)
         continue
-      }
-
-      if (!sameUid || wantsMotion || busyMotion) {
-        resetTileMotion(btn)
       }
 
       btn.disabled = false
@@ -740,15 +716,7 @@ function renderBoard(opts: RenderOptions = {}): void {
       btn.classList.toggle('word', tile.kind === 'word')
       btn.classList.toggle('image', tile.kind === 'image')
 
-      if (wantsClear) {
-        btn.classList.add('clearing')
-      } else if (wantsFall) {
-        btn.style.setProperty('--fall', String(fall))
-        btn.classList.add('falling')
-      } else if (wantsSpawn) {
-        btn.style.setProperty('--drop', String(drop))
-        btn.classList.add('spawning')
-      } else if (wantsEnter) {
+      if (opts.enter) {
         btn.style.setProperty('--stagger', String((row + col) % 8))
         btn.classList.add('enter')
       }
@@ -758,163 +726,75 @@ function renderBoard(opts: RenderOptions = {}): void {
   syncOverlay(snap)
 }
 
-/**
- * After a successful swap animation, drop WAAPI transforms and sync cell art
- * in one synchronous turn so nothing eases back and clear can start cleanly.
- * When `clearing` is provided, matched cells start clearing in the same turn —
- * avoids a resting-state paint frame that reads as a pre-clear flash.
- */
-function bakeBoardAfterSwap(clearing?: Set<number>): void {
-  const snap = engine.snapshot()
+async function animateClear(cells: Iterable<number>): Promise<void> {
   const slots = ensureBoardSlots()
-  for (let i = 0; i < snap.cells.length; i++) {
-    const tile = snap.cells[i]
-    const btn = slots[i]!
-    const row = Math.floor(i / snap.cols)
-    const col = i % snap.cols
-    btn.dataset.row = String(row)
-    btn.dataset.col = String(col)
-
-    btn.style.transition = 'none'
-    btn.getAnimations().forEach((anim) => anim.cancel())
-    btn.style.transform = ''
-    btn.style.opacity = ''
-    btn.classList.remove(
-      'clearing',
-      'falling',
-      'spawning',
-      'enter',
-      'shake',
-      'swapping',
-      'hint',
-    )
-
-    if (!tile) {
-      btn.disabled = true
-      btn.classList.remove('word', 'image')
-      btn.classList.add('empty')
-      clearTilePaint(btn)
-      continue
-    }
-
-    btn.disabled = false
-    btn.classList.remove('empty')
-    paintTile(btn, tile)
-    btn.classList.toggle('word', tile.kind === 'word')
-    btn.classList.toggle('image', tile.kind === 'image')
-    if (clearing?.has(i)) btn.classList.add('clearing')
-  }
-}
-
-/** Add clear animation only on matched cells — leave the rest untouched. */
-function applyClearing(clearing: Set<number>): void {
-  const slots = ensureBoardSlots()
-  for (const i of clearing) {
+  const anims: Animation[] = []
+  for (const i of cells) {
     const btn = slots[i]
     if (!btn || btn.classList.contains('empty')) continue
-
-    btn.style.transition = 'none'
-    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'hint')
-
-    // Already started in bakeBoardAfterSwap — do not restart (restart needs a
-    // reflow that paints a full-opacity rest frame = visible flash).
-    if (btn.classList.contains('clearing')) continue
-
+    clearMotion(btn)
+    btn.style.pointerEvents = 'none'
+    anims.push(
+      playMotion(
+        btn,
+        [
+          { transform: 'scale(1)', opacity: 1 },
+          { transform: 'scale(0.78)', opacity: 0 },
+        ],
+        CLEAR_MS,
+      ),
+    )
+  }
+  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
+  // Keep cleared tiles hidden until the next paint — cancelling fill would flash them back.
+  for (const i of cells) {
+    const btn = slots[i]
+    if (!btn) continue
     btn.getAnimations().forEach((anim) => anim.cancel())
+    btn.style.opacity = '0'
     btn.style.transform = ''
-    btn.style.opacity = ''
-    btn.classList.add('clearing')
+    btn.style.pointerEvents = ''
   }
 }
 
-/** Wait until CSS tile animations finish (or fallback). Handles already-finished. */
-function waitForTileAnims(selector: string, fallbackMs: number): Promise<void> {
-  const els = [...boardEl.querySelectorAll(selector)] as HTMLElement[]
-  if (els.length === 0) return Promise.resolve()
-
-  return new Promise((resolve) => {
-    let settled = false
-    let remaining = els.length
-    const finish = () => {
-      if (settled) return
-      settled = true
-      resolve()
-    }
-    const timer = window.setTimeout(finish, fallbackMs)
-    const markDone = () => {
-      remaining -= 1
-      if (remaining <= 0) {
-        window.clearTimeout(timer)
-        finish()
-      }
-    }
-
-    for (const el of els) {
-      const running = el.getAnimations().filter((a) => a.playState !== 'finished')
-      if (running.length === 0) {
-        markDone()
-        continue
-      }
-      el.addEventListener(
-        'animationend',
-        (event) => {
-          if (event.target !== el) return
-          markDone()
-        },
-        { once: true },
-      )
-    }
-  })
-}
-
-function waitForClearAnim(fallbackMs: number): Promise<void> {
-  return waitForTileAnims('.tile.clearing', fallbackMs)
-}
-
-/**
- * After falls/spawns land, drop motion classes at the resting pose so the next
- * cascade/final paint does not cancel a still-running translate (visual snap).
- */
-function bakeBoardAfterSettle(): void {
+async function animateSettle(settle: SettleResult): Promise<void> {
   const slots = ensureBoardSlots()
-  for (const btn of slots) {
-    if (!btn.classList.contains('falling') && !btn.classList.contains('spawning')) {
-      continue
-    }
-    btn.style.transition = 'none'
-    for (const anim of btn.getAnimations()) {
-      try {
-        if (anim.playState !== 'finished') anim.finish()
-      } catch {
-        // ignore
-      }
-      anim.cancel()
-    }
-    btn.style.transform = ''
-    btn.style.opacity = ''
-    btn.style.removeProperty('--fall')
-    btn.style.removeProperty('--drop')
-    btn.classList.remove('falling', 'spawning')
-    btn.style.removeProperty('will-change')
-  }
-  void boardEl.offsetWidth
-}
+  const step = stepSize()
+  const anims: Animation[] = []
 
-function runTranslate(
-  el: HTMLElement,
-  from: string,
-  to: string,
-  ms: number,
-): Promise<void> {
-  el.classList.add('swapping')
-  const anim = el.animate(
-    [
-      { transform: from },
-      { transform: to },
-    ],
-    { duration: ms, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' },
-  )
-  return anim.finished.then(() => undefined)
+  for (const fall of settle.falls) {
+    const btn = slots[fall.toRow * engine.cols + fall.col]
+    if (!btn) continue
+    const dy = -(fall.toRow - fall.fromRow) * step
+    btn.classList.add('swapping')
+    anims.push(
+      playMotion(
+        btn,
+        [{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0px)' }],
+        FALL_MS,
+      ),
+    )
+  }
+
+  for (const spawn of settle.spawns) {
+    const btn = slots[spawn.row * engine.cols + spawn.col]
+    if (!btn) continue
+    const dy = -spawn.dropRows * step
+    btn.classList.add('swapping')
+    anims.push(
+      playMotion(
+        btn,
+        [
+          { transform: `translateY(${dy}px)`, opacity: 0 },
+          { transform: 'translateY(0px)', opacity: 1 },
+        ],
+        FALL_MS,
+      ),
+    )
+  }
+
+  await finishMotion(anims)
+  for (const btn of slots) btn.classList.remove('swapping')
 }
 
 async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
@@ -922,20 +802,28 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   const bEl = tileEl(b.row, b.col)
   if (!aEl || !bEl) return
 
+  // Swap fill is still applied — start bounce-back from that pose (no cancel/snap).
   const step = stepSize()
   const dx = (b.col - a.col) * step
   const dy = (b.row - a.row) * step
+  aEl.classList.add('swapping')
+  bEl.classList.add('swapping')
 
-  await Promise.all([
-    runTranslate(aEl, `translate(${dx}px, ${dy}px)`, 'translate(0,0)', 220),
-    runTranslate(bEl, `translate(${-dx}px, ${-dy}px)`, 'translate(0,0)', 220),
+  await finishMotion([
+    playMotion(
+      aEl,
+      [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }],
+      220,
+    ),
+    playMotion(
+      bEl,
+      [{ transform: `translate(${-dx}px, ${-dy}px)` }, { transform: 'translate(0px, 0px)' }],
+      220,
+    ),
   ])
-  aEl.getAnimations().forEach((x) => x.cancel())
-  bEl.getAnimations().forEach((x) => x.cancel())
-  aEl.classList.remove('swapping')
-  bEl.classList.remove('swapping')
-  aEl.style.transform = ''
-  bEl.style.transform = ''
+
+  clearMotion(aEl)
+  clearMotion(bEl)
   aEl.classList.add('shake')
   bEl.classList.add('shake')
   await wait(460)
@@ -944,6 +832,7 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
 async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
   let matches = firstMatches
   const seenToast = new Set<string>()
+  const slots = ensureBoardSlots()
 
   while (matches.length > 0) {
     const clearing = new Set<number>()
@@ -955,20 +844,16 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
       engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
     )
 
-    applyClearing(clearing)
+    // Start clear WAAPI before any await so it shares the paint with board sync.
+    const clearPromise = animateClear(clearing)
     haptic([8, 30, 12])
     spawnBursts(matches)
-    await waitForClearAnim(480)
+    await clearPromise
 
     const cleared = engine.clearMatches(matches)
     const settle = engine.settle()
-    const fallRows = new Map(
-      settle.falls.map((f) => [f.uid, f.toRow - f.fromRow] as const),
-    )
-    const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
-
-    // Paint falls first, then cheap HUD/goal text updates (in-place, no image reload).
-    renderBoard({ fallRows, spawnUids })
+    renderBoard()
+    const settlePromise = animateSettle(settle)
     updateHud(false)
     renderGoals(prevDone)
 
@@ -979,10 +864,11 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
       }
     }
 
-    // Fall/spawn CSS is 550ms — waiting shorter cancels mid-move and looks like
-    // a second local rearrange after tiles already settled.
-    await waitForTileAnims('.tile.falling, .tile.spawning', 650)
-    bakeBoardAfterSettle()
+    await settlePromise
+    for (const btn of slots) {
+      btn.style.transform = ''
+      btn.style.opacity = ''
+    }
     matches = engine.findMatches()
   }
 
@@ -1024,13 +910,23 @@ async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
   const step = stepSize()
   const dx = (to.col - from.col) * step
   const dy = (to.row - from.row) * step
-
   aEl.classList.add('swapping')
   bEl.classList.add('swapping')
-  await Promise.all([
-    runTranslate(aEl, 'translate(0,0)', `translate(${dx}px, ${dy}px)`, 210),
-    runTranslate(bEl, 'translate(0,0)', `translate(${-dx}px, ${-dy}px)`, 210),
-  ])
+
+  const anims = [
+    playMotion(
+      aEl,
+      [{ transform: 'translate(0px, 0px)' }, { transform: `translate(${dx}px, ${dy}px)` }],
+      SWAP_MS,
+    ),
+    playMotion(
+      bEl,
+      [{ transform: 'translate(0px, 0px)' }, { transform: `translate(${-dx}px, ${-dy}px)` }],
+      SWAP_MS,
+    ),
+  ]
+  // Keep fill until the next sync paint/reject — cancelling here causes snap-back.
+  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
 }
 
 async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
@@ -1050,12 +946,8 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     return
   }
 
-  // Bake swapped art and start clear in the same turn — no rest-frame flash.
-  const clearing = new Set<number>()
-  for (const g of result.matches) {
-    for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
-  }
-  bakeBoardAfterSwap(clearing)
+  // Cancel swap fills and paint new art in one sync turn, then clear via WAAPI.
+  renderBoard()
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false
