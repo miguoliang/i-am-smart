@@ -8,7 +8,7 @@ import {
   unlockAudio,
 } from './game/feel'
 import { speakEnglish } from './game/tts'
-import type { CellPos, MatchGroup, Tile } from './game/types'
+import type { CellPos, GameSnapshot, MatchGroup, Tile } from './game/types'
 
 bindNativeChrome()
 registerServiceWorker()
@@ -129,24 +129,25 @@ function showToast(wordId: string): void {
   toastEn.textContent = word.english
   toastZh.textContent = word.chinese
   toastEl.classList.remove('show')
-  void toastEl.offsetWidth
-  toastEl.classList.add('show')
-  speakEnglish(word.english)
+  // Avoid forced reflow mid-cascade; restart with a fresh class tick on rAF.
+  requestAnimationFrame(() => {
+    toastEl.classList.remove('show')
+    requestAnimationFrame(() => toastEl.classList.add('show'))
+  })
+  window.setTimeout(() => speakEnglish(word.english), 0)
   window.clearTimeout(toastTimer)
   toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1200)
 }
 
 function spawnBursts(matches: MatchGroup[]): void {
   const { size, gap, pad } = boardMetrics()
-  const boardRect = boardEl.getBoundingClientRect()
-  const wrapRect = burstsEl.getBoundingClientRect()
+  // board-wrap padding matches .board-wrap / .burst-layer inset (no layout reads).
+  const wrapPad = 4
 
   for (const group of matches) {
     for (const c of group.cells) {
-      const x =
-        boardRect.left - wrapRect.left + pad + c.col * (size + gap) + size / 2
-      const y =
-        boardRect.top - wrapRect.top + pad + c.row * (size + gap) + size / 2
+      const x = wrapPad + pad + c.col * (size + gap) + size / 2
+      const y = wrapPad + pad + c.row * (size + gap) + size / 2
       const burst = document.createElement('span')
       burst.className = 'burst'
       burst.style.left = `${x}px`
@@ -157,22 +158,59 @@ function spawnBursts(matches: MatchGroup[]): void {
   }
 }
 
+function ensureGoalSlots(count: number): HTMLElement[] {
+  while (goalsEl.children.length < count) {
+    const el = document.createElement('div')
+    el.className = 'goal'
+    const img = document.createElement('img')
+    img.decoding = 'async'
+    img.alt = ''
+    const badge = document.createElement('span')
+    badge.className = 'goal-count'
+    el.append(img, badge)
+    goalsEl.appendChild(el)
+  }
+  while (goalsEl.children.length > count) {
+    goalsEl.lastElementChild?.remove()
+  }
+  return [...goalsEl.children] as HTMLElement[]
+}
+
 function renderGoals(prevDone?: Set<string>): void {
   const snap = engine.snapshot()
-  goalsEl.innerHTML = snap.goals
-    .map((g) => {
-      const word = wordById(g.wordId)!
-      const done = g.current >= g.target
-      const left = Math.max(0, g.target - g.current)
-      const justDone = done && prevDone && !prevDone.has(g.wordId)
-      return `
-        <div class="goal ${done ? 'done' : ''} ${justDone ? 'pop' : ''}" title="${word.english}">
-          <img src="${assetUrl(word.image)}" alt="${word.english}" />
-          <span class="goal-count">${done ? '✓' : left}</span>
-        </div>
-      `
-    })
-    .join('')
+  const slots = ensureGoalSlots(snap.goals.length)
+
+  snap.goals.forEach((g, i) => {
+    const el = slots[i]!
+    const word = wordById(g.wordId)!
+    const done = g.current >= g.target
+    const left = Math.max(0, g.target - g.current)
+    const justDone = Boolean(done && prevDone && !prevDone.has(g.wordId))
+
+    el.title = word.english
+    el.classList.toggle('done', done)
+
+    if (justDone) {
+      el.classList.remove('pop')
+      requestAnimationFrame(() => {
+        el.classList.remove('pop')
+        requestAnimationFrame(() => el.classList.add('pop'))
+      })
+    } else {
+      el.classList.remove('pop')
+    }
+
+    const img = el.querySelector('img')!
+    const src = assetUrl(word.image)
+    if (img.getAttribute('src') !== src) {
+      img.src = src
+      img.alt = word.english
+    }
+
+    const badge = el.querySelector('.goal-count')!
+    const next = done ? '✓' : String(left)
+    if (badge.textContent !== next) badge.textContent = next
+  })
 }
 
 function updateHud(animate = false): void {
@@ -250,64 +288,17 @@ function clearTilePaint(btn: HTMLButtonElement): void {
   if (btn.childNodes.length) btn.replaceChildren()
 }
 
-function renderBoard(opts: RenderOptions = {}): void {
-  const snap = engine.snapshot()
-  updateHud(false)
-  const slots = ensureBoardSlots()
+function resetTileMotion(btn: HTMLButtonElement): void {
+  btn.getAnimations().forEach((anim) => anim.cancel())
+  btn.style.transform = ''
+  btn.style.opacity = ''
+  btn.style.removeProperty('--fall')
+  btn.style.removeProperty('--drop')
+  btn.style.removeProperty('--stagger')
+  btn.classList.remove('clearing', 'falling', 'spawning', 'enter', 'shake', 'swapping')
+}
 
-  for (let row = 0; row < snap.rows; row++) {
-    for (let col = 0; col < snap.cols; col++) {
-      const i = row * snap.cols + col
-      const tile = snap.cells[i]
-      const btn = slots[i]
-
-      btn.getAnimations().forEach((anim) => anim.cancel())
-      btn.style.transform = ''
-      btn.style.opacity = ''
-      btn.style.removeProperty('--fall')
-      btn.style.removeProperty('--drop')
-      btn.style.removeProperty('--stagger')
-      btn.dataset.row = String(row)
-      btn.dataset.col = String(col)
-      btn.classList.remove(
-        'clearing',
-        'falling',
-        'spawning',
-        'enter',
-        'shake',
-        'swapping',
-        'word',
-        'image',
-        'empty',
-      )
-
-      if (!tile) {
-        btn.disabled = true
-        btn.classList.add('empty')
-        clearTilePaint(btn)
-        continue
-      }
-
-      btn.disabled = false
-      paintTile(btn, tile)
-      btn.classList.add(tile.kind === 'word' ? 'word' : 'image')
-
-      const fall = opts.fallRows?.get(tile.uid)
-      const drop = opts.spawnUids?.get(tile.uid)
-      if (opts.clearing?.has(i)) btn.classList.add('clearing')
-      if (fall != null && fall > 0) {
-        btn.style.setProperty('--fall', String(fall))
-        btn.classList.add('falling')
-      } else if (drop != null) {
-        btn.style.setProperty('--drop', String(drop))
-        btn.classList.add('spawning')
-      } else if (opts.enter) {
-        btn.style.setProperty('--stagger', String((row + col) % 8))
-        btn.classList.add('enter')
-      }
-    }
-  }
-
+function syncOverlay(snap: GameSnapshot): void {
   if (snap.won) {
     overlayTitle.textContent = '过关！'
     overlayBody.textContent = `太棒了，食物词都收集齐了。得分 ${snap.score}`
@@ -319,6 +310,112 @@ function renderBoard(opts: RenderOptions = {}): void {
   } else {
     overlayEl.classList.remove('show')
   }
+}
+
+function renderBoard(opts: RenderOptions = {}): void {
+  const snap = engine.snapshot()
+  const slots = ensureBoardSlots()
+
+  for (let row = 0; row < snap.rows; row++) {
+    for (let col = 0; col < snap.cols; col++) {
+      const i = row * snap.cols + col
+      const tile = snap.cells[i]
+      const btn = slots[i]!
+      btn.dataset.row = String(row)
+      btn.dataset.col = String(col)
+
+      const fall = tile ? opts.fallRows?.get(tile.uid) : undefined
+      const drop = tile ? opts.spawnUids?.get(tile.uid) : undefined
+      const wantsFall = fall != null && fall > 0
+      const wantsSpawn = drop != null
+      const wantsEnter = Boolean(opts.enter && !wantsFall && !wantsSpawn)
+      const wantsClear = Boolean(opts.clearing?.has(i))
+      const wantsMotion = wantsClear || wantsFall || wantsSpawn || wantsEnter
+      const sameUid =
+        !!tile &&
+        btn.dataset.uid === String(tile.uid) &&
+        btn.dataset.kind === tile.kind &&
+        btn.dataset.wordId === tile.wordId
+      const busyMotion = btn.classList.contains('swapping') ||
+        btn.classList.contains('clearing') ||
+        btn.classList.contains('falling') ||
+        btn.classList.contains('spawning') ||
+        btn.classList.contains('shake')
+
+      if (!tile) {
+        if (!btn.classList.contains('empty') || btn.dataset.uid) {
+          resetTileMotion(btn)
+          btn.disabled = true
+          btn.classList.remove('word', 'image')
+          btn.classList.add('empty')
+          clearTilePaint(btn)
+        }
+        continue
+      }
+
+      if (!sameUid || wantsMotion || busyMotion) {
+        resetTileMotion(btn)
+      }
+
+      btn.disabled = false
+      btn.classList.remove('empty')
+      paintTile(btn, tile)
+      btn.classList.toggle('word', tile.kind === 'word')
+      btn.classList.toggle('image', tile.kind === 'image')
+
+      if (wantsClear) {
+        btn.classList.add('clearing')
+      } else if (wantsFall) {
+        btn.style.setProperty('--fall', String(fall))
+        btn.classList.add('falling')
+      } else if (wantsSpawn) {
+        btn.style.setProperty('--drop', String(drop))
+        btn.classList.add('spawning')
+      } else if (wantsEnter) {
+        btn.style.setProperty('--stagger', String((row + col) % 8))
+        btn.classList.add('enter')
+      }
+    }
+  }
+
+  syncOverlay(snap)
+}
+
+/** Add clear animation only on matched cells — leave the rest untouched. */
+function applyClearing(clearing: Set<number>): void {
+  const slots = ensureBoardSlots()
+  for (const i of clearing) {
+    const btn = slots[i]
+    if (!btn || btn.classList.contains('empty')) continue
+    btn.getAnimations().forEach((anim) => anim.cancel())
+    btn.style.transform = ''
+    btn.style.opacity = ''
+    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'clearing')
+    btn.classList.add('clearing')
+  }
+}
+
+function waitForClearAnim(fallbackMs: number): Promise<void> {
+  const clearingEl = boardEl.querySelector('.tile.clearing')
+  if (!clearingEl) return wait(fallbackMs)
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+    const timer = window.setTimeout(finish, fallbackMs)
+    clearingEl.addEventListener(
+      'animationend',
+      (event) => {
+        if (event.target !== clearingEl) return
+        window.clearTimeout(timer)
+        finish()
+      },
+      { once: true },
+    )
+  })
 }
 
 function runTranslate(
@@ -376,36 +473,37 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
       engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
     )
 
-    renderBoard({ clearing })
+    applyClearing(clearing)
     haptic([8, 30, 12])
-    await wait(24)
     spawnBursts(matches)
-    await wait(500)
+    await waitForClearAnim(520)
 
     const cleared = engine.clearMatches(matches)
+    const settle = engine.settle()
+    const fallRows = new Map(
+      settle.falls.map((f) => [f.uid, f.toRow - f.fromRow] as const),
+    )
+    const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
+
+    // Paint falls first, then cheap HUD/goal text updates (in-place, no image reload).
+    renderBoard({ fallRows, spawnUids })
+    updateHud(false)
+    renderGoals(prevDone)
+
     for (const wordId of cleared) {
       if (!seenToast.has(wordId)) {
         seenToast.add(wordId)
         showToast(wordId)
       }
     }
-    updateHud(true)
-    renderGoals(prevDone)
 
-    const settle = engine.settle()
-    const fallRows = new Map(
-      settle.falls.map((f) => [f.uid, f.toRow - f.fromRow] as const),
-    )
-    const spawnUids = new Map(settle.spawns.map((s) => [s.uid, s.dropRows]))
-    renderBoard({ fallRows, spawnUids })
-    updateHud(true)
     await wait(560)
-
     matches = engine.findMatches()
   }
 
   engine.checkEnd()
   renderBoard()
+  updateHud(true)
   renderGoals()
 }
 
@@ -460,10 +558,14 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     haptic([10, 40, 10])
     await animateSwapReject(from, to)
     renderBoard()
+    updateHud(false)
     busy = false
     return
   }
 
+  // Bake the swapped board into the DOM before clear starts, so clear
+  // only animates matched cells instead of rebuilding the whole grid.
+  renderBoard()
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false
