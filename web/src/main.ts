@@ -824,6 +824,7 @@ function restart(): void {
   engine.reset()
   hideOverlay()
   renderBoard({ enter: true })
+  updateHud(true)
   renderGoals()
   scheduleHint(1600)
 }
