@@ -34,23 +34,23 @@ let drag: DragState | null = null
 
 app.innerHTML = `
   <div class="shell">
-    <header class="topbar">
-      <div class="brand-block">
+    <div class="playfield">
+      <header class="hud">
+        <div class="badge score-badge" aria-label="分数">
+          <span class="badge-label">分数</span>
+          <span class="badge-value" id="score">0</span>
+        </div>
         <h1 class="brand">词图三消</h1>
-        <p class="score-line">分数 <span id="score">0</span></p>
-      </div>
-      <button class="btn icon-btn" type="button" id="restart" aria-label="重新开始">↻</button>
-      <div class="moves-bubble" aria-label="剩余步数">
-        <span class="moves-label">步数</span>
-        <span class="moves-value" id="moves">24</span>
-      </div>
-    </header>
+        <div class="badge moves-badge" aria-label="剩余步数">
+          <span class="badge-label">步数</span>
+          <span class="badge-value" id="moves">24</span>
+        </div>
+      </header>
 
-    <section class="goals-bar" aria-label="收集目标">
-      <div class="goal-grid" id="goals"></div>
-    </section>
+      <section class="goals-bar" aria-label="收集目标">
+        <div class="goal-grid" id="goals"></div>
+      </section>
 
-    <div class="board-stage">
       <div class="board-wrap">
         <div class="board" id="board" aria-label="三消棋盘"></div>
         <div class="burst-layer" id="bursts" aria-hidden="true"></div>
@@ -66,11 +66,17 @@ app.innerHTML = `
           </div>
         </div>
       </div>
+
+      <div class="footer-bar">
+        <button class="btn ghost-btn" type="button" id="restart">重新开始</button>
+      </div>
     </div>
   </div>
 `
 
 const boardEl = app.querySelector<HTMLDivElement>('#board')!
+const boardWrapEl = app.querySelector<HTMLDivElement>('.board-wrap')!
+const playfieldEl = app.querySelector<HTMLDivElement>('.playfield')!
 const goalsEl = app.querySelector<HTMLDivElement>('#goals')!
 const scoreEl = app.querySelector<HTMLSpanElement>('#score')!
 const movesEl = app.querySelector<HTMLSpanElement>('#moves')!
@@ -84,6 +90,22 @@ const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
+
+function layoutBoard(): void {
+  const hud = playfieldEl.querySelector('.hud') as HTMLElement
+  const goals = playfieldEl.querySelector('.goals-bar') as HTMLElement
+  const footer = playfieldEl.querySelector('.footer-bar') as HTMLElement
+  const gap = parseFloat(getComputedStyle(playfieldEl).gap) || 10
+  const availH =
+    playfieldEl.clientHeight -
+    hud.clientHeight -
+    goals.clientHeight -
+    footer.clientHeight -
+    gap * 3
+  const side = Math.max(240, Math.floor(Math.min(playfieldEl.clientWidth, availH)))
+  boardWrapEl.style.width = `${side}px`
+  boardWrapEl.style.height = `${side}px`
+}
 
 function boardMetrics(): { size: number; gap: number; pad: number } {
   const styles = getComputedStyle(boardEl)
@@ -107,15 +129,6 @@ function pulseStat(el: HTMLElement): void {
   el.classList.remove('pulse')
   void el.offsetWidth
   el.classList.add('pulse')
-}
-
-// Keep score pulse subtle via parent line when value changes.
-function pulseScore(): void {
-  const line = scoreEl.parentElement
-  if (!line) return
-  line.classList.remove('pulse')
-  void line.offsetWidth
-  line.classList.add('pulse')
 }
 
 function showToast(wordId: string): void {
@@ -176,7 +189,7 @@ function updateHud(animate = false): void {
   const prevMoves = movesEl.textContent
   scoreEl.textContent = String(snap.score)
   movesEl.textContent = String(snap.movesLeft)
-  if (animate && prevScore !== scoreEl.textContent) pulseScore()
+  if (animate && prevScore !== scoreEl.textContent) pulseStat(scoreEl)
   if (animate && prevMoves !== movesEl.textContent) pulseStat(movesEl)
 }
 
@@ -191,6 +204,7 @@ function renderBoard(opts: RenderOptions = {}): void {
   const snap = engine.snapshot()
   updateHud(false)
   renderGoals()
+  layoutBoard()
 
   boardEl.innerHTML = ''
   for (let row = 0; row < snap.rows; row++) {
@@ -562,5 +576,7 @@ function restart(): void {
 
 app.querySelector('#restart')?.addEventListener('click', restart)
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
+window.addEventListener('resize', layoutBoard)
 
 renderBoard({ enter: true })
+layoutBoard()
