@@ -75,10 +75,6 @@ app.innerHTML = `
           </div>
         </div>
       </div>
-
-      <div class="footer-bar">
-        <button class="btn ghost-btn" type="button" id="restart">重新开始</button>
-      </div>
     </div>
   </div>
 `
@@ -101,19 +97,10 @@ boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
 
 function layoutBoard(): void {
-  const hud = playfieldEl.querySelector('.hud') as HTMLElement
-  const goals = playfieldEl.querySelector('.goals-bar') as HTMLElement
-  const footer = playfieldEl.querySelector('.footer-bar') as HTMLElement
-  const gap = parseFloat(getComputedStyle(playfieldEl).gap) || 10
-  const availH =
-    playfieldEl.clientHeight -
-    hud.clientHeight -
-    goals.clientHeight -
-    footer.clientHeight -
-    gap * 3
-  const side = Math.max(260, Math.floor(Math.min(playfieldEl.clientWidth, availH)))
-  boardWrapEl.style.width = `${side}px`
-  boardWrapEl.style.height = `${side}px`
+  // Always use the full playfield width. Keep the board square.
+  const width = Math.max(260, Math.floor(playfieldEl.clientWidth))
+  boardWrapEl.style.width = `${width}px`
+  boardWrapEl.style.height = `${width}px`
 }
 
 function boardMetrics(): { size: number; gap: number; pad: number } {
@@ -591,8 +578,19 @@ function restart(): void {
   renderBoard({ enter: true })
 }
 
-app.querySelector('#restart')?.addEventListener('click', restart)
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
+// Long-press title to restart without a permanent footer button.
+const brandEl = app.querySelector('.brand')
+let brandTimer = 0
+brandEl?.addEventListener('pointerdown', () => {
+  brandTimer = window.setTimeout(() => {
+    haptic(16)
+    restart()
+  }, 650)
+})
+brandEl?.addEventListener('pointerup', () => window.clearTimeout(brandTimer))
+brandEl?.addEventListener('pointerleave', () => window.clearTimeout(brandTimer))
+brandEl?.addEventListener('pointercancel', () => window.clearTimeout(brandTimer))
 window.addEventListener('resize', layoutBoard)
 
 let audioReady = false
