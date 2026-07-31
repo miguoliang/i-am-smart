@@ -4,10 +4,20 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="description" content="词图三消 — 用 KET 闪卡图片和英文单词玩的学习向三消小游戏" />
-    <title>词图三消 · 闪卡英雄</title>
+    <meta name="theme-color" content="#2f7a66" />
+    <meta name="color-scheme" content="light" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="词图三消" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>词图三消</title>
+    <link rel="manifest" href="/i-am-smart/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/i-am-smart/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/i-am-smart/icons/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,6 +26,9 @@
     />
   </head>
   <body>
+    <div id="boot" class="boot" aria-hidden="true">
+      <div class="boot-mark">词图三消</div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

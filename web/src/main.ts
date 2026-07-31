@@ -1,8 +1,17 @@
 import './style.css'
 import { FOOD_WORDS, assetUrl, wordById } from './data/words'
 import { Match3Engine } from './game/engine'
+import {
+  bindNativeChrome,
+  haptic,
+  registerServiceWorker,
+  unlockAudio,
+} from './game/feel'
 import { speakEnglish } from './game/tts'
 import type { CellPos, MatchGroup } from './game/types'
+
+bindNativeChrome()
+registerServiceWorker()
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('#app missing')
@@ -329,6 +338,10 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     )
 
     renderBoard({ clearing })
+    boardWrapEl.classList.remove('punch')
+    void boardWrapEl.offsetWidth
+    boardWrapEl.classList.add('punch')
+    haptic([8, 30, 12])
     await wait(32)
     spawnBursts(matches)
     await wait(420)
@@ -474,6 +487,7 @@ async function trySwipeSwap(
   const result = engine.commitSwap(from, to)
 
   if (!result.ok) {
+    haptic([10, 40, 10])
     await animateSwapReject(from, to)
     renderBoard()
     busy = false
@@ -542,6 +556,7 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
 
   if (!to || !engine.areAdjacent(state.from, to)) {
     clearDragTransforms()
+    haptic(8)
     const aEl = tileEl(state.from.row, state.from.col)
     if (aEl) {
       aEl.classList.add('shake')
@@ -551,6 +566,7 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
     return
   }
 
+  haptic(10)
   await trySwipeSwap(state.from, to, state.dx, state.dy)
 }
 
@@ -579,5 +595,18 @@ app.querySelector('#restart')?.addEventListener('click', restart)
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
 window.addEventListener('resize', layoutBoard)
 
+let audioReady = false
+const armAudio = () => {
+  if (audioReady) return
+  audioReady = true
+  unlockAudio()
+}
+window.addEventListener('pointerdown', armAudio, { once: true })
+
 renderBoard({ enter: true })
 layoutBoard()
+
+const boot = document.querySelector('#boot')
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => boot?.classList.add('hide'))
+})
