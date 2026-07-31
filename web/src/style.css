@@ -745,7 +745,7 @@ button.btn:active {
     2% 35%,
     39% 35%
   );
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 55%, transparent));
+  filter: drop-shadow(0 0 6px rgba(255, 220, 140, 0.5));
 }
 
 .end-burst {
@@ -758,7 +758,7 @@ button.btn:active {
   border-radius: 50%;
   background: var(--c);
   opacity: 0;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 70%, transparent);
+  box-shadow: 0 0 14px rgba(255, 220, 140, 0.55);
   animation: end-burst-out 0.85s var(--delay) var(--ease-soft) forwards;
 }
 
