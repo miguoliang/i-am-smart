@@ -1,53 +1,42 @@
-# 闪卡英雄
+# 词图三消
 
-原生 iOS 英语闪卡 App，基于 CEFR 词库与 SM-2 间隔重复算法。词库打包在 App 内，免登录，打开即用。
+纯前端英语学习小游戏：用 KET 闪卡图片和英文单词玩三消。同一词条的图片格与英文格可以互消。打开即玩，无需登录。
 
-## 功能
+## 玩法
 
-- **学习**：翻转闪卡，「不会 / 会了」两档评分，SM-2 自动调度复习
-- **统计**：总词量、已掌握、学习中、今日待复习、30 天热力图
-- **设置**：考试目标（KET / PET·四级 / 六级 / 雅思·托福）、每日复习上限、美音/英音
+- 相邻交换，横向 / 纵向 ≥3 个相同词条即可消除
+- 图块与英文块属于同一词即可连消
+- 消除时显示中英对照并朗读英文
+- MVP 主题：食物（8 词）
 
-## 技术栈
-
-- Swift 5.9+ / SwiftUI
-- SwiftData（本地持久化）
-- iOS 17.0+
-- 无第三方依赖
-
-## 开发
+## 本地运行
 
 ```bash
-# 在 Xcode 中打开
-open ShankaHero.xcodeproj
-
-# 命令行构建与测试
-xcodebuild -scheme ShankaHero \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
-  build test
+cd web
+npm install
+npm run dev
 ```
+
+浏览器打开带 `/i-am-smart/` 路径的本地地址（见 Vite 终端输出）。
+
+## 构建与部署
+
+```bash
+cd web
+npm run build
+```
+
+产物在 `web/dist/`。推到 `main` 后由 `.github/workflows/deploy-web.yml` 部署到 GitHub Pages（仓库 Settings → Pages → Source 选 **GitHub Actions**）。
+
+预期地址：`https://miguoliang.github.io/i-am-smart/`（若配置了自定义域名则走该域名）。
 
 ## 项目结构
 
 ```
-ShankaHero/           # App 源码
-ShankaHeroTests/      # 单元测试（SM-2、待复习调度）
-ShankaHero.xcodeproj
-web/                  # 纯前端「词图三消」网页游戏（GitHub Pages）
-printables/           # KET 闪卡打印贴纸素材
+web/          # 网页游戏（Vite + TypeScript）
+data/         # CEFR 词库 JSON
+printables/   # KET 闪卡贴纸素材（图片源）
 ```
-
-词库文件位于 `ShankaHero/Resources/Vocabulary/`（cefr-a1.json … cefr-c2.json，共 6784 词条）。
-
-## 网页游戏（词图三消）
-
-用 KET 贴纸图 + 英文单词做的学习向三消：同一词条的图片格与英文格可互消。
-
-```bash
-cd web && npm install && npm run dev
-```
-
-合并到 `main` 后可由 `.github/workflows/deploy-web.yml` 部署到 GitHub Pages（需在仓库 Settings → Pages 选择 GitHub Actions）。详见 `web/README.md`。
 
 ## 许可证
 

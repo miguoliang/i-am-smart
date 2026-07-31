@@ -2,7 +2,8 @@
 -
 
 ## Test plan
-- [ ] Local Xcode build/test when UI or native code changes (no remote iOS CI)
+- [ ] `cd web && npm run build`
+- [ ] Smoke-play the match-3 level in the browser when gameplay changes
 
 ## Notes (optional)
 -

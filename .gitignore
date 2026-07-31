@@ -1,17 +1,15 @@
 # macOS
 .DS_Store
 
-# Xcode
-DerivedData/
-build/
-*.xcuserstate
-*.xccheckout
-*.xcscmblueprint
-xcuserdata/
-
-# Swift Package Manager
-.build/
-.swiftpm/
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Secrets
 .env*
