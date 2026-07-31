@@ -1,23 +1,21 @@
 import { FOOD_WORDS } from '../data/words'
 
-export const WARMUP_LEVELS = 5
-export const REVIEW_LEVELS = 5
+/** Every block of this many clears: either all-image (before any word) or review with learned words. */
+export const LEVELS_PER_BLOCK = 5
 
-const STORAGE_KEY = 'cititu-progress-v1'
-
-export type CampaignPhase = 'warmup' | 'learn' | 'review' | 'complete'
+const STORAGE_KEY = 'cititu-progress-v2'
+const ALL_WORD_IDS = FOOD_WORDS.map((w) => w.id)
 
 export interface ProgressState {
-  /** Successfully cleared play levels (warmup + reviews). */
+  /** Successfully cleared play levels. */
   clearedLevels: number
-  /** Words already taught via the learn screen. */
+  /** Words the player has chosen to learn. */
   unlockedWords: string[]
-  /** Stable teaching order for this save. */
-  learnOrder: string[]
 }
 
 export interface PlaySetup {
-  phase: 'warmup' | 'review'
+  /** No English text tiles yet. */
+  imageOnly: boolean
   /** Words that may appear as English text tiles. */
   textWordIds: string[]
   label: string
@@ -27,23 +25,13 @@ export interface PlaySetup {
 
 export type NextStep =
   | { kind: 'play'; setup: PlaySetup }
-  | { kind: 'learn'; wordId: string }
+  | { kind: 'pick'; candidates: string[] }
   | { kind: 'complete' }
 
-function shuffleIds(ids: string[]): string[] {
-  const copy = [...ids]
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[copy[i], copy[j]] = [copy[j]!, copy[i]!]
-  }
-  return copy
-}
-
-export function createProgress(allWordIds: string[] = FOOD_WORDS.map((w) => w.id)): ProgressState {
+export function createProgress(): ProgressState {
   return {
     clearedLevels: 0,
     unlockedWords: [],
-    learnOrder: shuffleIds(allWordIds),
   }
 }
 
@@ -52,21 +40,12 @@ export function loadProgress(): ProgressState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createProgress()
     const parsed = JSON.parse(raw) as Partial<ProgressState>
-    const base = createProgress()
-    const learnOrder =
-      Array.isArray(parsed.learnOrder) && parsed.learnOrder.length === base.learnOrder.length
-        ? parsed.learnOrder.filter((id): id is string => typeof id === 'string')
-        : base.learnOrder
-    if (learnOrder.length !== base.learnOrder.length) return createProgress()
-
     const unlockedWords = Array.isArray(parsed.unlockedWords)
-      ? parsed.unlockedWords.filter((id): id is string => learnOrder.includes(id))
+      ? parsed.unlockedWords.filter((id): id is string => ALL_WORD_IDS.includes(id))
       : []
-
     return {
       clearedLevels: Math.max(0, Number(parsed.clearedLevels) || 0),
       unlockedWords,
-      learnOrder,
     }
   } catch {
     return createProgress()
@@ -78,7 +57,9 @@ export function saveProgress(state: ProgressState): void {
 }
 
 export function unlockWord(state: ProgressState, wordId: string): ProgressState {
-  if (state.unlockedWords.includes(wordId)) return state
+  if (!ALL_WORD_IDS.includes(wordId) || state.unlockedWords.includes(wordId)) {
+    return state
+  }
   const next = {
     ...state,
     unlockedWords: [...state.unlockedWords, wordId],
@@ -96,50 +77,38 @@ export function markLevelCleared(state: ProgressState): ProgressState {
   return next
 }
 
-/** What the player should see next based on saved progress. */
+export function remainingWordIds(state: ProgressState): string[] {
+  return ALL_WORD_IDS.filter((id) => !state.unlockedWords.includes(id))
+}
+
+/**
+ * Progression:
+ * - Levels 1–5: all images
+ * - Pick one picture and learn its word
+ * - Next 5 levels: that word can appear as text
+ * - Pick another picture, learn, next 5 levels… until all words are learned
+ */
 export function getNextStep(state: ProgressState): NextStep {
-  const totalWords = state.learnOrder.length
-
-  if (state.clearedLevels < WARMUP_LEVELS) {
-    const n = state.clearedLevels + 1
-    return {
-      kind: 'play',
-      setup: {
-        phase: 'warmup',
-        textWordIds: [],
-        goalFocusIds: state.learnOrder,
-        label: `热身 ${n}/${WARMUP_LEVELS}`,
-      },
-    }
-  }
-
-  const reviewsDone = state.clearedLevels - WARMUP_LEVELS
   const unlocked = state.unlockedWords.length
+  const blocksDone = Math.floor(state.clearedLevels / LEVELS_PER_BLOCK)
 
-  if (unlocked < totalWords && reviewsDone >= unlocked * REVIEW_LEVELS) {
-    const wordId = state.learnOrder[unlocked]
-    if (!wordId) return { kind: 'complete' }
-    return { kind: 'learn', wordId }
+  // After every 5 clears, if we still owe a newly learned word for that block, pick one.
+  if (unlocked < blocksDone) {
+    const candidates = remainingWordIds(state)
+    if (candidates.length === 0) return { kind: 'complete' }
+    return { kind: 'pick', candidates }
   }
 
-  if (unlocked === 0) {
-    const wordId = state.learnOrder[0]
-    if (!wordId) return { kind: 'complete' }
-    return { kind: 'learn', wordId }
-  }
+  const levelNum = state.clearedLevels + 1
+  const imageOnly = unlocked === 0
 
-  if (unlocked >= totalWords && reviewsDone >= unlocked * REVIEW_LEVELS) {
-    return { kind: 'complete' }
-  }
-
-  const levelInReview = reviewsDone - (unlocked - 1) * REVIEW_LEVELS + 1
   return {
     kind: 'play',
     setup: {
-      phase: 'review',
+      imageOnly,
       textWordIds: [...state.unlockedWords],
-      goalFocusIds: [...state.unlockedWords],
-      label: `复习 ${levelInReview}/${REVIEW_LEVELS} · 已学${unlocked}词`,
+      goalFocusIds: imageOnly ? ALL_WORD_IDS : [...state.unlockedWords],
+      label: `第 ${levelNum} 关`,
     },
   }
 }

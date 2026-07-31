@@ -63,7 +63,7 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
-        <div class="hud-level" id="level-chip">热身 1/5</div>
+        <div class="hud-level" id="level-chip">第 1 关</div>
         <section class="goals-bar" aria-label="收集目标">
           <div class="goal-grid" id="goals"></div>
         </section>
@@ -95,13 +95,18 @@ app.innerHTML = `
       </div>
     </div>
     <div class="learn" id="learn">
-      <div class="learn-card">
+      <div class="learn-pick" id="learn-pick">
+        <p class="learn-kicker">选一张图</p>
+        <h2 class="learn-pick-title">学习它的英文</h2>
+        <div class="learn-pick-grid" id="learn-pick-grid"></div>
+      </div>
+      <div class="learn-card" id="learn-card" hidden>
         <p class="learn-kicker">新单词</p>
         <img class="learn-img" id="learn-img" alt="" />
         <h2 class="learn-en" id="learn-en"></h2>
         <p class="learn-zh" id="learn-zh"></p>
         <button class="btn learn-speak" type="button" id="learn-speak">听发音</button>
-        <button class="btn end-btn" type="button" id="learn-go">开始复习</button>
+        <button class="btn end-btn" type="button" id="learn-go">学会了，继续</button>
       </div>
     </div>
   </div>
@@ -125,6 +130,9 @@ const endGoalsEl = app.querySelector<HTMLDivElement>('#end-goals')!
 const endFxEl = app.querySelector<HTMLDivElement>('#end-fx')!
 const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 const learnEl = app.querySelector<HTMLDivElement>('#learn')!
+const learnPickEl = app.querySelector<HTMLDivElement>('#learn-pick')!
+const learnPickGrid = app.querySelector<HTMLDivElement>('#learn-pick-grid')!
+const learnCardEl = app.querySelector<HTMLDivElement>('#learn-card')!
 const learnImg = app.querySelector<HTMLImageElement>('#learn-img')!
 const learnEn = app.querySelector<HTMLHeadingElement>('#learn-en')!
 const learnZh = app.querySelector<HTMLParagraphElement>('#learn-zh')!
@@ -494,6 +502,9 @@ function hideOverlay(): void {
 
 function hideLearn(): void {
   learnEl.classList.remove('show')
+  learnPickEl.hidden = false
+  learnCardEl.hidden = true
+  learnPickGrid.replaceChildren()
   pendingLearnWordId = null
 }
 
@@ -541,8 +552,8 @@ function showComplete(): void {
   endBadgeEl.textContent = 'MASTER'
   overlayTitle.textContent = '全部学会'
   endMetaEl.textContent = '食物词都学完啦'
-  overlayBtn.textContent = '再玩热身'
-  endGoalsEl.innerHTML = progress.learnOrder
+  overlayBtn.textContent = '从第 1 关再来'
+  endGoalsEl.innerHTML = progress.unlockedWords
     .map((id) => {
       const word = wordById(id)!
       return `
@@ -558,19 +569,37 @@ function showComplete(): void {
   overlayEl.classList.add('show', 'is-win')
 }
 
-function showLearn(wordId: string): void {
+function showLearnCard(wordId: string): void {
   const word = wordById(wordId)
   if (!word) return
-  hideOverlay()
-  clearHint()
-  busy = true
   pendingLearnWordId = wordId
+  learnPickEl.hidden = true
+  learnCardEl.hidden = false
   learnImg.src = assetUrl(word.image)
   learnImg.alt = word.english
   learnEn.textContent = word.english
   learnZh.textContent = word.chinese
+  window.setTimeout(() => speakEnglish(word.english), 200)
+}
+
+function showPick(candidates: string[]): void {
+  hideOverlay()
+  clearHint()
+  busy = true
+  pendingLearnWordId = null
+  learnPickEl.hidden = false
+  learnCardEl.hidden = true
+  learnPickGrid.innerHTML = candidates
+    .map((id) => {
+      const word = wordById(id)!
+      return `
+        <button class="learn-pick-item" type="button" data-word-id="${word.id}" aria-label="${word.chinese}">
+          <img src="${assetUrl(word.image)}" alt="${word.english}" />
+        </button>
+      `
+    })
+    .join('')
   learnEl.classList.add('show')
-  window.setTimeout(() => speakEnglish(word.english), 280)
 }
 
 function startPlay(setup: PlaySetup): void {
@@ -586,10 +615,10 @@ function startPlay(setup: PlaySetup): void {
   engine.configureRound({
     wordIds: ALL_WORD_IDS,
     textWordIds,
-    wordTileChance: setup.phase === 'warmup' ? 0 : 0.48,
+    wordTileChance: setup.imageOnly ? 0 : 0.48,
     goalFocusIds: setup.goalFocusIds,
     moves: 28,
-    maxGoals: setup.phase === 'warmup' ? 3 : Math.min(3, Math.max(2, textWordIds.length)),
+    maxGoals: setup.imageOnly ? 3 : Math.min(3, Math.max(2, textWordIds.length)),
     goalPerWord: 3,
   })
 
@@ -603,8 +632,8 @@ function startPlay(setup: PlaySetup): void {
 
 function continueCampaign(): void {
   const step = getNextStep(progress)
-  if (step.kind === 'learn') {
-    showLearn(step.wordId)
+  if (step.kind === 'pick') {
+    showPick(step.candidates)
     return
   }
   if (step.kind === 'complete') {
@@ -631,7 +660,6 @@ function onOverlayAction(): void {
     progress = {
       clearedLevels: 0,
       unlockedWords: [],
-      learnOrder: progress.learnOrder,
     }
     saveProgress(progress)
     continueCampaign()
@@ -992,6 +1020,15 @@ learnSpeakBtn.addEventListener('click', () => {
     const word = wordById(pendingLearnWordId)
     if (word) speakEnglish(word.english)
   }
+})
+learnPickGrid.addEventListener('click', (event) => {
+  const btn = (event.target as HTMLElement | null)?.closest?.(
+    '.learn-pick-item',
+  ) as HTMLButtonElement | null
+  const wordId = btn?.dataset.wordId
+  if (!wordId) return
+  haptic(10)
+  showLearnCard(wordId)
 })
 
 // Long-press moves badge to retry the current level.

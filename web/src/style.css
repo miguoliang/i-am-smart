@@ -513,8 +513,9 @@ button.btn:active {
   animation: overlay-veil-in 0.4s var(--ease-soft) both;
 }
 
+.learn-pick,
 .learn-card {
-  width: min(100%, 340px);
+  width: min(100%, 360px);
   padding: 28px 22px 22px;
   border-radius: 28px;
   background: linear-gradient(180deg, #fffaf0 0%, #ffe4a8 100%);
@@ -523,6 +524,43 @@ button.btn:active {
     0 18px 40px rgba(16, 40, 32, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
   animation: end-content-in 0.55s var(--ease-soft) both;
+}
+
+.learn-pick-title {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+
+.learn-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.learn-pick-item {
+  appearance: none;
+  border: none;
+  border-radius: 16px;
+  aspect-ratio: 1;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.learn-pick-item:active {
+  transform: scale(0.94);
+}
+
+.learn-pick-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
 }
 
 .learn-kicker {
