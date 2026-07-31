@@ -94,10 +94,6 @@ function boardMetrics(): { size: number; gap: number; pad: number } {
   return { size, gap, pad }
 }
 
-function cellSize(): number {
-  return boardMetrics().size
-}
-
 function stepSize(): number {
   const { size, gap } = boardMetrics()
   return size + gap
