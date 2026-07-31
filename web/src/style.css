@@ -356,6 +356,12 @@ body {
   transition: none;
 }
 
+.tile.hint {
+  z-index: 4;
+  animation: tile-hint 1.15s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 236, 170, 0.85));
+}
+
 .tile.clearing {
   animation: tile-clear 0.48s var(--ease-soft) forwards;
   pointer-events: none;
@@ -553,6 +559,16 @@ button.btn:active {
   }
   80% {
     transform: translateX(3px);
+  }
+}
+
+@keyframes tile-hint {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
   }
 }
 
