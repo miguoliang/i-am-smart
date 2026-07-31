@@ -20,8 +20,9 @@
   --space: 4px;
   --font-display: 'Baloo 2', 'Noto Sans SC', sans-serif;
   --font-body: 'Nunito', 'Noto Sans SC', sans-serif;
-  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-pop: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --ease-snap: cubic-bezier(0.33, 0.9, 0.32, 1);
+  --ease-pop: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --ease-soft: cubic-bezier(0.4, 0.0, 0.2, 1);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   color: var(--ink);
@@ -304,7 +305,7 @@ body {
     14px -10px 0 -2px #ffb14a,
     -12px -8px 0 -2px #fff6c8,
     10px 12px 0 -2px #ffd36a;
-  animation: burst-pop 0.45s var(--ease-snap) forwards;
+  animation: burst-pop 0.58s var(--ease-soft) forwards;
 }
 
 .tile {
@@ -355,31 +356,31 @@ body {
 }
 
 .tile.clearing {
-  animation: tile-clear 0.34s var(--ease-snap) forwards;
+  animation: tile-clear 0.5s var(--ease-soft) forwards;
   pointer-events: none;
   z-index: 3;
   transition: none;
 }
 
 .tile.falling {
-  animation: tile-fall 0.38s var(--ease-snap) both;
+  animation: tile-fall 0.55s var(--ease-soft) both;
   transition: none;
   z-index: 2;
 }
 
 .tile.spawning {
-  animation: tile-spawn 0.4s var(--ease-snap) both;
+  animation: tile-spawn 0.58s var(--ease-soft) both;
   --drop: 1;
   transition: none;
   z-index: 2;
 }
 
 .tile.enter {
-  animation: tile-enter 0.4s calc(var(--stagger, 0) * 28ms) var(--ease-snap) both;
+  animation: tile-enter 0.52s calc(var(--stagger, 0) * 36ms) var(--ease-soft) both;
 }
 
 .tile.shake {
-  animation: tile-shake 0.38s ease;
+  animation: tile-shake 0.48s ease;
 }
 
 .tile img {
@@ -493,12 +494,12 @@ button.btn:active {
     transform: scale(1);
     opacity: 1;
   }
-  70% {
-    transform: scale(0.85);
-    opacity: 0.55;
+  45% {
+    transform: scale(1.04);
+    opacity: 0.9;
   }
   100% {
-    transform: scale(0.4);
+    transform: scale(0.55);
     opacity: 0;
   }
 }
