@@ -416,6 +416,8 @@ function clearTilePaint(btn: HTMLButtonElement): void {
 }
 
 function resetTileMotion(btn: HTMLButtonElement): void {
+  // Kill WAAPI first while transitions are disabled by motion classes / CSS.
+  btn.style.transition = 'none'
   btn.getAnimations().forEach((anim) => anim.cancel())
   btn.style.transform = ''
   btn.style.opacity = ''
@@ -431,6 +433,17 @@ function resetTileMotion(btn: HTMLButtonElement): void {
     'swapping',
     'hint',
   )
+  // Clear the inline transition override on the next frame.
+  requestAnimationFrame(() => {
+    if (
+      !btn.classList.contains('swapping') &&
+      !btn.classList.contains('clearing') &&
+      !btn.classList.contains('falling') &&
+      !btn.classList.contains('spawning')
+    ) {
+      btn.style.transition = ''
+    }
+  })
 }
 
 function renderEndGoals(snap: GameSnapshot): void {
@@ -745,40 +758,100 @@ function renderBoard(opts: RenderOptions = {}): void {
   syncOverlay(snap)
 }
 
+/**
+ * After a successful swap animation, drop WAAPI transforms and sync cell art
+ * in one synchronous turn so nothing eases back and clear can start cleanly.
+ */
+function bakeBoardAfterSwap(): void {
+  const snap = engine.snapshot()
+  const slots = ensureBoardSlots()
+  for (let i = 0; i < snap.cells.length; i++) {
+    const tile = snap.cells[i]
+    const btn = slots[i]!
+    const row = Math.floor(i / snap.cols)
+    const col = i % snap.cols
+    btn.dataset.row = String(row)
+    btn.dataset.col = String(col)
+
+    btn.style.transition = 'none'
+    btn.getAnimations().forEach((anim) => anim.cancel())
+    btn.style.transform = ''
+    btn.style.opacity = ''
+    btn.classList.remove(
+      'clearing',
+      'falling',
+      'spawning',
+      'enter',
+      'shake',
+      'swapping',
+      'hint',
+    )
+
+    if (!tile) {
+      btn.disabled = true
+      btn.classList.remove('word', 'image')
+      btn.classList.add('empty')
+      clearTilePaint(btn)
+      continue
+    }
+
+    btn.disabled = false
+    btn.classList.remove('empty')
+    paintTile(btn, tile)
+    btn.classList.toggle('word', tile.kind === 'word')
+    btn.classList.toggle('image', tile.kind === 'image')
+  }
+  void boardEl.offsetWidth
+}
+
 /** Add clear animation only on matched cells — leave the rest untouched. */
 function applyClearing(clearing: Set<number>): void {
   const slots = ensureBoardSlots()
   for (const i of clearing) {
     const btn = slots[i]
     if (!btn || btn.classList.contains('empty')) continue
+    btn.style.transition = 'none'
     btn.getAnimations().forEach((anim) => anim.cancel())
     btn.style.transform = ''
     btn.style.opacity = ''
-    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'clearing')
+    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'clearing', 'hint')
+  }
+  // Force style flush so re-adding `clearing` always restarts the CSS animation.
+  void boardEl.offsetWidth
+  for (const i of clearing) {
+    const btn = slots[i]
+    if (!btn || btn.classList.contains('empty')) continue
     btn.classList.add('clearing')
   }
 }
 
 function waitForClearAnim(fallbackMs: number): Promise<void> {
-  const clearingEl = boardEl.querySelector('.tile.clearing')
-  if (!clearingEl) return wait(fallbackMs)
+  const clearingEls = [...boardEl.querySelectorAll('.tile.clearing')]
+  if (clearingEls.length === 0) return wait(fallbackMs)
+
   return new Promise((resolve) => {
     let settled = false
+    let remaining = clearingEls.length
     const finish = () => {
       if (settled) return
       settled = true
       resolve()
     }
     const timer = window.setTimeout(finish, fallbackMs)
-    clearingEl.addEventListener(
-      'animationend',
-      (event) => {
-        if (event.target !== clearingEl) return
-        window.clearTimeout(timer)
-        finish()
-      },
-      { once: true },
-    )
+    for (const el of clearingEls) {
+      el.addEventListener(
+        'animationend',
+        (event) => {
+          if (event.target !== el) return
+          remaining -= 1
+          if (remaining <= 0) {
+            window.clearTimeout(timer)
+            finish()
+          }
+        },
+        { once: true },
+      )
+    }
   })
 }
 
@@ -929,9 +1002,9 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     return
   }
 
-  // Bake the swapped board into the DOM before clear starts, so clear
-  // only animates matched cells instead of rebuilding the whole grid.
-  renderBoard()
+  // Update cell art while swap transforms are still applied, then drop them
+  // without a CSS tween — prevents the "slide back then clear fails" glitch.
+  bakeBoardAfterSwap()
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false

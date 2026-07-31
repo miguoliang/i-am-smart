@@ -331,9 +331,8 @@ body {
   padding: 0;
   overflow: hidden;
   cursor: grab;
-  transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease;
+  /* Avoid transitioning transform — it turns WAAPI cancel into a visible snap-back. */
+  transition: box-shadow 0.14s ease;
   backface-visibility: hidden;
 }
 
