@@ -389,11 +389,10 @@ body {
 }
 
 .tile.clearing {
-  animation: tile-clear 0.48s var(--ease-soft) forwards;
+  animation: tile-clear 0.42s var(--ease-soft) forwards;
   pointer-events: none;
   z-index: 3;
   transition: none;
-  will-change: transform, opacity;
 }
 
 .tile.falling {
@@ -909,12 +908,8 @@ button.btn:active {
     transform: scale(1);
     opacity: 1;
   }
-  45% {
-    transform: scale(1.04);
-    opacity: 0.9;
-  }
   100% {
-    transform: scale(0.55);
+    transform: scale(0.78);
     opacity: 0;
   }
 }

@@ -761,8 +761,10 @@ function renderBoard(opts: RenderOptions = {}): void {
 /**
  * After a successful swap animation, drop WAAPI transforms and sync cell art
  * in one synchronous turn so nothing eases back and clear can start cleanly.
+ * When `clearing` is provided, matched cells start clearing in the same turn —
+ * avoids a resting-state paint frame that reads as a pre-clear flash.
  */
-function bakeBoardAfterSwap(): void {
+function bakeBoardAfterSwap(clearing?: Set<number>): void {
   const snap = engine.snapshot()
   const slots = ensureBoardSlots()
   for (let i = 0; i < snap.cells.length; i++) {
@@ -800,8 +802,8 @@ function bakeBoardAfterSwap(): void {
     paintTile(btn, tile)
     btn.classList.toggle('word', tile.kind === 'word')
     btn.classList.toggle('image', tile.kind === 'image')
+    if (clearing?.has(i)) btn.classList.add('clearing')
   }
-  void boardEl.offsetWidth
 }
 
 /** Add clear animation only on matched cells — leave the rest untouched. */
@@ -810,17 +812,17 @@ function applyClearing(clearing: Set<number>): void {
   for (const i of clearing) {
     const btn = slots[i]
     if (!btn || btn.classList.contains('empty')) continue
+
     btn.style.transition = 'none'
+    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'hint')
+
+    // Already started in bakeBoardAfterSwap — do not restart (restart needs a
+    // reflow that paints a full-opacity rest frame = visible flash).
+    if (btn.classList.contains('clearing')) continue
+
     btn.getAnimations().forEach((anim) => anim.cancel())
     btn.style.transform = ''
     btn.style.opacity = ''
-    btn.classList.remove('swapping', 'falling', 'spawning', 'shake', 'enter', 'clearing', 'hint')
-  }
-  // Force style flush so re-adding `clearing` always restarts the CSS animation.
-  void boardEl.offsetWidth
-  for (const i of clearing) {
-    const btn = slots[i]
-    if (!btn || btn.classList.contains('empty')) continue
     btn.classList.add('clearing')
   }
 }
@@ -956,7 +958,7 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     applyClearing(clearing)
     haptic([8, 30, 12])
     spawnBursts(matches)
-    await waitForClearAnim(520)
+    await waitForClearAnim(480)
 
     const cleared = engine.clearMatches(matches)
     const settle = engine.settle()
@@ -1048,9 +1050,12 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     return
   }
 
-  // Update cell art while swap transforms are still applied, then drop them
-  // without a CSS tween — prevents the "slide back then clear fails" glitch.
-  bakeBoardAfterSwap()
+  // Bake swapped art and start clear in the same turn — no rest-frame flash.
+  const clearing = new Set<number>()
+  for (const g of result.matches) {
+    for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
+  }
+  bakeBoardAfterSwap(clearing)
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false
