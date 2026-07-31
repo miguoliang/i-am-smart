@@ -62,13 +62,18 @@ app.innerHTML = `
           <span class="toast-en" id="toast-en"></span>
           <span class="toast-zh" id="toast-zh"></span>
         </div>
-        <div class="overlay" id="overlay">
-          <div class="overlay-card">
-            <h2 id="overlay-title"></h2>
-            <p id="overlay-body"></p>
-            <button class="btn" type="button" id="overlay-btn">再来一局</button>
-          </div>
-        </div>
+      </div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="end-sky" aria-hidden="true"></div>
+      <div class="end-rays" aria-hidden="true"></div>
+      <div class="end-fx" id="end-fx" aria-hidden="true"></div>
+      <div class="end-content">
+        <span class="end-badge" id="end-badge"></span>
+        <h2 class="end-title" id="overlay-title"></h2>
+        <p class="end-meta" id="end-meta"></p>
+        <div class="end-goals" id="end-goals"></div>
+        <button class="btn end-btn" type="button" id="overlay-btn">再来一局</button>
       </div>
     </div>
   </div>
@@ -84,7 +89,10 @@ const toastEn = app.querySelector<HTMLSpanElement>('#toast-en')!
 const toastZh = app.querySelector<HTMLSpanElement>('#toast-zh')!
 const overlayEl = app.querySelector<HTMLDivElement>('#overlay')!
 const overlayTitle = app.querySelector<HTMLHeadingElement>('#overlay-title')!
-const overlayBody = app.querySelector<HTMLParagraphElement>('#overlay-body')!
+const endBadgeEl = app.querySelector<HTMLSpanElement>('#end-badge')!
+const endMetaEl = app.querySelector<HTMLParagraphElement>('#end-meta')!
+const endGoalsEl = app.querySelector<HTMLDivElement>('#end-goals')!
+const endFxEl = app.querySelector<HTMLDivElement>('#end-fx')!
 const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
@@ -378,20 +386,96 @@ function resetTileMotion(btn: HTMLButtonElement): void {
   )
 }
 
+function renderEndGoals(snap: GameSnapshot): void {
+  endGoalsEl.innerHTML = snap.goals
+    .map((g) => {
+      const word = wordById(g.wordId)!
+      const done = g.current >= g.target
+      const left = Math.max(0, g.target - g.current)
+      return `
+        <div class="end-goal ${done ? 'is-done' : 'is-miss'}" title="${word.english}">
+          <img src="${assetUrl(word.image)}" alt="${word.english}" />
+          <span class="end-goal-mark">${done ? '✓' : left}</span>
+        </div>
+      `
+    })
+    .join('')
+}
+
+const WIN_CONFETTI = ['#ffd36a', '#fff6c8', '#7dcea0', '#ff9f68', '#ffe08a', '#5fb396', '#fffaf0']
+
+function spawnEndFx(kind: 'win' | 'lose'): void {
+  endFxEl.replaceChildren()
+
+  if (kind === 'lose') {
+    for (let i = 0; i < 10; i++) {
+      const spark = document.createElement('span')
+      spark.className = 'end-ember'
+      spark.style.setProperty('--x', `${10 + Math.random() * 80}%`)
+      spark.style.setProperty('--delay', `${Math.random() * 0.6}s`)
+      spark.style.setProperty('--dur', `${1.1 + Math.random() * 0.9}s`)
+      spark.style.setProperty('--drift', `${(Math.random() * 36 - 18).toFixed(1)}px`)
+      endFxEl.appendChild(spark)
+    }
+    return
+  }
+
+  for (let i = 0; i < 42; i++) {
+    const piece = document.createElement('span')
+    const shape = i % 4 === 0 ? 'ribbon' : i % 4 === 1 ? 'star' : 'dot'
+    piece.className = `confetti confetti-${shape}`
+    piece.style.setProperty('--x', `${Math.random() * 100}%`)
+    piece.style.setProperty('--delay', `${Math.random() * 1.35}s`)
+    piece.style.setProperty('--dur', `${2 + Math.random() * 2.2}s`)
+    piece.style.setProperty('--rot', `${Math.floor(Math.random() * 720 - 360)}deg`)
+    piece.style.setProperty('--drift', `${(Math.random() * 120 - 60).toFixed(1)}px`)
+    piece.style.setProperty('--scale', `${(0.65 + Math.random() * 1.1).toFixed(2)}`)
+    piece.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
+    endFxEl.appendChild(piece)
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const burst = document.createElement('span')
+    burst.className = 'end-burst'
+    const angle = (i / 12) * Math.PI * 2
+    burst.style.setProperty('--dx', `${Math.cos(angle) * (90 + Math.random() * 70)}px`)
+    burst.style.setProperty('--dy', `${Math.sin(angle) * (90 + Math.random() * 70)}px`)
+    burst.style.setProperty('--delay', `${0.05 + Math.random() * 0.18}s`)
+    burst.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
+    endFxEl.appendChild(burst)
+  }
+}
+
+function hideOverlay(): void {
+  overlayEl.classList.remove('show', 'is-win', 'is-lose')
+  endFxEl.replaceChildren()
+  endGoalsEl.replaceChildren()
+}
+
 function syncOverlay(snap: GameSnapshot): void {
   if (snap.won) {
-    overlayTitle.textContent = '过关！'
-    overlayBody.textContent =
-      snap.movesLeft > 0
-        ? `目标收集齐了，还剩 ${snap.movesLeft} 步。`
-        : '刚好在步数内完成目标，太棒了！'
-    overlayEl.classList.add('show')
+    clearHint()
+    endBadgeEl.textContent = 'CLEAR'
+    overlayTitle.textContent = '过关'
+    endMetaEl.textContent =
+      snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步` : '完美通关'
+    renderEndGoals(snap)
+    spawnEndFx('win')
+    overlayEl.classList.remove('is-lose')
+    overlayEl.classList.add('show', 'is-win')
+    haptic([10, 40, 18, 40, 24])
   } else if (snap.lost) {
-    overlayTitle.textContent = '步数用完'
-    overlayBody.textContent = '再试一局，在步数内收集完目标吧。'
-    overlayEl.classList.add('show')
+    clearHint()
+    endBadgeEl.textContent = 'RETRY'
+    overlayTitle.textContent = '失败'
+    endMetaEl.textContent = '步数用尽'
+    renderEndGoals(snap)
+    spawnEndFx('lose')
+    overlayEl.classList.remove('is-win')
+    overlayEl.classList.add('show', 'is-lose')
+    haptic([20, 50, 20])
   } else {
-    overlayEl.classList.remove('show')
+    hideOverlay()
   }
 }
 
@@ -738,7 +822,7 @@ function restart(): void {
   boardEl.classList.remove('is-dragging')
   clearHint()
   engine.reset()
-  overlayEl.classList.remove('show')
+  hideOverlay()
   renderBoard({ enter: true })
   renderGoals()
   scheduleHint(1600)
