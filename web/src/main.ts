@@ -21,7 +21,8 @@ const engine = new Match3Engine({
   cols: 6,
   rows: 6,
   moves: 24,
-  goalPerWord: 2,
+  maxGoals: 3,
+  goalPerWord: 3,
 })
 
 let busy = false

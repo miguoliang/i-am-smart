@@ -199,21 +199,25 @@ body {
 }
 
 .goal-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
 }
 
 .goal {
   position: relative;
+  width: min(64px, 18vw);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   border-radius: 14px;
   background: transparent;
   border: none;
-  overflow: hidden;
+  overflow: visible;
   transition: transform 0.25s var(--ease-pop);
+  flex: 0 0 auto;
 }
 
 .goal.done {
@@ -236,17 +240,17 @@ body {
 
 .goal-count {
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  min-width: 1.15rem;
-  height: 1.15rem;
+  right: -4px;
+  bottom: -4px;
+  min-width: 1.25rem;
+  height: 1.25rem;
   padding: 0 4px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   background: #fff;
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
   border: 1px solid var(--line);
@@ -671,7 +675,11 @@ button.btn:active {
   }
 
   .goal-grid {
-    gap: 2px;
+    gap: 10px;
+  }
+
+  .goal {
+    width: min(56px, 20vw);
   }
 }
 
