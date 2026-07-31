@@ -40,24 +40,76 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 body {
   min-height: 100dvh;
+  min-height: var(--vvh, 100dvh);
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 230, 170, 0.35), transparent 42%),
     linear-gradient(180deg, #6fbfa8 0%, #3d8f78 48%, #2b6758 100%);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 #app {
   height: 100dvh;
+  height: var(--vvh, 100dvh);
   width: 100%;
   margin: 0 auto;
   padding:
-    calc(8px + var(--safe-top))
-    8px
-    calc(8px + var(--safe-bottom));
+    calc(6px + var(--safe-top))
+    6px
+    calc(6px + var(--safe-bottom));
   display: grid;
+  position: relative;
+}
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #6fbfa8 0%, #2f7a66 100%);
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.boot.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-mark {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 9vw, 2.6rem);
+  color: #fff8ec;
+  text-shadow: 0 3px 0 rgba(20, 50, 40, 0.25);
+  animation: boot-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes boot-pulse {
+  from {
+    transform: scale(0.96);
+    opacity: 0.88;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (display-mode: standalone) {
+  body {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255, 230, 170, 0.28), transparent 42%),
+      linear-gradient(180deg, #5fb396 0%, #2f7a66 55%, #245847 100%);
+  }
 }
 
 .shell {
@@ -217,6 +269,23 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   justify-self: center;
   align-self: start;
+  transform: translateZ(0);
+}
+
+.board-wrap.punch {
+  animation: board-punch 0.28s var(--ease-snap);
+}
+
+@keyframes board-punch {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.985);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .board {

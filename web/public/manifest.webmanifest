@@ -1,0 +1,26 @@
+{
+  "name": "词图三消",
+  "short_name": "词图三消",
+  "description": "图片和英文单词可以互消的学习向三消小游戏",
+  "start_url": "/i-am-smart/",
+  "scope": "/i-am-smart/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2f7a66",
+  "theme_color": "#2f7a66",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/i-am-smart/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/i-am-smart/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

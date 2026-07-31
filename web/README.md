@@ -21,6 +21,13 @@ npm run build
 
 首次部署前需在仓库 Settings → Pages 将 Source 设为 **GitHub Actions**（private 仓库还需 Pro/Team，或改为 public）。详见根目录 `README.md`。
 
+## 接近原生体验
+
+- 支持添加到手机主屏幕（PWA / standalone）
+- 禁止页面橡皮筋滚动抢手势
+- 消除时轻微震动反馈（支持的手机）
+- 离线可打开最近缓存的页面壳
+
 ## 玩法（MVP）
 
 - 主题：食物（8 词）
