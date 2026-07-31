@@ -15,11 +15,22 @@ const engine = new Match3Engine({
   goalPerWord: 2,
 })
 
-let selected: CellPos | null = null
 let busy = false
 let toastTimer = 0
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
+
+type DragState = {
+  pointerId: number
+  from: CellPos
+  startX: number
+  startY: number
+  dx: number
+  dy: number
+  axis: 'x' | 'y' | null
+}
+
+let drag: DragState | null = null
 
 app.innerHTML = `
   <div class="shell">
@@ -42,7 +53,7 @@ app.innerHTML = `
     <section class="panel goals">
       <h2 class="goals-title">食物关 · 收集目标</h2>
       <div class="goal-grid" id="goals"></div>
-      <p class="hint">先点一格再点相邻格交换；连成 3 个同词会放大消失、掉落补位。</p>
+      <p class="hint">按住格子向上下左右滑一下即可交换；连成 3 个同词会消除补位。</p>
     </section>
 
     <div class="board-wrap">
@@ -88,13 +99,17 @@ function cellSize(): number {
   return (boardEl.clientWidth - gap * (engine.cols - 1)) / engine.cols
 }
 
+function stepSize(): number {
+  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
+  return cellSize() + gap
+}
+
 function tileEl(row: number, col: number): HTMLElement | null {
   return boardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`)
 }
 
 function pulseStat(el: HTMLElement): void {
   el.classList.remove('pulse')
-  // restart animation
   void el.offsetWidth
   el.classList.add('pulse')
 }
@@ -191,9 +206,6 @@ function renderBoard(opts: RenderOptions = {}): void {
 
       btn.dataset.uid = String(tile.uid)
       if (tile.kind === 'word') btn.classList.add('word')
-      if (selected && selected.row === row && selected.col === col) {
-        btn.classList.add('selected')
-      }
       if (opts.clearing?.has(i)) btn.classList.add('clearing')
       const fall = opts.fallRows?.get(tile.uid)
       if (fall != null && fall > 0) {
@@ -223,7 +235,6 @@ function renderBoard(opts: RenderOptions = {}): void {
         btn.appendChild(label)
       }
 
-      btn.addEventListener('click', () => onTileClick(row, col))
       boardEl.appendChild(btn)
     }
   }
@@ -239,14 +250,6 @@ function renderBoard(opts: RenderOptions = {}): void {
   } else {
     overlayEl.classList.remove('show')
   }
-}
-
-function clearSelectionStyles(): void {
-  boardEl.querySelectorAll('.tile.selected').forEach((el) => {
-    el.classList.remove('selected')
-    ;(el as HTMLElement).style.transform = ''
-    ;(el as HTMLElement).style.animation = 'none'
-  })
 }
 
 function runTranslate(
@@ -266,39 +269,18 @@ function runTranslate(
   return anim.finished.then(() => undefined)
 }
 
-async function animateSwap(a: CellPos, b: CellPos): Promise<void> {
-  clearSelectionStyles()
-  const aEl = tileEl(a.row, a.col)
-  const bEl = tileEl(b.row, b.col)
-  if (!aEl || !bEl) return
-
-  const size = cellSize()
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
-  const step = size + gap
-  const dx = (b.col - a.col) * step
-  const dy = (b.row - a.row) * step
-
-  await Promise.all([
-    runTranslate(aEl, 'translate(0,0) scale(1)', `translate(${dx}px, ${dy}px) scale(1.08)`, 220),
-    runTranslate(bEl, 'translate(0,0) scale(1)', `translate(${-dx}px, ${-dy}px) scale(1.08)`, 220),
-  ])
-}
-
 async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   const aEl = tileEl(a.row, a.col)
   const bEl = tileEl(b.row, b.col)
   if (!aEl || !bEl) return
 
-  const size = cellSize()
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 6
-  const step = size + gap
+  const step = stepSize()
   const dx = (b.col - a.col) * step
   const dy = (b.row - a.row) * step
 
-  // Return from speculative swap pose, then shake.
   await Promise.all([
-    runTranslate(aEl, `translate(${dx}px, ${dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 180),
-    runTranslate(bEl, `translate(${-dx}px, ${-dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 180),
+    runTranslate(aEl, `translate(${dx}px, ${dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 160),
+    runTranslate(bEl, `translate(${-dx}px, ${-dy}px) scale(1.08)`, 'translate(0,0) scale(1)', 160),
   ])
   aEl.getAnimations().forEach((x) => x.cancel())
   bEl.getAnimations().forEach((x) => x.cancel())
@@ -308,7 +290,7 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   bEl.style.transform = ''
   aEl.classList.add('shake')
   bEl.classList.add('shake')
-  await wait(380)
+  await wait(360)
 }
 
 async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
@@ -326,7 +308,6 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
     )
 
     renderBoard({ clearing })
-    // Next frame so CSS clear animation definitely starts on mounted nodes.
     await wait(32)
     spawnBursts(matches)
     await wait(420)
@@ -357,36 +338,118 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
   renderBoard()
 }
 
-async function onTileClick(row: number, col: number): Promise<void> {
-  if (busy || engine.won || engine.lost) return
+function neighborToward(from: CellPos, dx: number, dy: number): CellPos | null {
+  const step = stepSize()
+  const threshold = step * 0.28
+  if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return null
 
-  if (!selected) {
-    selected = { row, col }
-    renderBoard()
-    return
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    const col = from.col + (dx > 0 ? 1 : -1)
+    if (col < 0 || col >= engine.cols) return null
+    return { row: from.row, col }
   }
+  const row = from.row + (dy > 0 ? 1 : -1)
+  if (row < 0 || row >= engine.rows) return null
+  return { row, col: from.col }
+}
 
-  if (selected.row === row && selected.col === col) {
-    selected = null
-    renderBoard()
-    return
+function clearDragTransforms(): void {
+  boardEl.querySelectorAll('.tile.dragging, .tile.drag-pair').forEach((node) => {
+    const el = node as HTMLElement
+    el.classList.remove('dragging', 'drag-pair')
+    el.style.transform = ''
+  })
+}
+
+function applyDragVisual(state: DragState): void {
+  const aEl = tileEl(state.from.row, state.from.col)
+  if (!aEl) return
+
+  let dx = state.dx
+  let dy = state.dy
+  const step = stepSize()
+
+  // Lock to one axis after a short move for cleaner swipe feel.
+  if (!state.axis) {
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      state.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'
+    }
   }
+  if (state.axis === 'x') dy = 0
+  if (state.axis === 'y') dx = 0
 
-  const from = selected
-  const to = { row, col }
+  dx = Math.max(-step, Math.min(step, dx))
+  dy = Math.max(-step, Math.min(step, dy))
 
-  if (!engine.areAdjacent(from, to)) {
-    selected = to
-    renderBoard()
-    return
-  }
+  aEl.classList.add('dragging')
+  aEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.06)`
 
+  // Preview the neighbor sliding the opposite way.
+  boardEl.querySelectorAll('.tile.drag-pair').forEach((node) => {
+    const el = node as HTMLElement
+    if (el !== aEl) {
+      el.classList.remove('drag-pair')
+      el.style.transform = ''
+    }
+  })
+
+  const to = neighborToward(state.from, dx, dy)
+  if (!to) return
+  const bEl = tileEl(to.row, to.col)
+  if (!bEl) return
+  bEl.classList.add('drag-pair')
+  bEl.style.transform = `translate(${-dx}px, ${-dy}px)`
+}
+
+async function finishSwipeTo(
+  from: CellPos,
+  to: CellPos,
+  currentDx: number,
+  currentDy: number,
+): Promise<void> {
+  const aEl = tileEl(from.row, from.col)
+  const bEl = tileEl(to.row, to.col)
+  if (!aEl || !bEl) return
+
+  const step = stepSize()
+  const dx = (to.col - from.col) * step
+  const dy = (to.row - from.row) * step
+
+  // Continue from the finger pose to a full swap pose.
+  let fromDx = currentDx
+  let fromDy = currentDy
+  if (to.col !== from.col) fromDy = 0
+  if (to.row !== from.row) fromDx = 0
+  fromDx = Math.max(-step, Math.min(step, fromDx))
+  fromDy = Math.max(-step, Math.min(step, fromDy))
+
+  aEl.classList.add('swapping')
+  bEl.classList.add('swapping')
+  await Promise.all([
+    runTranslate(
+      aEl,
+      `translate(${fromDx}px, ${fromDy}px) scale(1.06)`,
+      `translate(${dx}px, ${dy}px) scale(1.08)`,
+      140,
+    ),
+    runTranslate(
+      bEl,
+      `translate(${-fromDx}px, ${-fromDy}px)`,
+      `translate(${-dx}px, ${-dy}px) scale(1.08)`,
+      140,
+    ),
+  ])
+}
+
+async function trySwipeSwap(
+  from: CellPos,
+  to: CellPos,
+  currentDx: number,
+  currentDy: number,
+): Promise<void> {
   busy = true
-  selected = null
-  clearSelectionStyles()
 
-  // Visual swap first on current board, then commitSwap mutates state.
-  await animateSwap(from, to)
+  await finishSwipeTo(from, to, currentDx, currentDy)
   const result = engine.commitSwap(from, to)
 
   if (!result.ok) {
@@ -401,9 +464,91 @@ async function onTileClick(row: number, col: number): Promise<void> {
   busy = false
 }
 
+function posFromEventTarget(target: EventTarget | null): CellPos | null {
+  const el = (target as HTMLElement | null)?.closest?.('.tile') as HTMLButtonElement | null
+  if (!el || el.classList.contains('empty') || el.disabled) return null
+  const row = Number(el.dataset.row)
+  const col = Number(el.dataset.col)
+  if (!Number.isFinite(row) || !Number.isFinite(col)) return null
+  return { row, col }
+}
+
+function onPointerDown(e: PointerEvent): void {
+  if (busy || engine.won || engine.lost || drag) return
+  if (e.button !== 0 && e.pointerType === 'mouse') return
+
+  const from = posFromEventTarget(e.target)
+  if (!from) return
+
+  drag = {
+    pointerId: e.pointerId,
+    from,
+    startX: e.clientX,
+    startY: e.clientY,
+    dx: 0,
+    dy: 0,
+    axis: null,
+  }
+
+  boardEl.setPointerCapture(e.pointerId)
+  boardEl.classList.add('is-dragging')
+  const aEl = tileEl(from.row, from.col)
+  aEl?.classList.add('dragging')
+  e.preventDefault()
+}
+
+function onPointerMove(e: PointerEvent): void {
+  if (!drag || e.pointerId !== drag.pointerId) return
+  drag.dx = e.clientX - drag.startX
+  drag.dy = e.clientY - drag.startY
+  applyDragVisual(drag)
+  e.preventDefault()
+}
+
+async function onPointerUp(e: PointerEvent): Promise<void> {
+  if (!drag || e.pointerId !== drag.pointerId) return
+
+  const state = drag
+  drag = null
+  boardEl.classList.remove('is-dragging')
+  try {
+    boardEl.releasePointerCapture(e.pointerId)
+  } catch {
+    // ignore if already released
+  }
+
+  const to = neighborToward(state.from, state.dx, state.dy)
+
+  if (!to || !engine.areAdjacent(state.from, to)) {
+    clearDragTransforms()
+    const aEl = tileEl(state.from.row, state.from.col)
+    if (aEl) {
+      aEl.classList.add('shake')
+      await wait(220)
+      aEl.classList.remove('shake')
+    }
+    return
+  }
+
+  await trySwipeSwap(state.from, to, state.dx, state.dy)
+}
+
+function onPointerCancel(e: PointerEvent): void {
+  if (!drag || e.pointerId !== drag.pointerId) return
+  drag = null
+  boardEl.classList.remove('is-dragging')
+  clearDragTransforms()
+}
+
+boardEl.addEventListener('pointerdown', onPointerDown)
+boardEl.addEventListener('pointermove', onPointerMove)
+boardEl.addEventListener('pointerup', onPointerUp)
+boardEl.addEventListener('pointercancel', onPointerCancel)
+
 function restart(): void {
-  selected = null
+  drag = null
   busy = false
+  boardEl.classList.remove('is-dragging')
   engine.reset()
   overlayEl.classList.remove('show')
   renderBoard({ enter: true })
