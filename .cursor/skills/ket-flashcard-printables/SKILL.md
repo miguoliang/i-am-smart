@@ -19,8 +19,8 @@ Reusable workflow for physical sticker / flashcard prototypes. Capture layout an
 
 ## Sources of Truth
 
-- Vocabulary: `ShankaHero/Resources/Vocabulary/cefr-a1.json` + `cefr-a2.json`
-- KET scope: A1 + A2 (`ExamScope` / `ExamWordScope.ket`)
+- Vocabulary: `data/vocabulary/cefr-a1.json` + `data/vocabulary/cefr-a2.json`
+- KET scope: A1 + A2 levels in those files
 - Existing pack: `printables/ket-flashcards/` (PDF master + preview PNGs + index)
 
 ## Word Selection
@@ -84,5 +84,5 @@ Print note for README: use actual size / 100% scale; borderless printers preferr
 - Illustrate every noun in the vocab “for completeness”
 - Put English/Chinese labels on the sticker sheets unless the user asks
 - Commit multi‑MB preview PNGs
-- Change app code or vocab JSON for a printables-only task
+- Change web game code or vocab JSON for a printables-only task
 - Re-derive card size / margins from scratch — use this skill’s table

@@ -1,6 +1,7 @@
 # Default reviewers
 * @miguoliang
 
-ShankaHero/** @miguoliang
-ShankaHeroTests/** @miguoliang
+web/** @miguoliang
+data/** @miguoliang
+printables/** @miguoliang
 .github/** @miguoliang
