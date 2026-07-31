@@ -214,10 +214,11 @@ body {
 }
 
 .goal.pop {
-  animation: goal-pop 0.5s var(--ease-pop);
+  animation: goal-pop 0.45s var(--ease-pop);
 }
 
 .goal img {
+  display: block;
   width: 86%;
   height: 86%;
   object-fit: contain;
@@ -356,10 +357,11 @@ body {
 }
 
 .tile.clearing {
-  animation: tile-clear 0.5s var(--ease-soft) forwards;
+  animation: tile-clear 0.48s var(--ease-soft) forwards;
   pointer-events: none;
   z-index: 3;
   transition: none;
+  will-change: transform, opacity;
 }
 
 .tile.falling {
