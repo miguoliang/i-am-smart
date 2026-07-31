@@ -27,6 +27,9 @@ const engine = new Match3Engine({
 
 let busy = false
 let toastTimer = 0
+let hintTimer = 0
+
+const HINT_IDLE_MS = 4200
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
 
@@ -138,20 +141,82 @@ function pulseStat(el: HTMLElement): void {
   el.classList.add('pulse')
 }
 
-function showToast(wordId: string): void {
-  const word = wordById(wordId)
-  if (!word) return
-  toastEn.textContent = word.english
-  toastZh.textContent = word.chinese
+function flashToast(en: string, zh: string, speak = false): void {
+  toastEn.textContent = en
+  toastZh.textContent = zh
   toastEl.classList.remove('show')
-  // Avoid forced reflow mid-cascade; restart with a fresh class tick on rAF.
   requestAnimationFrame(() => {
     toastEl.classList.remove('show')
     requestAnimationFrame(() => toastEl.classList.add('show'))
   })
-  window.setTimeout(() => speakEnglish(word.english), 0)
+  if (speak) window.setTimeout(() => speakEnglish(en), 0)
   window.clearTimeout(toastTimer)
   toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1200)
+}
+
+function showToast(wordId: string): void {
+  const word = wordById(wordId)
+  if (!word) return
+  flashToast(word.english, word.chinese, true)
+}
+
+function clearHintVisual(): void {
+  boardEl.querySelectorAll('.tile.hint').forEach((node) => {
+    node.classList.remove('hint')
+  })
+}
+
+function clearHint(): void {
+  window.clearTimeout(hintTimer)
+  hintTimer = 0
+  clearHintVisual()
+}
+
+function showHint(): void {
+  if (busy || engine.won || engine.lost || drag) return
+
+  const moves = engine.findHintMoves()
+  if (moves.length === 0) {
+    void ensurePlayable()
+    return
+  }
+
+  clearHintVisual()
+  const pick = moves[Math.floor(Math.random() * moves.length)]!
+  tileEl(pick.a.row, pick.a.col)?.classList.add('hint')
+  tileEl(pick.b.row, pick.b.col)?.classList.add('hint')
+}
+
+function scheduleHint(delay = HINT_IDLE_MS): void {
+  window.clearTimeout(hintTimer)
+  hintTimer = 0
+  clearHintVisual()
+  if (busy || engine.won || engine.lost) return
+  hintTimer = window.setTimeout(() => showHint(), delay)
+}
+
+async function reshuffleBoard(): Promise<void> {
+  clearHint()
+  busy = true
+  flashToast('Shuffle', '重新排列')
+  haptic([12, 40, 12])
+  engine.shuffleBoard()
+  renderBoard({ enter: true })
+  await wait(480)
+  busy = false
+  scheduleHint()
+}
+
+async function ensurePlayable(): Promise<void> {
+  if (engine.won || engine.lost) {
+    clearHint()
+    return
+  }
+  if (engine.hasValidMove()) {
+    scheduleHint()
+    return
+  }
+  await reshuffleBoard()
 }
 
 function spawnBursts(matches: MatchGroup[]): void {
@@ -310,7 +375,15 @@ function resetTileMotion(btn: HTMLButtonElement): void {
   btn.style.removeProperty('--fall')
   btn.style.removeProperty('--drop')
   btn.style.removeProperty('--stagger')
-  btn.classList.remove('clearing', 'falling', 'spawning', 'enter', 'shake', 'swapping')
+  btn.classList.remove(
+    'clearing',
+    'falling',
+    'spawning',
+    'enter',
+    'shake',
+    'swapping',
+    'hint',
+  )
 }
 
 function syncOverlay(snap: GameSnapshot): void {
@@ -565,6 +638,7 @@ async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
 
 async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
   busy = true
+  clearHint()
 
   await animateSwapTo(from, to)
   const result = engine.commitSwap(from, to)
@@ -575,6 +649,7 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     renderBoard()
     updateHud(false)
     busy = false
+    scheduleHint()
     return
   }
 
@@ -584,6 +659,7 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
   updateHud(true)
   await resolveWithAnimation(result.matches)
   busy = false
+  await ensurePlayable()
 }
 
 async function commitSwipeIfReady(state: DragState, dx: number, dy: number): Promise<boolean> {
@@ -613,6 +689,7 @@ function onPointerDown(e: PointerEvent): void {
   const from = posFromEventTarget(e.target)
   if (!from) return
 
+  clearHint()
   drag = {
     pointerId: e.pointerId,
     from,
@@ -645,12 +722,14 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
 
   drag = null
   endPointerGesture(state.pointerId)
+  scheduleHint()
 }
 
 function onPointerCancel(e: PointerEvent): void {
   if (!drag || e.pointerId !== drag.pointerId) return
   drag = null
   endPointerGesture(e.pointerId)
+  scheduleHint()
 }
 
 boardEl.addEventListener('pointerdown', onPointerDown)
@@ -662,10 +741,12 @@ function restart(): void {
   drag = null
   busy = false
   boardEl.classList.remove('is-dragging')
+  clearHint()
   engine.reset()
   overlayEl.classList.remove('show')
   renderBoard({ enter: true })
   renderGoals()
+  scheduleHint(1600)
 }
 
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
@@ -694,6 +775,7 @@ window.addEventListener('pointerdown', armAudio, { once: true })
 renderBoard({ enter: true })
 renderGoals()
 layoutBoard()
+scheduleHint(1800)
 
 const boot = document.querySelector('#boot')
 requestAnimationFrame(() => {

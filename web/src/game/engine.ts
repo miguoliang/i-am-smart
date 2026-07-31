@@ -1,6 +1,7 @@
 import type {
   CellPos,
   GameSnapshot,
+  HintMove,
   LevelGoal,
   MatchGroup,
   SettleResult,
@@ -172,6 +173,34 @@ export class Match3Engine {
     return this.findMatches().length > 0
   }
 
+  /** Adjacent swaps that would create at least one match. */
+  findHintMoves(): HintMove[] {
+    const hints: HintMove[] = []
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        const a = { row, col }
+        if (!this.get(row, col)) continue
+
+        const neighbors: CellPos[] = []
+        if (col + 1 < this.cols) neighbors.push({ row, col: col + 1 })
+        if (row + 1 < this.rows) neighbors.push({ row: row + 1, col })
+
+        for (const b of neighbors) {
+          if (!this.get(b.row, b.col)) continue
+          this.swapCells(a, b)
+          const ok = this.hasAnyMatch()
+          this.swapCells(a, b)
+          if (ok) hints.push({ a, b })
+        }
+      }
+    }
+    return hints
+  }
+
+  hasValidMove(): boolean {
+    return this.findHintMoves().length > 0
+  }
+
   rebuildBoard(): void {
     for (let n = 0; n < 80; n++) {
       for (let row = 0; row < this.rows; row++) {
@@ -198,8 +227,31 @@ export class Match3Engine {
           this.set(row, col, tile)
         }
       }
-      if (!this.hasAnyMatch()) return
+      if (!this.hasAnyMatch() && this.hasValidMove()) return
     }
+  }
+
+  /**
+   * Reshuffle existing tiles when the board has no useful swaps.
+   * Keeps the same tile multiset when possible.
+   */
+  shuffleBoard(): void {
+    const tiles = this.cells.filter((t): t is Tile => t != null)
+    if (tiles.length !== this.cols * this.rows) {
+      this.rebuildBoard()
+      return
+    }
+
+    for (let attempt = 0; attempt < 80; attempt++) {
+      for (let i = tiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[tiles[i], tiles[j]] = [tiles[j]!, tiles[i]!]
+      }
+      for (let i = 0; i < tiles.length; i++) this.cells[i] = tiles[i]!
+      if (!this.hasAnyMatch() && this.hasValidMove()) return
+    }
+
+    this.rebuildBoard()
   }
 
   areAdjacent(a: CellPos, b: CellPos): boolean {

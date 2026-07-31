@@ -51,3 +51,8 @@ export interface SettleResult {
   falls: TileFall[]
   spawns: TileSpawn[]
 }
+
+export interface HintMove {
+  a: CellPos
+  b: CellPos
+}
