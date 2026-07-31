@@ -348,25 +348,8 @@ body {
   padding: 4px;
 }
 
-.tile.dragging {
-  z-index: 6;
-  outline: 3px solid var(--accent);
-  outline-offset: -3px;
-  border-radius: 18px;
-  transition: none;
-  cursor: grabbing;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.tile.drag-pair {
-  z-index: 5;
-  transition: none;
-  opacity: 0.92;
-}
-
 .tile.swapping {
   z-index: 5;
-  box-shadow: 0 12px 20px rgba(31, 42, 36, 0.24);
   transition: none;
 }
 
