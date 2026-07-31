@@ -255,14 +255,14 @@ body {
   position: relative;
   width: 100%;
   height: auto;
-  margin: 0;
+  margin: 0 auto;
   padding: 4px;
   border-radius: 18px;
   background: linear-gradient(180deg, #3f9d84 0%, var(--board-deep) 100%);
   box-shadow:
     var(--shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  justify-self: stretch;
+  justify-self: center;
   align-self: start;
   transform: translateZ(0);
 }

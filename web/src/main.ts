@@ -19,8 +19,8 @@ if (!app) throw new Error('#app missing')
 const engine = new Match3Engine({
   wordIds: FOOD_WORDS.map((w) => w.id),
   cols: 6,
-  rows: 6,
-  moves: 24,
+  rows: 8,
+  moves: 28,
   maxGoals: 4,
   goalPerWord: 3,
 })
@@ -52,7 +52,7 @@ app.innerHTML = `
         </section>
         <div class="hud-stat" aria-label="剩余步数">
           <span class="hud-label">步数</span>
-          <span class="hud-value" id="moves">24</span>
+          <span class="hud-value" id="moves">28</span>
         </div>
       </header>
 
@@ -93,10 +93,25 @@ boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
 
 function layoutBoard(): void {
-  // Always use the full playfield width. Keep the board square.
-  const width = Math.max(260, Math.floor(playfieldEl.clientWidth))
+  // Fill width; height follows cols×rows so tiles stay roughly square.
+  const maxWidth = Math.max(260, Math.floor(playfieldEl.clientWidth))
+  const hud = playfieldEl.querySelector('.hud') as HTMLElement | null
+  const gap = parseFloat(getComputedStyle(playfieldEl).gap) || 4
+  const availH = Math.max(
+    280,
+    playfieldEl.clientHeight - (hud?.offsetHeight ?? 0) - gap,
+  )
+
+  let width = maxWidth
+  let height = Math.floor((width * engine.rows) / engine.cols)
+
+  if (height > availH) {
+    height = Math.floor(availH)
+    width = Math.floor((height * engine.cols) / engine.rows)
+  }
+
   boardWrapEl.style.width = `${width}px`
-  boardWrapEl.style.height = `${width}px`
+  boardWrapEl.style.height = `${height}px`
 }
 
 function boardMetrics(): { size: number; gap: number; pad: number } {
