@@ -46,20 +46,18 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
-        <div class="badge score-badge" aria-label="分数">
+        <div class="badge score-badge" aria-label="分数" id="score-badge">
           <span class="badge-label">分数</span>
           <span class="badge-value" id="score">0</span>
         </div>
-        <h1 class="brand">词图三消</h1>
+        <section class="goals-bar" aria-label="收集目标">
+          <div class="goal-grid" id="goals"></div>
+        </section>
         <div class="badge moves-badge" aria-label="剩余步数">
           <span class="badge-label">步数</span>
           <span class="badge-value" id="moves">24</span>
         </div>
       </header>
-
-      <section class="goals-bar" aria-label="收集目标">
-        <div class="goal-grid" id="goals"></div>
-      </section>
 
       <div class="board-wrap">
         <div class="board" id="board" aria-label="三消棋盘"></div>
@@ -637,18 +635,18 @@ function restart(): void {
 }
 
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
-// Long-press title to restart without a permanent footer button.
-const brandEl = app.querySelector('.brand')
-let brandTimer = 0
-brandEl?.addEventListener('pointerdown', () => {
-  brandTimer = window.setTimeout(() => {
+// Long-press score badge to restart without a permanent footer button.
+const scoreBadgeEl = app.querySelector('#score-badge')
+let restartTimer = 0
+scoreBadgeEl?.addEventListener('pointerdown', () => {
+  restartTimer = window.setTimeout(() => {
     haptic(16)
     restart()
   }, 650)
 })
-brandEl?.addEventListener('pointerup', () => window.clearTimeout(brandTimer))
-brandEl?.addEventListener('pointerleave', () => window.clearTimeout(brandTimer))
-brandEl?.addEventListener('pointercancel', () => window.clearTimeout(brandTimer))
+scoreBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
+scoreBadgeEl?.addEventListener('pointerleave', () => window.clearTimeout(restartTimer))
+scoreBadgeEl?.addEventListener('pointercancel', () => window.clearTimeout(restartTimer))
 window.addEventListener('resize', layoutBoard)
 
 let audioReady = false
