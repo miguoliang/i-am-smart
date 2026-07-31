@@ -186,29 +186,30 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
 .goal {
   position: relative;
-  width: min(48px, 11vw);
+  width: min(46px, 10.5vw);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(106, 64, 16, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   overflow: visible;
-  transition: transform 0.25s var(--ease-pop), background 0.2s ease;
+  transition: transform 0.25s var(--ease-pop);
   flex: 0 0 auto;
 }
 
 .goal.done {
-  background: rgba(62, 165, 108, 0.18);
-  border-color: rgba(62, 165, 108, 0.28);
+  background: transparent;
+  border: none;
   filter: none;
+  opacity: 0.72;
 }
 
 .goal.pop {
@@ -631,7 +632,7 @@ button.btn:active {
 
 @media (max-width: 360px) {
   .hud {
-    grid-template-columns: 62px minmax(0, 1fr) 62px;
+    grid-template-columns: 58px minmax(0, 1fr) 58px;
     min-height: 58px;
     padding: 5px;
     border-radius: 18px;
@@ -642,12 +643,11 @@ button.btn:active {
   }
 
   .goal-grid {
-    gap: 6px;
+    gap: 4px;
   }
 
   .goal {
-    width: min(42px, 12vw);
-    border-radius: 12px;
+    width: min(40px, 11vw);
   }
 }
 

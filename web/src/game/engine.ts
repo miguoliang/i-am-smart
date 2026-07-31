@@ -64,7 +64,7 @@ export class Match3Engine {
     this.startingMoves = options.moves ?? 28
     this.movesLeft = this.startingMoves
     this.goalPerWord = options.goalPerWord ?? 2
-    this.maxGoals = options.maxGoals ?? 3
+    this.maxGoals = options.maxGoals ?? 4
     this.goals = this.buildGoals()
     this.cells = new Array(this.cols * this.rows).fill(null)
     this.rebuildBoard()

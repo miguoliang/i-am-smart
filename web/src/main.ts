@@ -21,7 +21,7 @@ const engine = new Match3Engine({
   cols: 6,
   rows: 6,
   moves: 24,
-  maxGoals: 3,
+  maxGoals: 4,
   goalPerWord: 3,
 })
 
