@@ -46,14 +46,10 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
-        <div class="hud-stat" aria-label="分数" id="score-badge">
-          <span class="hud-label">分数</span>
-          <span class="hud-value" id="score">0</span>
-        </div>
         <section class="goals-bar" aria-label="收集目标">
           <div class="goal-grid" id="goals"></div>
         </section>
-        <div class="hud-stat" aria-label="剩余步数">
+        <div class="hud-stat" aria-label="剩余步数" id="moves-badge">
           <span class="hud-label">步数</span>
           <span class="hud-value" id="moves">28</span>
         </div>
@@ -82,7 +78,6 @@ const boardEl = app.querySelector<HTMLDivElement>('#board')!
 const boardWrapEl = app.querySelector<HTMLDivElement>('.board-wrap')!
 const playfieldEl = app.querySelector<HTMLDivElement>('.playfield')!
 const goalsEl = app.querySelector<HTMLDivElement>('#goals')!
-const scoreEl = app.querySelector<HTMLSpanElement>('#score')!
 const movesEl = app.querySelector<HTMLSpanElement>('#moves')!
 const toastEl = app.querySelector<HTMLDivElement>('#toast')!
 const toastEn = app.querySelector<HTMLSpanElement>('#toast-en')!
@@ -295,11 +290,8 @@ function renderGoals(prevDone?: Set<string>): void {
 
 function updateHud(animate = false): void {
   const snap = engine.snapshot()
-  const prevScore = scoreEl.textContent
   const prevMoves = movesEl.textContent
-  scoreEl.textContent = String(snap.score)
   movesEl.textContent = String(snap.movesLeft)
-  if (animate && prevScore !== scoreEl.textContent) pulseStat(scoreEl)
   if (animate && prevMoves !== movesEl.textContent) pulseStat(movesEl)
 }
 
@@ -389,11 +381,14 @@ function resetTileMotion(btn: HTMLButtonElement): void {
 function syncOverlay(snap: GameSnapshot): void {
   if (snap.won) {
     overlayTitle.textContent = '过关！'
-    overlayBody.textContent = `太棒了，食物词都收集齐了。得分 ${snap.score}`
+    overlayBody.textContent =
+      snap.movesLeft > 0
+        ? `目标收集齐了，还剩 ${snap.movesLeft} 步。`
+        : '刚好在步数内完成目标，太棒了！'
     overlayEl.classList.add('show')
   } else if (snap.lost) {
     overlayTitle.textContent = '步数用完'
-    overlayBody.textContent = '再试一局，留意图和英文是同一词就能消。'
+    overlayBody.textContent = '再试一局，在步数内收集完目标吧。'
     overlayEl.classList.add('show')
   } else {
     overlayEl.classList.remove('show')
@@ -750,18 +745,18 @@ function restart(): void {
 }
 
 app.querySelector('#overlay-btn')?.addEventListener('click', restart)
-// Long-press score badge to restart without a permanent footer button.
-const scoreBadgeEl = app.querySelector('#score-badge')
+// Long-press moves badge to restart without a permanent footer button.
+const movesBadgeEl = app.querySelector('#moves-badge')
 let restartTimer = 0
-scoreBadgeEl?.addEventListener('pointerdown', () => {
+movesBadgeEl?.addEventListener('pointerdown', () => {
   restartTimer = window.setTimeout(() => {
     haptic(16)
     restart()
   }, 650)
 })
-scoreBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
-scoreBadgeEl?.addEventListener('pointerleave', () => window.clearTimeout(restartTimer))
-scoreBadgeEl?.addEventListener('pointercancel', () => window.clearTimeout(restartTimer))
+movesBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
+movesBadgeEl?.addEventListener('pointerleave', () => window.clearTimeout(restartTimer))
+movesBadgeEl?.addEventListener('pointercancel', () => window.clearTimeout(restartTimer))
 window.addEventListener('resize', layoutBoard)
 
 let audioReady = false

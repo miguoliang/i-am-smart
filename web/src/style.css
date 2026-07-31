@@ -132,7 +132,7 @@ body {
 
 .hud {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 72px;
+  grid-template-columns: minmax(0, 1fr) 72px;
   align-items: stretch;
   gap: 0;
   min-height: 64px;
@@ -178,8 +178,7 @@ body {
   place-items: center;
   margin: 0;
   min-width: 0;
-  padding: 0 8px;
-  border-left: 1px solid rgba(106, 64, 16, 0.12);
+  padding: 0 10px;
   border-right: 1px solid rgba(106, 64, 16, 0.12);
 }
 
@@ -358,8 +357,24 @@ body {
 
 .tile.hint {
   z-index: 4;
-  animation: tile-hint 1.15s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px rgba(255, 236, 170, 0.85));
+  overflow: visible;
+  animation: tile-hint 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.tile.hint::after {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 244, 196, 0.55) 0%,
+    rgba(255, 236, 170, 0.22) 38%,
+    rgba(255, 236, 170, 0) 72%
+  );
+  pointer-events: none;
+  z-index: -1;
+  animation: hint-glow 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
 .tile.clearing {
@@ -568,7 +583,19 @@ button.btn:active {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes hint-glow {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
 
@@ -651,7 +678,7 @@ button.btn:active {
 
 @media (max-width: 360px) {
   .hud {
-    grid-template-columns: 58px minmax(0, 1fr) 58px;
+    grid-template-columns: minmax(0, 1fr) 62px;
     min-height: 58px;
     padding: 5px;
     border-radius: 18px;
