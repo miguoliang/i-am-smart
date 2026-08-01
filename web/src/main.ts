@@ -45,10 +45,22 @@ const engine = new Match3Engine({
 let busy = false
 let toastTimer = 0
 let hintTimer = 0
+/** Board px step cached while busy so motion never reflows mid-animation. */
+let cachedStep = 0
+let layoutPending = false
 
 const HINT_IDLE_MS = 4200
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
+
+function setBusy(next: boolean): void {
+  busy = next
+  boardEl.classList.toggle('is-resolving', next)
+  if (!next && layoutPending) {
+    layoutPending = false
+    layoutBoard()
+  }
+}
 
 type DragState = {
   pointerId: number
@@ -152,8 +164,14 @@ boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
  * Fit the board into `.board-stage` while keeping cols×rows aspect.
  * Re-run via ResizeObserver — iOS visualViewport / font / chrome changes
  * used to leave a one-shot layout stuck until refresh.
+ * Never resize during resolve animations (that is a common source of frame skips).
  */
 function layoutBoard(): void {
+  if (busy) {
+    layoutPending = true
+    return
+  }
+
   const stageW = boardStageEl.clientWidth
   const stageH = boardStageEl.clientHeight
   if (stageW < 40 || stageH < 40) return
@@ -169,6 +187,9 @@ function layoutBoard(): void {
   const nextH = `${height}px`
   if (boardWrapEl.style.width !== nextW) boardWrapEl.style.width = nextW
   if (boardWrapEl.style.height !== nextH) boardWrapEl.style.height = nextH
+
+  // Refresh motion step only when the board is idle.
+  cachedStep = stepSize()
 }
 
 function bindBoardLayout(): void {
@@ -268,13 +289,13 @@ function scheduleHint(delay = HINT_IDLE_MS): void {
 
 async function reshuffleBoard(): Promise<void> {
   clearHint()
-  busy = true
+  setBusy(true)
   flashToast('Shuffle', '重新排列')
   haptic([12, 40, 12])
   engine.shuffleBoard()
   renderBoard({ enter: true })
   await wait(480)
-  busy = false
+  setBusy(false)
   scheduleHint()
 }
 
@@ -377,26 +398,42 @@ type RenderOptions = {
 
 const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const SWAP_MS = 200
-const CLEAR_MS = 400
-const FALL_MS = 520
+const CLEAR_MS = 380
+const FALL_MS = 480
+
+function motionStep(): number {
+  return cachedStep > 0 ? cachedStep : stepSize()
+}
 
 function playMotion(
   el: HTMLElement,
   keyframes: Keyframe[],
   ms: number,
 ): Animation {
+  el.classList.add('is-moving')
   return el.animate(keyframes, {
     duration: ms,
     easing: MOTION_EASE,
     // both: from-state applies immediately — no rest-frame flash before play
     fill: 'both',
+    composite: 'replace',
   })
 }
 
 async function finishMotion(anims: Animation[]): Promise<void> {
   if (anims.length === 0) return
   await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
-  for (const anim of anims) anim.cancel()
+  for (const anim of anims) {
+    const el = anim.effect && 'target' in anim.effect
+      ? (anim.effect as KeyframeEffect).target
+      : null
+    anim.cancel()
+    if (el instanceof HTMLElement) {
+      el.classList.remove('is-moving', 'swapping')
+      el.style.transform = ''
+      el.style.opacity = ''
+    }
+  }
 }
 
 function ensureBoardSlots(): HTMLButtonElement[] {
@@ -490,7 +527,7 @@ function clearMotion(btn: HTMLElement): void {
   btn.style.transform = ''
   btn.style.opacity = ''
   btn.style.removeProperty('--stagger')
-  btn.classList.remove('enter', 'shake', 'swapping', 'hint')
+  btn.classList.remove('enter', 'shake', 'swapping', 'hint', 'is-moving')
 }
 
 function renderEndGoals(snap: GameSnapshot): void {
@@ -645,7 +682,7 @@ function showLearnCard(wordId: string): void {
 function showPick(candidates: string[]): void {
   hideOverlay()
   clearHint()
-  busy = true
+  setBusy(true)
   pendingLearnWordId = null
   learnPickEl.hidden = false
   learnCardEl.hidden = true
@@ -666,7 +703,7 @@ function startPlay(setup: PlaySetup): void {
   hideOverlay()
   hideLearn()
   currentSetup = setup
-  busy = false
+  setBusy(false)
   drag = null
   boardEl.classList.remove('is-dragging')
   clearHint()
@@ -774,12 +811,66 @@ function renderBoard(opts: RenderOptions = {}): void {
   syncOverlay(snap)
 }
 
+/**
+ * Paint engine state and start clear in the same turn.
+ * Avoids a resting paint frame between swap fill cancel and clear.
+ */
+function paintAndClear(clearing: Set<number>): Animation[] {
+  const snap = engine.snapshot()
+  const slots = ensureBoardSlots()
+  const anims: Animation[] = []
+
+  for (let i = 0; i < snap.cells.length; i++) {
+    const tile = snap.cells[i]
+    const btn = slots[i]!
+    btn.dataset.row = String(Math.floor(i / snap.cols))
+    btn.dataset.col = String(i % snap.cols)
+    clearMotion(btn)
+
+    if (!tile) {
+      btn.disabled = true
+      btn.classList.remove('word', 'image')
+      btn.classList.add('empty')
+      clearTilePaint(btn)
+      continue
+    }
+
+    btn.disabled = false
+    btn.classList.remove('empty')
+    paintTile(btn, tile)
+    btn.classList.toggle('word', tile.kind === 'word')
+    btn.classList.toggle('image', tile.kind === 'image')
+
+    if (clearing.has(i)) {
+      btn.style.pointerEvents = 'none'
+      anims.push(
+        playMotion(
+          btn,
+          [
+            { transform: 'scale(1)', opacity: 1 },
+            { transform: 'scale(0.82)', opacity: 0 },
+          ],
+          CLEAR_MS,
+        ),
+      )
+    }
+  }
+
+  return anims
+}
+
 async function animateClear(cells: Iterable<number>): Promise<void> {
   const slots = ensureBoardSlots()
   const anims: Animation[] = []
   for (const i of cells) {
     const btn = slots[i]
     if (!btn || btn.classList.contains('empty')) continue
+    const existing = btn.getAnimations().filter((a) => a.playState !== 'finished')
+    if (existing.length > 0) {
+      // Already clearing from paintAndClear — do not cancel/restart.
+      anims.push(...existing)
+      continue
+    }
     clearMotion(btn)
     btn.style.pointerEvents = 'none'
     anims.push(
@@ -787,7 +878,7 @@ async function animateClear(cells: Iterable<number>): Promise<void> {
         btn,
         [
           { transform: 'scale(1)', opacity: 1 },
-          { transform: 'scale(0.78)', opacity: 0 },
+          { transform: 'scale(0.82)', opacity: 0 },
         ],
         CLEAR_MS,
       ),
@@ -802,47 +893,85 @@ async function animateClear(cells: Iterable<number>): Promise<void> {
     btn.style.opacity = '0'
     btn.style.transform = ''
     btn.style.pointerEvents = ''
+    btn.classList.remove('is-moving', 'swapping')
   }
 }
 
-async function animateSettle(settle: SettleResult): Promise<void> {
+/**
+ * Paint settled board with fall/spawn start poses already applied, then ease down.
+ * One sync turn — no resting-at-destination frame before motion starts.
+ */
+async function paintAndSettle(settle: SettleResult): Promise<void> {
+  const snap = engine.snapshot()
   const slots = ensureBoardSlots()
-  const step = stepSize()
-  const anims: Animation[] = []
+  const step = motionStep()
+  const fallByIndex = new Map<number, number>()
+  const spawnByIndex = new Map<number, number>()
 
   for (const fall of settle.falls) {
-    const btn = slots[fall.toRow * engine.cols + fall.col]
-    if (!btn) continue
-    const dy = -(fall.toRow - fall.fromRow) * step
-    btn.classList.add('swapping')
-    anims.push(
-      playMotion(
-        btn,
-        [{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0px)' }],
-        FALL_MS,
-      ),
-    )
+    fallByIndex.set(fall.toRow * engine.cols + fall.col, fall.toRow - fall.fromRow)
+  }
+  for (const spawn of settle.spawns) {
+    spawnByIndex.set(spawn.row * engine.cols + spawn.col, spawn.dropRows)
   }
 
-  for (const spawn of settle.spawns) {
-    const btn = slots[spawn.row * engine.cols + spawn.col]
-    if (!btn) continue
-    const dy = -spawn.dropRows * step
-    btn.classList.add('swapping')
-    anims.push(
-      playMotion(
-        btn,
-        [
-          { transform: `translateY(${dy}px)`, opacity: 0 },
-          { transform: 'translateY(0px)', opacity: 1 },
-        ],
-        FALL_MS,
-      ),
-    )
+  type Move = { btn: HTMLButtonElement; fromY: number; fromOpacity: number }
+  const moves: Move[] = []
+
+  for (let i = 0; i < snap.cells.length; i++) {
+    const tile = snap.cells[i]
+    const btn = slots[i]!
+    btn.dataset.row = String(Math.floor(i / snap.cols))
+    btn.dataset.col = String(i % snap.cols)
+    clearMotion(btn)
+
+    if (!tile) {
+      btn.disabled = true
+      btn.classList.remove('word', 'image')
+      btn.classList.add('empty')
+      clearTilePaint(btn)
+      continue
+    }
+
+    btn.disabled = false
+    btn.classList.remove('empty')
+    paintTile(btn, tile)
+    btn.classList.toggle('word', tile.kind === 'word')
+    btn.classList.toggle('image', tile.kind === 'image')
+
+    const fallRows = fallByIndex.get(i)
+    const dropRows = spawnByIndex.get(i)
+    if (fallRows != null && fallRows > 0) {
+      const fromY = -fallRows * step
+      btn.style.transform = `translateY(${fromY}px)`
+      btn.classList.add('swapping', 'is-moving')
+      moves.push({ btn, fromY, fromOpacity: 1 })
+    } else if (dropRows != null) {
+      const fromY = -dropRows * step
+      btn.style.transform = `translateY(${fromY}px)`
+      btn.style.opacity = '0'
+      btn.classList.add('swapping', 'is-moving')
+      moves.push({ btn, fromY, fromOpacity: 0 })
+    }
   }
+
+  // Start WAAPI from the inline start pose in the same turn.
+  const anims = moves.map(({ btn, fromY, fromOpacity }) => {
+    const anim = playMotion(
+      btn,
+      [
+        { transform: `translateY(${fromY}px)`, opacity: fromOpacity },
+        { transform: 'translateY(0px)', opacity: 1 },
+      ],
+      FALL_MS,
+    )
+    // WAAPI owns the pose now — drop inline so we do not double-apply.
+    btn.style.transform = ''
+    btn.style.opacity = ''
+    return anim
+  })
 
   await finishMotion(anims)
-  for (const btn of slots) btn.classList.remove('swapping')
 }
 
 async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
@@ -851,7 +980,7 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   if (!aEl || !bEl) return
 
   // Swap fill is still applied — start bounce-back from that pose (no cancel/snap).
-  const step = stepSize()
+  const step = motionStep()
   const dx = (b.col - a.col) * step
   const dy = (b.row - a.row) * step
   aEl.classList.add('swapping')
@@ -877,10 +1006,13 @@ async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
   await wait(460)
 }
 
-async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
+async function resolveWithAnimation(
+  firstMatches: MatchGroup[],
+  opts: { alreadyClearing?: boolean } = {},
+): Promise<void> {
   let matches = firstMatches
   const seenToast = new Set<string>()
-  const slots = ensureBoardSlots()
+  let firstWave = true
 
   while (matches.length > 0) {
     const clearing = new Set<number>()
@@ -892,30 +1024,28 @@ async function resolveWithAnimation(firstMatches: MatchGroup[]): Promise<void> {
       engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
     )
 
-    // Start clear WAAPI before any await so it shares the paint with board sync.
-    const clearPromise = animateClear(clearing)
+    if (!(firstWave && opts.alreadyClearing)) {
+      void paintAndClear(clearing)
+    }
+    firstWave = false
+
     haptic([8, 30, 12])
     spawnBursts(matches)
-    await clearPromise
+    await animateClear(clearing)
 
     const cleared = engine.clearMatches(matches)
     const settle = engine.settle()
-    renderBoard()
-    const settlePromise = animateSettle(settle)
+    const settlePromise = paintAndSettle(settle)
     updateHud(false)
     renderGoals(prevDone)
+    // Toasts after settle — speech/DOM work mid-fall causes jank on phones.
+    await settlePromise
 
     for (const wordId of cleared) {
       if (!seenToast.has(wordId)) {
         seenToast.add(wordId)
         showToast(wordId)
       }
-    }
-
-    await settlePromise
-    for (const btn of slots) {
-      btn.style.transform = ''
-      btn.style.opacity = ''
     }
     matches = engine.findMatches()
   }
@@ -955,7 +1085,7 @@ async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
   const bEl = tileEl(to.row, to.col)
   if (!aEl || !bEl) return
 
-  const step = stepSize()
+  const step = motionStep()
   const dx = (to.col - from.col) * step
   const dy = (to.row - from.row) * step
   aEl.classList.add('swapping')
@@ -978,7 +1108,8 @@ async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
 }
 
 async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
-  busy = true
+  setBusy(true)
+  if (cachedStep <= 0) cachedStep = stepSize()
   clearHint()
 
   await animateSwapTo(from, to)
@@ -989,16 +1120,20 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     await animateSwapReject(from, to)
     renderBoard()
     updateHud(false)
-    busy = false
+    setBusy(false)
     scheduleHint()
     return
   }
 
-  // Cancel swap fills and paint new art in one sync turn, then clear via WAAPI.
-  renderBoard()
+  const clearing = new Set<number>()
+  for (const g of result.matches) {
+    for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
+  }
+  // One turn: drop swap fills, paint swapped art, start clear — no gap frame.
+  paintAndClear(clearing)
   updateHud(true)
-  await resolveWithAnimation(result.matches)
-  busy = false
+  await resolveWithAnimation(result.matches, { alreadyClearing: true })
+  setBusy(false)
   await ensurePlayable()
 }
 
