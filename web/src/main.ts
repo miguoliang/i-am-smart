@@ -807,14 +807,17 @@ function startPlay(setup: PlaySetup): void {
   boardEl.classList.remove('is-dragging')
   clearHint()
 
-  const textWordIds = setup.textWordIds
+  // Board tiles are always pictures — long English labels do not fit the cells.
+  // Learned words still steer goals; text shows on learn / toast / review speak.
   engine.configureRound({
     wordIds: ALL_WORD_IDS,
-    textWordIds,
-    wordTileChance: setup.imageOnly ? 0 : 0.48,
+    textWordIds: [],
+    wordTileChance: 0,
     goalFocusIds: setup.goalFocusIds,
     moves: 28,
-    maxGoals: setup.imageOnly ? 3 : Math.min(3, Math.max(2, textWordIds.length)),
+    maxGoals: setup.imageOnly
+      ? 3
+      : Math.min(3, Math.max(2, setup.textWordIds.length || 2)),
     goalPerWord: 3,
   })
 

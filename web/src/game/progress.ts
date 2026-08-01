@@ -14,9 +14,9 @@ export interface ProgressState {
 }
 
 export interface PlaySetup {
-  /** No English text tiles yet. */
+  /** True before any word is unlocked (goals use the full food pack). */
   imageOnly: boolean
-  /** Words that may appear as English text tiles. */
+  /** Words already learned — used to focus goals (board stays image-only). */
   textWordIds: string[]
   label: string
   /** Prefer these ids when building goals. */
@@ -83,9 +83,9 @@ export function remainingWordIds(state: ProgressState): string[] {
 
 /**
  * Progression:
- * - Levels 1–5: all images
- * - Pick one picture and learn its word
- * - Next 5 levels: that word can appear as text
+ * - Levels 1–5: play with all food pictures
+ * - Pick one picture and learn its English word
+ * - Next 5 levels: goals prefer that learned word (board stays pictures)
  * - Pick another picture, learn, next 5 levels… until all words are learned
  */
 export function getNextStep(state: ProgressState): NextStep {
