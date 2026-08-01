@@ -574,6 +574,7 @@ function pickReviewWords(max = 3): string[] {
 function hideWinReview(): void {
   window.clearTimeout(reviewSpeakTimer)
   reviewSpeakTimer = 0
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
   endReviewEl.hidden = true
   endReviewGrid.replaceChildren()
   endGoalsEl.hidden = false
