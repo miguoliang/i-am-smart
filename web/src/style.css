@@ -781,9 +781,10 @@ button.btn:active {
 .end-review-item {
   appearance: none;
   border: none;
-  width: min(96px, 26vw);
-  padding: 10px 8px 9px;
-  border-radius: 18px;
+  width: min(92px, 24vw);
+  aspect-ratio: 1;
+  padding: 10px;
+  border-radius: 20px;
   background: linear-gradient(180deg, #fffaf0 0%, #ffe4a8 100%);
   color: #6a4010;
   box-shadow:
@@ -791,31 +792,16 @@ button.btn:active {
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
   cursor: pointer;
   display: grid;
-  justify-items: center;
-  gap: 4px;
+  place-items: center;
   animation: end-goal-pop 0.55s calc(0.34s + var(--i, 0) * 0.08s) var(--ease-soft) both;
 }
 
 .end-review-item img {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.16));
-}
-
-.end-review-en {
-  font-family: var(--font-display);
-  font-size: clamp(0.95rem, 3.8vw, 1.1rem);
-  font-weight: 800;
-  line-height: 1.05;
-}
-
-.end-review-zh {
-  font-size: 0.72rem;
-  font-weight: 700;
-  opacity: 0.68;
-  line-height: 1;
 }
 
 .end-review-item:active {

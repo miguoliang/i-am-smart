@@ -607,9 +607,7 @@ function renderWinReview(): void {
           style="--i:${i}"
           aria-label="${word.english}，${word.chinese}"
         >
-          <img src="${assetUrl(word.image)}" alt="" draggable="false" />
-          <span class="end-review-en">${word.english}</span>
-          <span class="end-review-zh">${word.chinese}</span>
+          <img src="${assetUrl(word.image)}" alt="${word.english}" draggable="false" />
         </button>
       `
     })
