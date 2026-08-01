@@ -1082,21 +1082,26 @@ async function animateClear(cells: Iterable<number>): Promise<void> {
 }
 
 /**
- * Paint settled board with fall/spawn start poses already applied, then drop.
- * Only touch cells that change or move — idle tiles stay put (avoids settle hitch).
+ * Paint settled board, then FLIP-fall each surviving tile from its pre-paint slot.
+ * Tracking by uid (not slot fall maps) so multi-row drops always move — never
+ * just swap art in place when a tile lands in another cell's old slot.
  */
 async function paintAndSettle(settle: SettleResult): Promise<void> {
   const snap = engine.snapshot()
   const slots = ensureBoardSlots()
   const step = motionStep()
-  const fallByIndex = new Map<number, number>()
-  const spawnByIndex = new Map<number, number>()
+  const cols = snap.cols
 
-  for (const fall of settle.falls) {
-    fallByIndex.set(fall.toRow * engine.cols + fall.col, fall.toRow - fall.fromRow)
+  // Capture uid → slot BEFORE painting settled content into fixed grid cells.
+  const prevUidIndex = new Map<string, number>()
+  for (let i = 0; i < slots.length; i++) {
+    const uid = slots[i]?.dataset.uid
+    if (uid) prevUidIndex.set(uid, i)
   }
+
+  const spawnByIndex = new Map<number, number>()
   for (const spawn of settle.spawns) {
-    spawnByIndex.set(spawn.row * engine.cols + spawn.col, spawn.dropRows)
+    spawnByIndex.set(spawn.row * cols + spawn.col, spawn.dropRows)
   }
 
   type Move = {
@@ -1110,20 +1115,10 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
   for (let i = 0; i < snap.cells.length; i++) {
     const tile = snap.cells[i]
     const btn = slots[i]!
-    const row = Math.floor(i / snap.cols)
-    const col = i % snap.cols
+    const row = Math.floor(i / cols)
+    const col = i % cols
     btn.dataset.row = String(row)
     btn.dataset.col = String(col)
-
-    const fallRows = tile ? fallByIndex.get(i) : undefined
-    const dropRows = tile ? spawnByIndex.get(i) : undefined
-    const willMove =
-      (fallRows != null && fallRows > 0) || dropRows != null
-    const sameUid =
-      !!tile &&
-      btn.dataset.uid === String(tile.uid) &&
-      btn.dataset.kind === tile.kind &&
-      btn.dataset.wordId === tile.wordId
 
     if (!tile) {
       if (!btn.classList.contains('empty') || btn.dataset.uid) {
@@ -1136,20 +1131,31 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
       continue
     }
 
-    if (!sameUid || willMove) {
-      clearMotion(btn)
-      btn.disabled = false
-      btn.classList.remove('empty')
-      paintTile(btn, tile)
-      btn.classList.toggle('word', tile.kind === 'word')
-      btn.classList.toggle('image', tile.kind === 'image')
+    const prevIndex = prevUidIndex.get(String(tile.uid))
+    if (prevIndex === i) {
+      // Idle tile — leave DOM alone (avoids settle hitch on untouched cells).
+      continue
     }
 
-    if (fallRows != null && fallRows > 0) {
-      const fromY = -fallRows * step
-      btn.style.transform = `translateY(${fromY}px)`
-      moves.push({ btn, fromY, fromOpacity: 1, rows: fallRows })
-    } else if (dropRows != null) {
+    clearMotion(btn)
+    btn.disabled = false
+    btn.classList.remove('empty')
+    paintTile(btn, tile)
+    btn.classList.toggle('word', tile.kind === 'word')
+    btn.classList.toggle('image', tile.kind === 'image')
+
+    if (prevIndex !== undefined) {
+      // Surviving tile: move from the slot it occupied before this paint.
+      const fromRow = Math.floor(prevIndex / cols)
+      const rows = row - fromRow
+      if (rows !== 0) {
+        const fromY = -rows * step
+        btn.style.transform = `translateY(${fromY}px)`
+        moves.push({ btn, fromY, fromOpacity: 1, rows: Math.abs(rows) })
+      }
+    } else {
+      // New uid in this slot — spawn from above (dropRows from engine).
+      const dropRows = Math.max(1, spawnByIndex.get(i) ?? row + 1)
       const fromY = -dropRows * step
       btn.style.transform = `translateY(${fromY}px)`
       btn.style.opacity = '0'
