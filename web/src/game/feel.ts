@@ -47,7 +47,11 @@ export function bindNativeChrome(): void {
   const vv = window.visualViewport
   if (!vv) return
   const sync = () => {
-    document.documentElement.style.setProperty('--vvh', `${vv.height}px`)
+    const next = `${vv.height}px`
+    if (document.documentElement.style.getPropertyValue('--vvh') === next) return
+    document.documentElement.style.setProperty('--vvh', next)
+    // Notify layout listeners (ResizeObserver also catches the reflow).
+    window.dispatchEvent(new Event('resize'))
   }
   vv.addEventListener('resize', sync)
   vv.addEventListener('scroll', sync)
