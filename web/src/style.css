@@ -299,10 +299,15 @@ body {
   border-radius: 14px;
   padding: 3px;
   border: none;
+  contain: layout style;
 }
 
 .board.is-dragging {
   cursor: grabbing;
+}
+
+.board.is-resolving {
+  pointer-events: none;
 }
 
 .burst-layer {
@@ -341,6 +346,14 @@ body {
   /* Avoid transitioning transform — it turns WAAPI cancel into a visible snap-back. */
   transition: box-shadow 0.14s ease;
   backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.tile.is-moving,
+.tile.swapping {
+  will-change: transform, opacity;
+  z-index: 5;
+  transition: none;
 }
 
 .tile.empty {
@@ -366,11 +379,6 @@ body {
     inset 0 -3px 0 rgba(31, 42, 36, 0.08),
     0 2px 0 rgba(0, 0, 0, 0.06);
   padding: 4px;
-}
-
-.tile.swapping {
-  z-index: 5;
-  transition: none;
 }
 
 .tile.hint {
