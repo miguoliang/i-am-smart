@@ -430,6 +430,35 @@ body {
   padding: 2px;
 }
 
+.combo {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  z-index: 6;
+  pointer-events: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 6.5vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #5a3208;
+  background: linear-gradient(180deg, #fff6c8 0%, #ffd36a 100%);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.14),
+    0 10px 22px rgba(16, 40, 32, 0.22);
+  opacity: 0;
+  transform: translate(-50%, -40%) scale(0.72);
+}
+
+.combo[hidden] {
+  display: none !important;
+}
+
+.combo.pop {
+  animation: combo-pop 0.88s var(--ease-pop) both;
+}
+
 .toast {
   position: absolute;
   left: 50%;
@@ -1023,6 +1052,28 @@ button.btn:active {
   100% {
     transform: scale(1.8);
     opacity: 0;
+  }
+}
+
+@keyframes combo-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.72);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.14);
+  }
+  36% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -54%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.94);
   }
 }
 

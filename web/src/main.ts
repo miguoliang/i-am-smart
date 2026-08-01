@@ -45,6 +45,7 @@ const engine = new Match3Engine({
 let busy = false
 let toastTimer = 0
 let hintTimer = 0
+let comboTimer = 0
 /** Board px step cached while busy so motion never reflows mid-animation. */
 let cachedStep = 0
 let layoutPending = false
@@ -89,6 +90,7 @@ app.innerHTML = `
         <div class="board-wrap">
           <div class="board" id="board" aria-label="三消棋盘"></div>
           <div class="burst-layer" id="bursts" aria-hidden="true"></div>
+          <div class="combo" id="combo" aria-live="polite" hidden></div>
           <div class="toast" id="toast" aria-live="polite">
             <span class="toast-en" id="toast-en"></span>
             <span class="toast-zh" id="toast-zh"></span>
@@ -140,6 +142,7 @@ const levelChipEl = app.querySelector<HTMLDivElement>('#level-chip')!
 const toastEl = app.querySelector<HTMLDivElement>('#toast')!
 const toastEn = app.querySelector<HTMLSpanElement>('#toast-en')!
 const toastZh = app.querySelector<HTMLSpanElement>('#toast-zh')!
+const comboEl = app.querySelector<HTMLDivElement>('#combo')!
 const overlayEl = app.querySelector<HTMLDivElement>('#overlay')!
 const overlayTitle = app.querySelector<HTMLHeadingElement>('#overlay-title')!
 const overlayBtn = app.querySelector<HTMLButtonElement>('#overlay-btn')!
@@ -259,6 +262,29 @@ function showToast(wordId: string): void {
   const word = wordById(wordId)
   if (!word) return
   flashToast(word.english, word.chinese, true)
+}
+
+function comboHaptic(combo: number): void {
+  if (combo <= 1) haptic([8, 30, 12])
+  else if (combo === 2) haptic([10, 22, 10, 22, 14])
+  else if (combo === 3) haptic([12, 18, 12, 18, 12, 18, 16])
+  else haptic([14, 16, 14, 16, 14, 16, 14, 20])
+}
+
+/** Visual pop for cascade waves (x2+). First clear stays quiet. */
+function showCombo(combo: number): void {
+  if (combo < 2) return
+  const label = combo >= 5 ? `连击 x${combo}!` : `连击 x${combo}`
+  comboEl.hidden = false
+  comboEl.textContent = label
+  comboEl.classList.remove('pop')
+  void comboEl.offsetWidth
+  comboEl.classList.add('pop')
+  window.clearTimeout(comboTimer)
+  comboTimer = window.setTimeout(() => {
+    comboEl.classList.remove('pop')
+    comboEl.hidden = true
+  }, 900)
 }
 
 function clearHintVisual(): void {
@@ -1115,8 +1141,10 @@ async function resolveWithAnimation(
   let matches = firstMatches
   const seenToast = new Set<string>()
   let firstWave = true
+  let combo = 0
 
   while (matches.length > 0) {
+    combo += 1
     const clearing = new Set<number>()
     for (const g of matches) {
       for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
@@ -1131,7 +1159,8 @@ async function resolveWithAnimation(
     }
     firstWave = false
 
-    haptic([8, 30, 12])
+    comboHaptic(combo)
+    showCombo(combo)
     spawnBursts(matches)
     await animateClear(clearing)
 
