@@ -432,8 +432,8 @@ type RenderOptions = {
 }
 
 const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
-/** Single-segment gravity ease — no overshoot/multi-keys (those hitch on mobile). */
-const FALL_EASE = 'cubic-bezier(0.33, 0.0, 0.2, 1)'
+/** Ease-in drop, hard stop — no landing bounce/overshoot. */
+const FALL_EASE = 'cubic-bezier(0.45, 0.0, 0.85, 1)'
 const SWAP_MS = 200
 const CLEAR_MS = 380
 const FALL_MS_BASE = 160
@@ -463,7 +463,7 @@ function playMotion(
   })
 }
 
-/** One continuous fall segment; duration scales with distance. */
+/** One continuous fall segment; duration scales with distance. No bounce. */
 function playFall(
   el: HTMLElement,
   fromY: number,
