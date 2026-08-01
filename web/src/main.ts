@@ -73,12 +73,14 @@ app.innerHTML = `
         </div>
       </header>
 
-      <div class="board-wrap">
-        <div class="board" id="board" aria-label="三消棋盘"></div>
-        <div class="burst-layer" id="bursts" aria-hidden="true"></div>
-        <div class="toast" id="toast" aria-live="polite">
-          <span class="toast-en" id="toast-en"></span>
-          <span class="toast-zh" id="toast-zh"></span>
+      <div class="board-stage">
+        <div class="board-wrap">
+          <div class="board" id="board" aria-label="三消棋盘"></div>
+          <div class="burst-layer" id="bursts" aria-hidden="true"></div>
+          <div class="toast" id="toast" aria-live="polite">
+            <span class="toast-en" id="toast-en"></span>
+            <span class="toast-zh" id="toast-zh"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -114,6 +116,7 @@ app.innerHTML = `
 
 const boardEl = app.querySelector<HTMLDivElement>('#board')!
 const boardWrapEl = app.querySelector<HTMLDivElement>('.board-wrap')!
+const boardStageEl = app.querySelector<HTMLDivElement>('.board-stage')!
 const playfieldEl = app.querySelector<HTMLDivElement>('.playfield')!
 const goalsEl = app.querySelector<HTMLDivElement>('#goals')!
 const movesEl = app.querySelector<HTMLSpanElement>('#moves')!
@@ -145,26 +148,44 @@ let overlayMode: 'win' | 'lose' | 'complete' | null = null
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
 
+/**
+ * Fit the board into `.board-stage` while keeping cols×rows aspect.
+ * Re-run via ResizeObserver — iOS visualViewport / font / chrome changes
+ * used to leave a one-shot layout stuck until refresh.
+ */
 function layoutBoard(): void {
-  // Fill width; height follows cols×rows so tiles stay roughly square.
-  const maxWidth = Math.max(260, Math.floor(playfieldEl.clientWidth))
-  const hud = playfieldEl.querySelector('.hud') as HTMLElement | null
-  const gap = parseFloat(getComputedStyle(playfieldEl).gap) || 4
-  const availH = Math.max(
-    280,
-    playfieldEl.clientHeight - (hud?.offsetHeight ?? 0) - gap,
-  )
+  const stageW = boardStageEl.clientWidth
+  const stageH = boardStageEl.clientHeight
+  if (stageW < 40 || stageH < 40) return
 
-  let width = maxWidth
+  let width = stageW
   let height = Math.floor((width * engine.rows) / engine.cols)
-
-  if (height > availH) {
-    height = Math.floor(availH)
+  if (height > stageH) {
+    height = stageH
     width = Math.floor((height * engine.cols) / engine.rows)
   }
 
-  boardWrapEl.style.width = `${width}px`
-  boardWrapEl.style.height = `${height}px`
+  const nextW = `${width}px`
+  const nextH = `${height}px`
+  if (boardWrapEl.style.width !== nextW) boardWrapEl.style.width = nextW
+  if (boardWrapEl.style.height !== nextH) boardWrapEl.style.height = nextH
+}
+
+function bindBoardLayout(): void {
+  const ro = new ResizeObserver(() => layoutBoard())
+  ro.observe(boardStageEl)
+  ro.observe(playfieldEl)
+  window.addEventListener('orientationchange', () => {
+    requestAnimationFrame(() => layoutBoard())
+  })
+  window.addEventListener('resize', layoutBoard)
+  void document.fonts?.ready?.then(() => layoutBoard())
+  layoutBoard()
+  // Catch late iOS viewport settling after first paint.
+  requestAnimationFrame(() => {
+    layoutBoard()
+    requestAnimationFrame(layoutBoard)
+  })
 }
 
 function boardMetrics(): { size: number; gap: number; pad: number } {
@@ -1086,7 +1107,7 @@ movesBadgeEl?.addEventListener('pointerdown', () => {
 movesBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
 movesBadgeEl?.addEventListener('pointerleave', () => window.clearTimeout(restartTimer))
 movesBadgeEl?.addEventListener('pointercancel', () => window.clearTimeout(restartTimer))
-window.addEventListener('resize', layoutBoard)
+bindBoardLayout()
 
 let audioReady = false
 const armAudio = () => {
@@ -1099,7 +1120,11 @@ window.addEventListener('pointerdown', armAudio, { once: true })
 const boot = document.querySelector('#boot')
 void preloadWordImages().finally(() => {
   continueCampaign()
+  layoutBoard()
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => boot?.classList.add('hide'))
+    requestAnimationFrame(() => {
+      boot?.classList.add('hide')
+      layoutBoard()
+    })
   })
 })
