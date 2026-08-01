@@ -432,12 +432,21 @@ type RenderOptions = {
 }
 
 const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+/** Accelerate down, soft overshoot land — reads more like gravity than ease-in-out. */
+const FALL_EASE = 'cubic-bezier(0.28, 0.08, 0.18, 1.18)'
 const SWAP_MS = 200
 const CLEAR_MS = 380
-const FALL_MS = 480
+const FALL_MS_BASE = 150
+const FALL_MS_PER_ROW = 82
+const FALL_MS_MAX = 600
+const FALL_COL_STAGGER = 16
 
 function motionStep(): number {
   return cachedStep > 0 ? cachedStep : stepSize()
+}
+
+function fallDurationMs(rows: number): number {
+  return Math.min(FALL_MS_MAX, FALL_MS_BASE + Math.max(1, rows) * FALL_MS_PER_ROW)
 }
 
 function playMotion(
@@ -450,6 +459,50 @@ function playMotion(
     duration: ms,
     easing: MOTION_EASE,
     // both: from-state applies immediately — no rest-frame flash before play
+    fill: 'both',
+    composite: 'replace',
+  })
+}
+
+/** Distance-scaled fall with light column stagger and a soft landing. */
+function playFall(
+  el: HTMLElement,
+  fromY: number,
+  fromOpacity: number,
+  rows: number,
+  delayMs: number,
+): Animation {
+  el.classList.add('is-moving', 'swapping')
+  const bounce = Math.min(5, 1.5 + rows * 0.6)
+  const frames: Keyframe[] =
+    fromOpacity < 1
+      ? [
+          { transform: `translateY(${fromY}px)`, opacity: 0 },
+          {
+            transform: `translateY(${Math.round(fromY * 0.45)}px)`,
+            opacity: 1,
+            offset: 0.38,
+          },
+          {
+            transform: `translateY(${-bounce}px)`,
+            opacity: 1,
+            offset: 0.86,
+          },
+          { transform: 'translateY(0px)', opacity: 1 },
+        ]
+      : [
+          { transform: `translateY(${fromY}px)` },
+          {
+            transform: `translateY(${-bounce}px)`,
+            offset: 0.86,
+          },
+          { transform: 'translateY(0px)' },
+        ]
+
+  return el.animate(frames, {
+    duration: fallDurationMs(rows),
+    delay: delayMs,
+    easing: FALL_EASE,
     fill: 'both',
     composite: 'replace',
   })
@@ -1026,8 +1079,8 @@ async function animateClear(cells: Iterable<number>): Promise<void> {
 }
 
 /**
- * Paint settled board with fall/spawn start poses already applied, then ease down.
- * One sync turn — no resting-at-destination frame before motion starts.
+ * Paint settled board with fall/spawn start poses already applied, then drop.
+ * Longer drops take longer; light column stagger + soft land overshoot.
  */
 async function paintAndSettle(settle: SettleResult): Promise<void> {
   const snap = engine.snapshot()
@@ -1043,14 +1096,22 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
     spawnByIndex.set(spawn.row * engine.cols + spawn.col, spawn.dropRows)
   }
 
-  type Move = { btn: HTMLButtonElement; fromY: number; fromOpacity: number }
+  type Move = {
+    btn: HTMLButtonElement
+    fromY: number
+    fromOpacity: number
+    rows: number
+    col: number
+  }
   const moves: Move[] = []
 
   for (let i = 0; i < snap.cells.length; i++) {
     const tile = snap.cells[i]
     const btn = slots[i]!
-    btn.dataset.row = String(Math.floor(i / snap.cols))
-    btn.dataset.col = String(i % snap.cols)
+    const row = Math.floor(i / snap.cols)
+    const col = i % snap.cols
+    btn.dataset.row = String(row)
+    btn.dataset.col = String(col)
     clearMotion(btn)
 
     if (!tile) {
@@ -1072,28 +1133,18 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
     if (fallRows != null && fallRows > 0) {
       const fromY = -fallRows * step
       btn.style.transform = `translateY(${fromY}px)`
-      btn.classList.add('swapping', 'is-moving')
-      moves.push({ btn, fromY, fromOpacity: 1 })
+      moves.push({ btn, fromY, fromOpacity: 1, rows: fallRows, col })
     } else if (dropRows != null) {
       const fromY = -dropRows * step
       btn.style.transform = `translateY(${fromY}px)`
       btn.style.opacity = '0'
-      btn.classList.add('swapping', 'is-moving')
-      moves.push({ btn, fromY, fromOpacity: 0 })
+      moves.push({ btn, fromY, fromOpacity: 0, rows: dropRows, col })
     }
   }
 
-  // Start WAAPI from the inline start pose in the same turn.
-  const anims = moves.map(({ btn, fromY, fromOpacity }) => {
-    const anim = playMotion(
-      btn,
-      [
-        { transform: `translateY(${fromY}px)`, opacity: fromOpacity },
-        { transform: 'translateY(0px)', opacity: 1 },
-      ],
-      FALL_MS,
-    )
-    // WAAPI owns the pose now — drop inline so we do not double-apply.
+  // Start falls in one sync turn from the inline start pose.
+  const anims = moves.map(({ btn, fromY, fromOpacity, rows, col }) => {
+    const anim = playFall(btn, fromY, fromOpacity, rows, col * FALL_COL_STAGGER)
     btn.style.transform = ''
     btn.style.opacity = ''
     return anim
