@@ -1,5 +1,5 @@
 import './style.css'
-import { FOOD_WORDS, assetUrl, wordById } from './data/words'
+import { FOOD_WORDS, assetUrl, preloadWordImages, wordById } from './data/words'
 import { Match3Engine } from './game/engine'
 import {
   bindNativeChrome,
@@ -393,18 +393,47 @@ function ensureBoardSlots(): HTMLButtonElement[] {
   return [...boardEl.children] as HTMLButtonElement[]
 }
 
+/** Assign tile art; retry once if Safari keeps a failed same-URL load. */
+function setTileImage(img: HTMLImageElement, src: string, alt: string): void {
+  img.alt = alt
+  const broken =
+    !!img.getAttribute('src') && img.complete && img.naturalWidth === 0
+  if (img.getAttribute('src') === src && !broken) return
+
+  img.onerror = () => {
+    if (img.dataset.failSrc === src) return
+    img.dataset.failSrc = src
+    // Re-setting the same src after error is a no-op in WebKit — clear first.
+    img.removeAttribute('src')
+    requestAnimationFrame(() => {
+      img.src = src
+    })
+  }
+
+  if (broken || img.getAttribute('src') === src) img.removeAttribute('src')
+  delete img.dataset.failSrc
+  img.src = src
+}
+
 function paintTile(btn: HTMLButtonElement, tile: Tile): void {
+  const word = wordById(tile.wordId)
   const same =
     btn.dataset.uid === String(tile.uid) &&
     btn.dataset.kind === tile.kind &&
     btn.dataset.wordId === tile.wordId
-  if (same) return
+
+  if (same && tile.kind === 'image') {
+    const img = btn.querySelector('img')
+    // Same tile can still be a broken <img> after a flaky first load.
+    if (img && !(img.complete && img.naturalWidth === 0)) return
+  } else if (same) {
+    return
+  }
 
   btn.dataset.uid = String(tile.uid)
   btn.dataset.kind = tile.kind
   btn.dataset.wordId = tile.wordId
 
-  const word = wordById(tile.wordId)
   if (tile.kind === 'image' && word) {
     let img = btn.querySelector('img')
     if (!img) {
@@ -414,9 +443,7 @@ function paintTile(btn: HTMLButtonElement, tile: Tile): void {
       img.decoding = 'async'
       btn.appendChild(img)
     }
-    const src = assetUrl(word.image)
-    if (img.getAttribute('src') !== src) img.src = src
-    img.alt = word.english
+    setTileImage(img, assetUrl(word.image), word.english)
   } else if (word) {
     let label = btn.querySelector('.tile-word-label') as HTMLSpanElement | null
     if (!label) {
@@ -1069,9 +1096,10 @@ const armAudio = () => {
 }
 window.addEventListener('pointerdown', armAudio, { once: true })
 
-continueCampaign()
-
 const boot = document.querySelector('#boot')
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => boot?.classList.add('hide'))
+void preloadWordImages().finally(() => {
+  continueCampaign()
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => boot?.classList.add('hide'))
+  })
 })
