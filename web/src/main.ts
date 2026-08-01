@@ -525,9 +525,9 @@ function ensureBoardSlots(): HTMLButtonElement[] {
 /** Assign tile art; retry once if Safari keeps a failed same-URL load. */
 function setTileImage(img: HTMLImageElement, src: string, alt: string): void {
   img.alt = alt
-  const broken =
-    !!img.getAttribute('src') && img.complete && img.naturalWidth === 0
-  if (img.getAttribute('src') === src && !broken) return
+  const current = img.getAttribute('src')
+  const broken = !!current && img.complete && img.naturalWidth === 0
+  if (current === src && !broken) return
 
   img.onerror = () => {
     if (img.dataset.failSrc === src) return
@@ -539,9 +539,26 @@ function setTileImage(img: HTMLImageElement, src: string, alt: string): void {
     })
   }
 
-  if (broken || img.getAttribute('src') === src) img.removeAttribute('src')
+  // Always drop the previous bitmap before swapping src — otherwise falls can
+  // animate the old picture and swap to the real one when decode finishes.
+  img.removeAttribute('src')
   delete img.dataset.failSrc
   img.src = src
+}
+
+async function decodeTileImages(btns: Iterable<HTMLElement>): Promise<void> {
+  await Promise.all(
+    [...btns].map(async (btn) => {
+      const img = btn.querySelector('img')
+      if (!img?.getAttribute('src')) return
+      if (img.complete && img.naturalWidth > 0) return
+      try {
+        await img.decode()
+      } catch {
+        // ignore decode failures; onerror retry handles broken art
+      }
+    }),
+  )
 }
 
 function paintTile(btn: HTMLButtonElement, tile: Tile): void {
@@ -559,20 +576,23 @@ function paintTile(btn: HTMLButtonElement, tile: Tile): void {
     return
   }
 
+  const prevWordId = btn.dataset.wordId
   btn.dataset.uid = String(tile.uid)
   btn.dataset.kind = tile.kind
   btn.dataset.wordId = tile.wordId
 
   if (tile.kind === 'image' && word) {
+    const src = assetUrl(word.image)
     let img = btn.querySelector('img')
-    if (!img) {
+    // New word on this slot → new <img>, so we never keep a stale bitmap.
+    if (!img || prevWordId !== tile.wordId) {
       btn.replaceChildren()
       img = document.createElement('img')
       img.draggable = false
       img.decoding = 'async'
       btn.appendChild(img)
     }
-    setTileImage(img, assetUrl(word.image), word.english)
+    setTileImage(img, src, word.english)
   } else if (word) {
     let label = btn.querySelector('.tile-word-label') as HTMLSpanElement | null
     if (!label) {
@@ -1136,6 +1156,9 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
       moves.push({ btn, fromY, fromOpacity: 0, rows: dropRows })
     }
   }
+
+  // Wait for new art to decode so the fall never starts on a stale picture.
+  await decodeTileImages(moves.map((m) => m.btn))
 
   // Start all falls together in one sync turn (no column delay pop-in).
   const anims = moves.map(({ btn, fromY, fromOpacity, rows }) => {
