@@ -105,6 +105,10 @@ app.innerHTML = `
         <h2 class="end-title" id="overlay-title"></h2>
         <p class="end-meta" id="end-meta"></p>
         <div class="end-goals" id="end-goals"></div>
+        <div class="end-review" id="end-review" hidden>
+          <p class="end-review-kicker">点一下，听发音</p>
+          <div class="end-review-grid" id="end-review-grid"></div>
+        </div>
         <button class="btn end-btn" type="button" id="overlay-btn">下一关</button>
       </div>
     </div>
@@ -142,6 +146,8 @@ const overlayBtn = app.querySelector<HTMLButtonElement>('#overlay-btn')!
 const endBadgeEl = app.querySelector<HTMLSpanElement>('#end-badge')!
 const endMetaEl = app.querySelector<HTMLParagraphElement>('#end-meta')!
 const endGoalsEl = app.querySelector<HTMLDivElement>('#end-goals')!
+const endReviewEl = app.querySelector<HTMLDivElement>('#end-review')!
+const endReviewGrid = app.querySelector<HTMLDivElement>('#end-review-grid')!
 const endFxEl = app.querySelector<HTMLDivElement>('#end-fx')!
 const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
 const learnEl = app.querySelector<HTMLDivElement>('#learn')!
@@ -156,6 +162,9 @@ const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
 
 let pendingLearnWordId: string | null = null
 let overlayMode: 'win' | 'lose' | 'complete' | null = null
+/** wordId → clear count this level (for post-win review). */
+const levelClearCounts = new Map<string, number>()
+let reviewSpeakTimer = 0
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
@@ -530,7 +539,94 @@ function clearMotion(btn: HTMLElement): void {
   btn.classList.remove('enter', 'shake', 'swapping', 'hint', 'is-moving')
 }
 
+function noteClearedWords(wordIds: string[]): void {
+  for (const wordId of wordIds) {
+    levelClearCounts.set(wordId, (levelClearCounts.get(wordId) ?? 0) + 1)
+  }
+}
+
+function resetLevelClearCounts(): void {
+  levelClearCounts.clear()
+  window.clearTimeout(reviewSpeakTimer)
+  reviewSpeakTimer = 0
+}
+
+/** Prefer cleared goal words, then most-cleared fillers — up to 3 for win review. */
+function pickReviewWords(max = 3): string[] {
+  const goalIds = engine.goals.map((g) => g.wordId)
+  const byCount = [...levelClearCounts.entries()].sort((a, b) => b[1] - a[1])
+  const picked: string[] = []
+
+  for (const id of goalIds) {
+    if (levelClearCounts.has(id) && !picked.includes(id) && picked.length < max) {
+      picked.push(id)
+    }
+  }
+  for (const [id] of byCount) {
+    if (!picked.includes(id) && picked.length < max) picked.push(id)
+  }
+  for (const id of goalIds) {
+    if (!picked.includes(id) && picked.length < max) picked.push(id)
+  }
+  return picked
+}
+
+function hideWinReview(): void {
+  window.clearTimeout(reviewSpeakTimer)
+  reviewSpeakTimer = 0
+  endReviewEl.hidden = true
+  endReviewGrid.replaceChildren()
+  endGoalsEl.hidden = false
+}
+
+function speakReviewWord(wordId: string, btn?: HTMLElement | null): void {
+  const word = wordById(wordId)
+  if (!word) return
+  endReviewGrid.querySelectorAll('.end-review-item.is-speaking').forEach((el) => {
+    el.classList.remove('is-speaking')
+  })
+  btn?.classList.add('is-speaking')
+  speakEnglish(word.english)
+  window.setTimeout(() => btn?.classList.remove('is-speaking'), 700)
+}
+
+function renderWinReview(): void {
+  const ids = pickReviewWords(3)
+  endGoalsEl.hidden = true
+  endGoalsEl.replaceChildren()
+  endReviewEl.hidden = false
+  endReviewGrid.innerHTML = ids
+    .map((id, i) => {
+      const word = wordById(id)!
+      return `
+        <button
+          class="end-review-item"
+          type="button"
+          data-word-id="${word.id}"
+          style="--i:${i}"
+          aria-label="${word.english}，${word.chinese}"
+        >
+          <img src="${assetUrl(word.image)}" alt="" draggable="false" />
+          <span class="end-review-en">${word.english}</span>
+          <span class="end-review-zh">${word.chinese}</span>
+        </button>
+      `
+    })
+    .join('')
+
+  const first = ids[0]
+  if (first) {
+    reviewSpeakTimer = window.setTimeout(() => {
+      const btn = endReviewGrid.querySelector<HTMLElement>(
+        `[data-word-id="${first}"]`,
+      )
+      speakReviewWord(first, btn)
+    }, 480)
+  }
+}
+
 function renderEndGoals(snap: GameSnapshot): void {
+  hideWinReview()
   endGoalsEl.innerHTML = snap.goals
     .map((g) => {
       const word = wordById(g.wordId)!
@@ -594,6 +690,7 @@ function hideOverlay(): void {
   overlayEl.classList.remove('show', 'is-win', 'is-lose')
   endFxEl.replaceChildren()
   endGoalsEl.replaceChildren()
+  hideWinReview()
   overlayMode = null
 }
 
@@ -615,9 +712,9 @@ function syncOverlay(snap: GameSnapshot): void {
       endBadgeEl.textContent = 'CLEAR'
       overlayTitle.textContent = '过关'
       endMetaEl.textContent =
-        snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步` : '完美通关'
+        snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步 · 复习一下` : '完美通关 · 复习一下'
       overlayBtn.textContent = '下一关'
-      renderEndGoals(snap)
+      renderWinReview()
       spawnEndFx('win')
       overlayEl.classList.remove('is-lose')
       overlayEl.classList.add('show', 'is-win')
@@ -645,11 +742,13 @@ function syncOverlay(snap: GameSnapshot): void {
 function showComplete(): void {
   clearHint()
   hideLearn()
+  hideWinReview()
   overlayMode = 'complete'
   endBadgeEl.textContent = 'MASTER'
   overlayTitle.textContent = '全部学会'
   endMetaEl.textContent = '食物词都学完啦'
   overlayBtn.textContent = '从第 1 关再来'
+  endGoalsEl.hidden = false
   endGoalsEl.innerHTML = progress.unlockedWords
     .map((id) => {
       const word = wordById(id)!
@@ -703,6 +802,7 @@ function startPlay(setup: PlaySetup): void {
   hideOverlay()
   hideLearn()
   currentSetup = setup
+  resetLevelClearCounts()
   setBusy(false)
   drag = null
   boardEl.classList.remove('is-dragging')
@@ -1041,6 +1141,7 @@ async function resolveWithAnimation(
     // Toasts after settle — speech/DOM work mid-fall causes jank on phones.
     await settlePromise
 
+    noteClearedWords(cleared)
     for (const wordId of cleared) {
       if (!seenToast.has(wordId)) {
         seenToast.add(wordId)
@@ -1213,6 +1314,15 @@ boardEl.addEventListener('pointerup', onPointerUp)
 boardEl.addEventListener('pointercancel', onPointerCancel)
 
 overlayBtn.addEventListener('click', onOverlayAction)
+endReviewGrid.addEventListener('click', (event) => {
+  const btn = (event.target as HTMLElement | null)?.closest?.(
+    '.end-review-item',
+  ) as HTMLButtonElement | null
+  const wordId = btn?.dataset.wordId
+  if (!wordId) return
+  haptic(8)
+  speakReviewWord(wordId, btn)
+})
 learnGoBtn.addEventListener('click', onLearnConfirm)
 learnSpeakBtn.addEventListener('click', () => {
   if (pendingLearnWordId) {
