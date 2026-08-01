@@ -25,3 +25,19 @@ export function assetUrl(path: string): string {
   const base = import.meta.env.BASE_URL
   return `${base}${path.replace(/^\//, '')}`
 }
+
+/** Warm the food card images so first paints rarely race cold network loads. */
+export function preloadWordImages(): Promise<void> {
+  return Promise.all(
+    FOOD_WORDS.map(
+      (word) =>
+        new Promise<void>((resolve) => {
+          const img = new Image()
+          img.decoding = 'async'
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+          img.src = assetUrl(word.image)
+        }),
+    ),
+  ).then(() => undefined)
+}
