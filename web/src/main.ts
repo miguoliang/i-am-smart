@@ -432,14 +432,13 @@ type RenderOptions = {
 }
 
 const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
-/** Accelerate down, soft overshoot land — reads more like gravity than ease-in-out. */
-const FALL_EASE = 'cubic-bezier(0.28, 0.08, 0.18, 1.18)'
+/** Single-segment gravity ease — no overshoot/multi-keys (those hitch on mobile). */
+const FALL_EASE = 'cubic-bezier(0.33, 0.0, 0.2, 1)'
 const SWAP_MS = 200
 const CLEAR_MS = 380
-const FALL_MS_BASE = 150
-const FALL_MS_PER_ROW = 82
-const FALL_MS_MAX = 600
-const FALL_COL_STAGGER = 16
+const FALL_MS_BASE = 160
+const FALL_MS_PER_ROW = 72
+const FALL_MS_MAX = 520
 
 function motionStep(): number {
   return cachedStep > 0 ? cachedStep : stepSize()
@@ -464,48 +463,26 @@ function playMotion(
   })
 }
 
-/** Distance-scaled fall with light column stagger and a soft landing. */
+/** One continuous fall segment; duration scales with distance. */
 function playFall(
   el: HTMLElement,
   fromY: number,
   fromOpacity: number,
   rows: number,
-  delayMs: number,
 ): Animation {
   el.classList.add('is-moving', 'swapping')
-  const bounce = Math.min(5, 1.5 + rows * 0.6)
-  const frames: Keyframe[] =
-    fromOpacity < 1
-      ? [
-          { transform: `translateY(${fromY}px)`, opacity: 0 },
-          {
-            transform: `translateY(${Math.round(fromY * 0.45)}px)`,
-            opacity: 1,
-            offset: 0.38,
-          },
-          {
-            transform: `translateY(${-bounce}px)`,
-            opacity: 1,
-            offset: 0.86,
-          },
-          { transform: 'translateY(0px)', opacity: 1 },
-        ]
-      : [
-          { transform: `translateY(${fromY}px)` },
-          {
-            transform: `translateY(${-bounce}px)`,
-            offset: 0.86,
-          },
-          { transform: 'translateY(0px)' },
-        ]
-
-  return el.animate(frames, {
-    duration: fallDurationMs(rows),
-    delay: delayMs,
-    easing: FALL_EASE,
-    fill: 'both',
-    composite: 'replace',
-  })
+  return el.animate(
+    [
+      { transform: `translateY(${fromY}px)`, opacity: fromOpacity },
+      { transform: 'translateY(0px)', opacity: 1 },
+    ],
+    {
+      duration: fallDurationMs(rows),
+      easing: FALL_EASE,
+      fill: 'both',
+      composite: 'replace',
+    },
+  )
 }
 
 async function finishMotion(anims: Animation[]): Promise<void> {
@@ -515,6 +492,12 @@ async function finishMotion(anims: Animation[]): Promise<void> {
     const el = anim.effect && 'target' in anim.effect
       ? (anim.effect as KeyframeEffect).target
       : null
+    // finish() keeps the end pose; cancel without it can hitch a frame on WebKit.
+    try {
+      if (anim.playState !== 'finished') anim.finish()
+    } catch {
+      // ignore
+    }
     anim.cancel()
     if (el instanceof HTMLElement) {
       el.classList.remove('is-moving', 'swapping')
@@ -1080,7 +1063,7 @@ async function animateClear(cells: Iterable<number>): Promise<void> {
 
 /**
  * Paint settled board with fall/spawn start poses already applied, then drop.
- * Longer drops take longer; light column stagger + soft land overshoot.
+ * Only touch cells that change or move — idle tiles stay put (avoids settle hitch).
  */
 async function paintAndSettle(settle: SettleResult): Promise<void> {
   const snap = engine.snapshot()
@@ -1101,7 +1084,6 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
     fromY: number
     fromOpacity: number
     rows: number
-    col: number
   }
   const moves: Move[] = []
 
@@ -1112,39 +1094,52 @@ async function paintAndSettle(settle: SettleResult): Promise<void> {
     const col = i % snap.cols
     btn.dataset.row = String(row)
     btn.dataset.col = String(col)
-    clearMotion(btn)
+
+    const fallRows = tile ? fallByIndex.get(i) : undefined
+    const dropRows = tile ? spawnByIndex.get(i) : undefined
+    const willMove =
+      (fallRows != null && fallRows > 0) || dropRows != null
+    const sameUid =
+      !!tile &&
+      btn.dataset.uid === String(tile.uid) &&
+      btn.dataset.kind === tile.kind &&
+      btn.dataset.wordId === tile.wordId
 
     if (!tile) {
-      btn.disabled = true
-      btn.classList.remove('word', 'image')
-      btn.classList.add('empty')
-      clearTilePaint(btn)
+      if (!btn.classList.contains('empty') || btn.dataset.uid) {
+        clearMotion(btn)
+        btn.disabled = true
+        btn.classList.remove('word', 'image')
+        btn.classList.add('empty')
+        clearTilePaint(btn)
+      }
       continue
     }
 
-    btn.disabled = false
-    btn.classList.remove('empty')
-    paintTile(btn, tile)
-    btn.classList.toggle('word', tile.kind === 'word')
-    btn.classList.toggle('image', tile.kind === 'image')
+    if (!sameUid || willMove) {
+      clearMotion(btn)
+      btn.disabled = false
+      btn.classList.remove('empty')
+      paintTile(btn, tile)
+      btn.classList.toggle('word', tile.kind === 'word')
+      btn.classList.toggle('image', tile.kind === 'image')
+    }
 
-    const fallRows = fallByIndex.get(i)
-    const dropRows = spawnByIndex.get(i)
     if (fallRows != null && fallRows > 0) {
       const fromY = -fallRows * step
       btn.style.transform = `translateY(${fromY}px)`
-      moves.push({ btn, fromY, fromOpacity: 1, rows: fallRows, col })
+      moves.push({ btn, fromY, fromOpacity: 1, rows: fallRows })
     } else if (dropRows != null) {
       const fromY = -dropRows * step
       btn.style.transform = `translateY(${fromY}px)`
       btn.style.opacity = '0'
-      moves.push({ btn, fromY, fromOpacity: 0, rows: dropRows, col })
+      moves.push({ btn, fromY, fromOpacity: 0, rows: dropRows })
     }
   }
 
-  // Start falls in one sync turn from the inline start pose.
-  const anims = moves.map(({ btn, fromY, fromOpacity, rows, col }) => {
-    const anim = playFall(btn, fromY, fromOpacity, rows, col * FALL_COL_STAGGER)
+  // Start all falls together in one sync turn (no column delay pop-in).
+  const anims = moves.map(({ btn, fromY, fromOpacity, rows }) => {
+    const anim = playFall(btn, fromY, fromOpacity, rows)
     btn.style.transform = ''
     btn.style.opacity = ''
     return anim
