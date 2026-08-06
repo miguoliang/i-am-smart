@@ -1,9 +1,13 @@
 export type TileKind = 'image' | 'word'
 
+/** Candy-crush-style boosters created from big matches. */
+export type TileSpecial = 'rocket-h' | 'rocket-v' | 'bomb'
+
 export interface Tile {
   uid: number
   wordId: string
   kind: TileKind
+  special?: TileSpecial
 }
 
 export interface CellPos {
@@ -55,4 +59,24 @@ export interface SettleResult {
 export interface HintMove {
   a: CellPos
   b: CellPos
+}
+
+export interface SpecialSpawn {
+  row: number
+  col: number
+  wordId: string
+  kind: TileKind
+  special: TileSpecial
+  /** Keep uid so the slot can morph without a spawn fall. */
+  uid: number
+}
+
+/** Planned clear for one cascade wave (matches + special blasts). */
+export interface ClearPlan {
+  /** Cells that become empty (fade out). */
+  fade: CellPos[]
+  /** Cells that turn into a new special in place. */
+  morph: SpecialSpawn[]
+  /** Word ids that progress goals this wave (once each). */
+  clearedWordIds: string[]
 }
