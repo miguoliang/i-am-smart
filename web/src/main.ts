@@ -17,7 +17,15 @@ import {
   unlockWord,
 } from './game/progress'
 import { speakEnglish } from './game/tts'
-import type { CellPos, GameSnapshot, MatchGroup, SettleResult, Tile } from './game/types'
+import type {
+  CellPos,
+  ClearPlan,
+  GameSnapshot,
+  MatchGroup,
+  SettleResult,
+  Tile,
+  TileSpecial,
+} from './game/types'
 
 bindNativeChrome()
 registerServiceWorker()
@@ -129,6 +137,14 @@ app.innerHTML = `
         <button class="btn end-btn" type="button" id="learn-go">学会了，继续</button>
       </div>
     </div>
+    <div class="quiz" id="quiz" hidden>
+      <div class="quiz-card">
+        <p class="quiz-kicker">加步挑战</p>
+        <img class="quiz-img" id="quiz-img" alt="" />
+        <p class="quiz-prompt">这是哪个英文词？</p>
+        <div class="quiz-options" id="quiz-options"></div>
+      </div>
+    </div>
   </div>
 `
 
@@ -162,12 +178,18 @@ const learnEn = app.querySelector<HTMLHeadingElement>('#learn-en')!
 const learnZh = app.querySelector<HTMLParagraphElement>('#learn-zh')!
 const learnSpeakBtn = app.querySelector<HTMLButtonElement>('#learn-speak')!
 const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
+const quizEl = app.querySelector<HTMLDivElement>('#quiz')!
+const quizImg = app.querySelector<HTMLImageElement>('#quiz-img')!
+const quizOptions = app.querySelector<HTMLDivElement>('#quiz-options')!
 
 let pendingLearnWordId: string | null = null
 let overlayMode: 'win' | 'lose' | 'complete' | null = null
 /** wordId → clear count this level (for post-win review). */
 const levelClearCounts = new Map<string, number>()
 let reviewSpeakTimer = 0
+/** At most one vocab quiz bonus per level. */
+let quizUsedThisLevel = false
+let comboMoveGranted = false
 
 boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
 boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
@@ -561,18 +583,41 @@ async function decodeTileImages(btns: Iterable<HTMLElement>): Promise<void> {
   )
 }
 
+function specialAttr(special?: TileSpecial): string {
+  return special ?? ''
+}
+
+function syncSpecialBadge(btn: HTMLButtonElement, special?: TileSpecial): void {
+  const want = specialAttr(special)
+  btn.dataset.special = want
+  btn.classList.toggle('has-special', !!special)
+  let badge = btn.querySelector('.tile-special') as HTMLSpanElement | null
+  if (!special) {
+    badge?.remove()
+    return
+  }
+  if (!badge) {
+    badge = document.createElement('span')
+    badge.className = 'tile-special'
+    badge.setAttribute('aria-hidden', 'true')
+    btn.appendChild(badge)
+  }
+  badge.className = `tile-special is-${special}`
+}
+
 function paintTile(btn: HTMLButtonElement, tile: Tile): void {
   const word = wordById(tile.wordId)
   const same =
     btn.dataset.uid === String(tile.uid) &&
     btn.dataset.kind === tile.kind &&
     btn.dataset.wordId === tile.wordId
+  const sameSpecial = btn.dataset.special === specialAttr(tile.special)
 
-  if (same && tile.kind === 'image') {
+  if (same && sameSpecial && tile.kind === 'image') {
     const img = btn.querySelector('img')
     // Same tile can still be a broken <img> after a flaky first load.
     if (img && !(img.complete && img.naturalWidth === 0)) return
-  } else if (same) {
+  } else if (same && sameSpecial) {
     return
   }
 
@@ -603,12 +648,16 @@ function paintTile(btn: HTMLButtonElement, tile: Tile): void {
     }
     label.textContent = word.english
   }
+
+  syncSpecialBadge(btn, tile.special)
 }
 
 function clearTilePaint(btn: HTMLButtonElement): void {
   delete btn.dataset.uid
   delete btn.dataset.kind
   delete btn.dataset.wordId
+  delete btn.dataset.special
+  btn.classList.remove('has-special', 'special-pop')
   if (btn.childNodes.length) btn.replaceChildren()
 }
 
@@ -618,7 +667,14 @@ function clearMotion(btn: HTMLElement): void {
   btn.style.transform = ''
   btn.style.opacity = ''
   btn.style.removeProperty('--stagger')
-  btn.classList.remove('enter', 'shake', 'swapping', 'hint', 'is-moving')
+  btn.classList.remove(
+    'enter',
+    'shake',
+    'swapping',
+    'hint',
+    'is-moving',
+    'special-pop',
+  )
 }
 
 function noteClearedWords(wordIds: string[]): void {
@@ -773,6 +829,7 @@ function hideOverlay(): void {
   endGoalsEl.replaceChildren()
   hideWinReview()
   overlayMode = null
+  hideQuiz()
 }
 
 function hideLearn(): void {
@@ -879,11 +936,20 @@ function showPick(candidates: string[]): void {
   learnEl.classList.add('show')
 }
 
+function hideQuiz(): void {
+  quizEl.hidden = true
+  quizEl.classList.remove('show')
+  quizOptions.replaceChildren()
+}
+
 function startPlay(setup: PlaySetup): void {
   hideOverlay()
   hideLearn()
+  hideQuiz()
   currentSetup = setup
   resetLevelClearCounts()
+  quizUsedThisLevel = false
+  comboMoveGranted = false
   setBusy(false)
   drag = null
   boardEl.classList.remove('is-dragging')
@@ -909,6 +975,90 @@ function startPlay(setup: PlaySetup): void {
   renderGoals()
   layoutBoard()
   scheduleHint(1800)
+}
+
+/** Quick picture → English pick for +2 moves (Duolingo-style bonus). */
+function offerQuizBonus(wordId: string): Promise<boolean> {
+  const word = wordById(wordId)
+  if (!word) return Promise.resolve(false)
+
+  const distractors = ALL_WORD_IDS.filter((id) => id !== wordId)
+  for (let i = distractors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[distractors[i], distractors[j]] = [distractors[j]!, distractors[i]!]
+  }
+  const options = [wordId, ...distractors.slice(0, 2)]
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[options[i], options[j]] = [options[j]!, options[i]!]
+  }
+
+  quizImg.src = assetUrl(word.image)
+  quizImg.alt = word.chinese
+  quizOptions.replaceChildren()
+  quizEl.hidden = false
+  quizEl.classList.add('show')
+  speakEnglish(word.english)
+
+  return new Promise((resolve) => {
+    let done = false
+    const finish = (ok: boolean) => {
+      if (done) return
+      done = true
+      hideQuiz()
+      resolve(ok)
+    }
+
+    for (const id of options) {
+      const opt = wordById(id)!
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'quiz-option'
+      btn.textContent = opt.english
+      btn.addEventListener('click', () => {
+        if (done) return
+        if (id === wordId) {
+          btn.classList.add('is-correct')
+          haptic([10, 30, 14])
+          window.setTimeout(() => finish(true), 280)
+        } else {
+          btn.classList.add('is-wrong')
+          haptic([20, 40, 20])
+          window.setTimeout(() => finish(false), 420)
+        }
+      })
+      quizOptions.appendChild(btn)
+    }
+  })
+}
+
+function planClearingIndices(plan: ClearPlan): Set<number> {
+  const clearing = new Set<number>()
+  for (const c of plan.fade) clearing.add(c.row * engine.cols + c.col)
+  return clearing
+}
+
+function paintMorphSpecials(plan: ClearPlan): void {
+  const slots = ensureBoardSlots()
+  for (const m of plan.morph) {
+    const btn = slots[m.row * engine.cols + m.col]
+    if (!btn) continue
+    clearMotion(btn)
+    btn.style.opacity = ''
+    btn.disabled = false
+    btn.classList.remove('empty')
+    paintTile(btn, {
+      uid: m.uid,
+      wordId: m.wordId,
+      kind: m.kind,
+      special: m.special,
+    })
+    btn.classList.toggle('word', m.kind === 'word')
+    btn.classList.toggle('image', m.kind === 'image')
+    btn.classList.remove('special-pop')
+    void btn.offsetWidth
+    btn.classList.add('special-pop')
+  }
 }
 
 function continueCampaign(): void {
@@ -1217,13 +1367,14 @@ async function resolveWithAnimation(
   const seenToast = new Set<string>()
   let firstWave = true
   let combo = 0
+  let quizWordId: string | null = null
+  // One combo-move grant per swipe cascade (not once per level).
+  comboMoveGranted = false
 
   while (matches.length > 0) {
     combo += 1
-    const clearing = new Set<number>()
-    for (const g of matches) {
-      for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
-    }
+    const plan = engine.planClear(matches)
+    const clearing = planClearingIndices(plan)
 
     const prevDone = new Set(
       engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
@@ -1239,7 +1390,16 @@ async function resolveWithAnimation(
     spawnBursts(matches)
     await animateClear(clearing)
 
-    const cleared = engine.clearMatches(matches)
+    const cleared = engine.applyClear(plan)
+    paintMorphSpecials(plan)
+
+    if (!comboMoveGranted && combo >= 3 && !engine.won && !engine.lost) {
+      comboMoveGranted = true
+      engine.grantMoves(1)
+      flashToast('+1 move', '连击奖励')
+      haptic([10, 24, 10])
+    }
+
     const settle = engine.settle()
     const settlePromise = paintAndSettle(settle)
     updateHud(false)
@@ -1254,7 +1414,28 @@ async function resolveWithAnimation(
         showToast(wordId)
       }
     }
+
+    // Offer one picture→English quiz after a goal is completed this wave.
+    if (!quizUsedThisLevel && !quizWordId && progress.unlockedWords.length > 0) {
+      const newlyDone = engine.goals.find(
+        (g) => g.current >= g.target && !prevDone.has(g.wordId),
+      )
+      if (newlyDone) quizWordId = newlyDone.wordId
+    }
+
     matches = engine.findMatches()
+  }
+
+  if (quizWordId && !quizUsedThisLevel && !engine.goals.every((g) => g.current >= g.target)) {
+    quizUsedThisLevel = true
+    const ok = await offerQuizBonus(quizWordId)
+    if (ok) {
+      engine.grantMoves(2)
+      flashToast('+2 moves', '答对加步')
+      updateHud(true)
+    } else {
+      flashToast('Almost', '再看看图')
+    }
   }
 
   engine.checkEnd()
@@ -1332,12 +1513,9 @@ async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
     return
   }
 
-  const clearing = new Set<number>()
-  for (const g of result.matches) {
-    for (const c of g.cells) clearing.add(c.row * engine.cols + c.col)
-  }
-  // One turn: drop swap fills, paint swapped art, start clear — no gap frame.
-  paintAndClear(clearing)
+  // Expand clearing with special blasts before the first paint frame.
+  const plan = engine.planClear(result.matches)
+  paintAndClear(planClearingIndices(plan))
   updateHud(true)
   await resolveWithAnimation(result.matches, { alreadyClearing: true })
   setBusy(false)

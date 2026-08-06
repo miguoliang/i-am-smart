@@ -1,23 +1,32 @@
 import type {
   CellPos,
+  ClearPlan,
   GameSnapshot,
   HintMove,
   LevelGoal,
   MatchGroup,
   SettleResult,
+  SpecialSpawn,
   Tile,
   TileKind,
+  TileSpecial,
   TileSpawn,
 } from './types'
 
 let nextUid = 1
 
-function makeTile(wordId: string, kind: TileKind): Tile {
-  return { uid: nextUid++, wordId, kind }
+function makeTile(wordId: string, kind: TileKind, special?: TileSpecial): Tile {
+  const tile: Tile = { uid: nextUid++, wordId, kind }
+  if (special) tile.special = special
+  return tile
 }
 
 function idx(cols: number, row: number, col: number): number {
   return row * cols + col
+}
+
+function cellKey(c: CellPos): string {
+  return `${c.row},${c.col}`
 }
 
 function inBounds(rows: number, cols: number, row: number, col: number): boolean {
@@ -47,6 +56,56 @@ function pickGoals(
   return [...prefer, ...rest].slice(0, Math.min(maxGoals, wordIds.length))
 }
 
+function longestConsecutive(sorted: number[]): number {
+  if (sorted.length === 0) return 0
+  let best = 1
+  let run = 1
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === sorted[i - 1]! + 1) {
+      run += 1
+      best = Math.max(best, run)
+    } else if (sorted[i] !== sorted[i - 1]) {
+      run = 1
+    }
+  }
+  return best
+}
+
+/** Longest horizontal / vertical runs inside a match group. */
+export function measureMatchShape(cells: CellPos[]): { maxH: number; maxV: number } {
+  const byRow = new Map<number, number[]>()
+  const byCol = new Map<number, number[]>()
+  for (const c of cells) {
+    const rowCols = byRow.get(c.row)
+    if (rowCols) rowCols.push(c.col)
+    else byRow.set(c.row, [c.col])
+    const colRows = byCol.get(c.col)
+    if (colRows) colRows.push(c.row)
+    else byCol.set(c.col, [c.row])
+  }
+
+  let maxH = 0
+  let maxV = 0
+  for (const cols of byRow.values()) {
+    cols.sort((a, b) => a - b)
+    maxH = Math.max(maxH, longestConsecutive(cols))
+  }
+  for (const rows of byCol.values()) {
+    rows.sort((a, b) => a - b)
+    maxV = Math.max(maxV, longestConsecutive(rows))
+  }
+  return { maxH, maxV }
+}
+
+export function specialForMatch(cells: CellPos[]): TileSpecial | null {
+  const { maxH, maxV } = measureMatchShape(cells)
+  const isCorner = maxH >= 3 && maxV >= 3 && cells.length >= 5
+  if (isCorner || maxH >= 5 || maxV >= 5) return 'bomb'
+  if (maxH >= 4 && maxH >= maxV) return 'rocket-h'
+  if (maxV >= 4) return 'rocket-v'
+  return null
+}
+
 export class Match3Engine {
   readonly cols: number
   readonly rows: number
@@ -63,6 +122,8 @@ export class Match3Engine {
   goals: LevelGoal[]
   won = false
   lost = false
+  /** Last successful swap endpoints — prefer these when spawning specials. */
+  lastSwap: { a: CellPos; b: CellPos } | null = null
 
   constructor(options: {
     cols?: number
@@ -332,18 +393,145 @@ export class Match3Engine {
     }
 
     this.movesLeft -= 1
+    this.lastSwap = { a, b }
     return { ok: true, matches }
   }
 
-  /** Clear current matches and update collection goals. */
-  clearMatches(matches: MatchGroup[]): string[] {
-    const cleared: string[] = []
-    for (const group of matches) {
-      cleared.push(group.wordId)
-      this.bumpGoal(group.wordId, 1)
-      for (const c of group.cells) this.set(c.row, c.col, null)
+  grantMoves(amount: number): void {
+    if (amount <= 0 || this.won || this.lost) return
+    this.movesLeft += amount
+  }
+
+  private blastCells(origin: CellPos, special: TileSpecial): CellPos[] {
+    const out: CellPos[] = []
+    if (special === 'rocket-h') {
+      for (let col = 0; col < this.cols; col++) out.push({ row: origin.row, col })
+      return out
     }
-    return cleared
+    if (special === 'rocket-v') {
+      for (let row = 0; row < this.rows; row++) out.push({ row, col: origin.col })
+      return out
+    }
+    // bomb — 3×3
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const row = origin.row + dr
+        const col = origin.col + dc
+        if (inBounds(this.rows, this.cols, row, col)) out.push({ row, col })
+      }
+    }
+    return out
+  }
+
+  private pickSpecialAnchor(cells: CellPos[]): CellPos {
+    const swap = this.lastSwap
+    if (swap) {
+      for (const tip of [swap.b, swap.a]) {
+        if (cells.some((c) => c.row === tip.row && c.col === tip.col)) return tip
+      }
+    }
+    return cells[Math.floor(cells.length / 2)]!
+  }
+
+  /**
+   * Expand match cells with special detonations (chain reactions).
+   * Does not mutate the board.
+   */
+  planClear(matches: MatchGroup[]): ClearPlan {
+    const seed: CellPos[] = []
+    for (const g of matches) {
+      for (const c of g.cells) seed.push(c)
+    }
+
+    const hit = new Map<string, CellPos>()
+    const queue: CellPos[] = []
+    const detonated = new Set<string>()
+
+    const enqueue = (c: CellPos) => {
+      const k = cellKey(c)
+      if (hit.has(k)) return
+      hit.set(k, c)
+      queue.push(c)
+    }
+
+    for (const c of seed) enqueue(c)
+
+    while (queue.length > 0) {
+      const c = queue.shift()!
+      const k = cellKey(c)
+      const tile = this.get(c.row, c.col)
+      if (!tile?.special || detonated.has(k)) continue
+      detonated.add(k)
+      for (const b of this.blastCells(c, tile.special)) enqueue(b)
+    }
+
+    const morph: SpecialSpawn[] = []
+    const morphKeys = new Set<string>()
+
+    for (const group of matches) {
+      const special = specialForMatch(group.cells)
+      if (!special) continue
+      const anchor = this.pickSpecialAnchor(group.cells)
+      const tile = this.get(anchor.row, anchor.col)
+      if (!tile || tile.wordId !== group.wordId) continue
+      // Don't morph a cell that is about to detonate as an existing special —
+      // the blast already consumes it.
+      if (tile.special && detonated.has(cellKey(anchor))) continue
+      const key = cellKey(anchor)
+      if (morphKeys.has(key)) continue
+      morphKeys.add(key)
+      morph.push({
+        row: anchor.row,
+        col: anchor.col,
+        wordId: tile.wordId,
+        kind: tile.kind,
+        special,
+        uid: tile.uid,
+      })
+    }
+
+    const fade: CellPos[] = []
+    for (const c of hit.values()) {
+      if (morphKeys.has(cellKey(c))) continue
+      if (!this.get(c.row, c.col)) continue
+      fade.push(c)
+    }
+
+    const clearedWordIds: string[] = []
+    const seen = new Set<string>()
+    for (const c of hit.values()) {
+      const tile = this.get(c.row, c.col)
+      if (!tile || seen.has(tile.wordId)) continue
+      // Morphing into a special still counts as collecting that match.
+      seen.add(tile.wordId)
+      clearedWordIds.push(tile.wordId)
+    }
+
+    return { fade, morph, clearedWordIds }
+  }
+
+  /** Apply a previously computed clear plan. */
+  applyClear(plan: ClearPlan): string[] {
+    for (const c of plan.fade) this.set(c.row, c.col, null)
+
+    for (const m of plan.morph) {
+      this.set(m.row, m.col, {
+        uid: m.uid,
+        wordId: m.wordId,
+        kind: m.kind,
+        special: m.special,
+      })
+    }
+
+    for (const wordId of plan.clearedWordIds) this.bumpGoal(wordId, 1)
+    this.lastSwap = null
+    return plan.clearedWordIds
+  }
+
+  /** Clear current matches (and chained specials) and update collection goals. */
+  clearMatches(matches: MatchGroup[]): string[] {
+    const plan = this.planClear(matches)
+    return this.applyClear(plan)
   }
 
   /** Apply gravity and spawn new tiles. */
@@ -405,6 +593,7 @@ export class Match3Engine {
     this.movesLeft = this.startingMoves
     this.won = false
     this.lost = false
+    this.lastSwap = null
     this.goals = this.buildGoals()
     this.rebuildBoard()
   }
