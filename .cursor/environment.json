@@ -1,0 +1,10 @@
+{
+  "name": "词图三消 (i-am-smart web game)",
+  "install": "cd web && npm ci",
+  "terminals": [
+    {
+      "name": "vite-dev",
+      "command": "cd web && npm run dev"
+    }
+  ]
+}
