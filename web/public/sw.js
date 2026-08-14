@@ -1,5 +1,5 @@
 /* Minimal offline shell for standalone / home-screen use. */
-const CACHE = 'cititu-v3'
+const CACHE = 'cititu-v4'
 const BASE = '/i-am-smart/'
 
 self.addEventListener('install', (event) => {

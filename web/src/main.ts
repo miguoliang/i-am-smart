@@ -16,6 +16,13 @@ import {
   type ProgressState,
   unlockWord,
 } from './game/progress'
+import {
+  loadThemeId,
+  saveThemeId,
+  THEMES,
+  themeById,
+  type ThemeId,
+} from './game/themes'
 import { speakEnglish } from './game/tts'
 import type {
   CellPos,
@@ -81,6 +88,8 @@ type DragState = {
 let drag: DragState | null = null
 
 app.innerHTML = `
+  <div class="theme-backdrop" id="theme-backdrop" aria-hidden="true"></div>
+  <div class="theme-motif" id="theme-motif" aria-hidden="true"></div>
   <div class="shell">
     <div class="playfield">
       <header class="hud">
@@ -93,6 +102,8 @@ app.innerHTML = `
           <span class="hud-value" id="moves">28</span>
         </div>
       </header>
+
+      <nav class="theme-bar" id="theme-bar" aria-label="换装"></nav>
 
       <div class="board-stage">
         <div class="board-wrap">
@@ -181,6 +192,70 @@ const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
 const quizEl = app.querySelector<HTMLDivElement>('#quiz')!
 const quizImg = app.querySelector<HTMLImageElement>('#quiz-img')!
 const quizOptions = app.querySelector<HTMLDivElement>('#quiz-options')!
+const themeBarEl = app.querySelector<HTMLElement>('#theme-bar')!
+const themeBackdropEl = app.querySelector<HTMLDivElement>('#theme-backdrop')!
+const themeMotifEl = app.querySelector<HTMLDivElement>('#theme-motif')!
+
+const MOTIF_BY_THEME: Partial<Record<ThemeId, string>> = {
+  campus: 'themes/motif-campus.svg',
+  pastoral: 'themes/motif-pastoral.svg',
+  girly: 'themes/motif-girly.svg',
+}
+
+function applyTheme(id: ThemeId): void {
+  const theme = themeById(id)
+  document.body.dataset.theme = theme.id
+  document.body.classList.toggle('has-theme-art', Boolean(theme.backdrop))
+
+  if (theme.backdrop) {
+    themeBackdropEl.style.backgroundImage = `url("${assetUrl(theme.backdrop)}")`
+  } else {
+    themeBackdropEl.style.backgroundImage = ''
+  }
+
+  const motif = MOTIF_BY_THEME[theme.id]
+  if (motif) {
+    themeMotifEl.style.backgroundImage = `url("${assetUrl(motif)}")`
+    themeMotifEl.hidden = false
+  } else {
+    themeMotifEl.style.backgroundImage = ''
+    themeMotifEl.hidden = true
+  }
+
+  themeBarEl.querySelectorAll<HTMLButtonElement>('.theme-chip').forEach((btn) => {
+    const active = btn.dataset.theme === theme.id
+    btn.classList.toggle('is-active', active)
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false')
+  })
+}
+
+function initThemeBar(): void {
+  themeBarEl.innerHTML = THEMES.map(
+    (theme) => `
+      <button
+        type="button"
+        class="theme-chip"
+        data-theme="${theme.id}"
+        aria-pressed="false"
+      >${theme.label}</button>
+    `,
+  ).join('')
+
+  themeBarEl.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement | null)?.closest?.('.theme-chip') as
+      | HTMLButtonElement
+      | null
+    if (!btn?.dataset.theme) return
+    const next = themeById(btn.dataset.theme).id
+    saveThemeId(next)
+    haptic(10)
+    applyTheme(next)
+  })
+
+  applyTheme(loadThemeId())
+}
+
+initThemeBar()
 
 let pendingLearnWordId: string | null = null
 let overlayMode: 'win' | 'lose' | 'complete' | null = null
