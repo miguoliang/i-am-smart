@@ -29,6 +29,9 @@
   --radius-sm: 12px;
   --gap: 5px;
   --space: 5px;
+  --tap: 44px;
+  --play-max: 560px;
+  --sheet-max: 360px;
   --font-display: 'Baloo 2', 'Noto Sans SC', sans-serif;
   --font-body: 'Nunito', 'Noto Sans SC', sans-serif;
   --ease-snap: cubic-bezier(0.33, 0.9, 0.32, 1);
@@ -36,6 +39,8 @@
   --ease-soft: cubic-bezier(0.4, 0.0, 0.2, 1);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   color: var(--ink);
   font-family: var(--font-body);
   font-synthesis: none;
@@ -99,8 +104,9 @@ body::after {
   margin: 0 auto;
   padding:
     calc(6px + var(--safe-top))
-    6px
-    calc(6px + var(--safe-bottom));
+    calc(8px + var(--safe-right))
+    calc(6px + var(--safe-bottom))
+    calc(8px + var(--safe-left));
   display: grid;
   position: relative;
   z-index: 1;
@@ -166,7 +172,7 @@ body::after {
 }
 
 .playfield {
-  width: min(100%, 560px);
+  width: min(100%, var(--play-max));
   height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -229,7 +235,7 @@ body::after {
   z-index: 1;
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
   align-items: center;
   padding: 0 2px 4px;
 }
@@ -246,8 +252,8 @@ body::after {
 
 .settings-btn {
   appearance: none;
-  width: 34px;
-  height: 34px;
+  width: var(--tap);
+  height: var(--tap);
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--hud-ink) 14%, transparent);
   border-radius: 999px;
@@ -257,6 +263,7 @@ body::after {
   background: color-mix(in srgb, var(--hud-ink) 7%, transparent);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .settings-btn svg {
@@ -712,7 +719,11 @@ body::after {
   z-index: 40;
   display: grid;
   place-items: center;
-  padding: calc(16px + var(--safe-top)) 18px calc(18px + var(--safe-bottom));
+  padding:
+    calc(16px + var(--safe-top))
+    calc(18px + var(--safe-right))
+    calc(18px + var(--safe-bottom))
+    calc(18px + var(--safe-left));
   background:
     radial-gradient(ellipse at 50% 20%, rgba(255, 246, 200, 0.55), transparent 55%),
     rgba(20, 42, 36, 0.55);
@@ -724,7 +735,7 @@ body::after {
 }
 
 .quiz-card {
-  width: min(100%, 340px);
+  width: min(100%, var(--sheet-max));
   padding: 22px 18px 18px;
   border-radius: 28px;
   background:
@@ -880,10 +891,12 @@ button.btn {
   appearance: none;
   border: none;
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 14px 18px;
+  min-height: var(--tap);
   font-family: var(--font-display);
   font-size: 1.05rem;
   cursor: pointer;
+  touch-action: manipulation;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, transparent 42%),
     linear-gradient(180deg, #f2a83a 0%, var(--accent) 48%, var(--accent-deep) 100%);
@@ -907,8 +920,9 @@ button.btn:active {
   place-items: center;
   padding:
     calc(24px + var(--safe-top))
-    20px
-    calc(24px + var(--safe-bottom));
+    calc(20px + var(--safe-right))
+    calc(24px + var(--safe-bottom))
+    calc(20px + var(--safe-left));
   background:
     radial-gradient(circle at 50% 20%, rgba(255, 236, 170, 0.4), transparent 40%),
     linear-gradient(165deg, #5fb396 0%, #2f7a66 48%, #1f5346 100%);
@@ -923,7 +937,7 @@ button.btn:active {
 
 .learn-pick,
 .learn-card {
-  width: min(100%, 360px);
+  width: min(100%, var(--sheet-max));
   padding: 28px 22px 22px;
   border-radius: 28px;
   background:
@@ -1032,8 +1046,9 @@ button.btn:active {
   place-items: center;
   padding:
     calc(24px + var(--safe-top))
-    20px
-    calc(24px + var(--safe-bottom));
+    calc(20px + var(--safe-right))
+    calc(24px + var(--safe-bottom))
+    calc(20px + var(--safe-left));
   z-index: 80;
   text-align: center;
   overflow: hidden;
@@ -1109,7 +1124,7 @@ button.btn:active {
 .end-content {
   position: relative;
   z-index: 2;
-  width: min(100%, 360px);
+  width: min(100%, var(--sheet-max));
   display: grid;
   justify-items: center;
   gap: 0;
@@ -1793,9 +1808,10 @@ body.has-theme-art::after {
   display: none;
   place-items: center;
   padding:
-    calc(20px + var(--safe-top))
-    18px
-    calc(20px + var(--safe-bottom));
+    calc(12px + var(--safe-top))
+    calc(16px + var(--safe-right))
+    calc(16px + var(--safe-bottom))
+    calc(16px + var(--safe-left));
   background: rgba(16, 28, 24, 0.52);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1811,8 +1827,12 @@ body.has-theme-art::after {
 }
 
 .settings-card {
-  width: min(100%, 360px);
-  padding: 22px 18px 18px;
+  width: min(100%, var(--sheet-max));
+  max-height: calc(var(--vvh, 100dvh) - var(--safe-top) - var(--safe-bottom) - 24px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 20px 16px 16px;
   border-radius: 26px;
   background: color-mix(in srgb, var(--hud-fill) 88%, #fff);
   color: var(--hud-ink);
@@ -1833,7 +1853,7 @@ body.has-theme-art::after {
 }
 
 .settings-title {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-family: var(--font-display);
   font-size: 1.7rem;
   line-height: 1.1;
@@ -1852,7 +1872,7 @@ body.has-theme-art::after {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin: 0 0 18px;
+  margin: 0 0 16px;
 }
 
 .settings-theme {
@@ -1866,11 +1886,15 @@ body.has-theme-art::after {
   cursor: pointer;
   text-align: left;
   box-shadow: 0 2px 0 color-mix(in srgb, var(--hud-ink) 10%, transparent);
+  touch-action: manipulation;
+  min-height: var(--tap);
 }
 
 .settings-theme-art {
   display: block;
-  height: 72px;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 72px;
   background-size: cover;
   background-position: center;
 }
@@ -1884,7 +1908,7 @@ body.has-theme-art::after {
 .settings-theme-copy {
   display: grid;
   gap: 1px;
-  padding: 8px 10px 10px;
+  padding: 10px 12px 12px;
 }
 
 .settings-theme-name {
@@ -1911,7 +1935,8 @@ body.has-theme-art::after {
 }
 
 .settings-close {
-  min-width: 12rem;
+  width: 100%;
+  min-width: 0;
 }
 
 body[data-theme='campus'] {
@@ -1995,11 +2020,100 @@ body[data-theme='girly'] .board-wrap {
 
 @media (max-width: 360px) {
   .theme-motif {
-    height: 72px;
-    opacity: 0.8;
+    height: 64px;
+    opacity: 0.72;
+  }
+}
+
+/* Phone landscape / short chrome: keep the pause sheet on one screen. */
+@media (max-height: 540px) {
+  .hud {
+    min-height: 52px;
+    padding: 5px;
+  }
+
+  .hud-top {
+    padding-bottom: 2px;
+  }
+
+  .settings-card {
+    padding: 12px 12px 12px;
+  }
+
+  .settings-title {
+    font-size: 1.28rem;
+    margin-bottom: 8px;
+  }
+
+  .settings-section {
+    margin-bottom: 6px;
+  }
+
+  .settings-themes {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .settings-theme-art {
-    height: 62px;
+    aspect-ratio: 4 / 3;
+    min-height: 44px;
+  }
+
+  .settings-theme-copy {
+    padding: 6px 6px 8px;
+  }
+
+  .settings-theme-name {
+    font-size: 0.86rem;
+  }
+
+  .settings-theme-hint {
+    display: none;
+  }
+
+  .theme-motif {
+    display: none;
+  }
+}
+
+/* iPad / large phones in portrait: bigger board and sheets. */
+@media (min-width: 700px) {
+  :root {
+    --play-max: 720px;
+    --sheet-max: 520px;
+    --space: 8px;
+  }
+
+  #app {
+    padding:
+      calc(12px + var(--safe-top))
+      calc(18px + var(--safe-right))
+      calc(12px + var(--safe-bottom))
+      calc(18px + var(--safe-left));
+  }
+
+  .hud {
+    min-height: 72px;
+    padding: 10px;
+    border-radius: 24px;
+  }
+
+  .settings-theme-art {
+    min-height: 96px;
+  }
+
+  .settings-theme-name {
+    font-size: 1.12rem;
+  }
+
+  .quiz-option {
+    min-height: var(--tap);
+  }
+}
+
+@media (min-width: 700px) and (min-height: 900px) {
+  :root {
+    --play-max: 780px;
   }
 }

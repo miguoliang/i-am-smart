@@ -372,6 +372,7 @@ function bindBoardLayout(): void {
   ro.observe(boardStageEl)
   ro.observe(playfieldEl)
   window.addEventListener('orientationchange', () => {
+    window.setTimeout(() => layoutBoard(), 80)
     requestAnimationFrame(() => layoutBoard())
   })
   window.addEventListener('resize', layoutBoard)

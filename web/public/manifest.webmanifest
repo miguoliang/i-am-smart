@@ -5,7 +5,7 @@
   "start_url": "/i-am-smart/",
   "scope": "/i-am-smart/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#2f7a66",
   "theme_color": "#2f7a66",
   "lang": "zh-CN",
