@@ -371,7 +371,7 @@ async function ensurePlayable(): Promise<void> {
 function spawnBursts(matches: MatchGroup[]): void {
   const { size, gap, pad } = boardMetrics()
   // board-wrap padding matches .board-wrap / .burst-layer inset (no layout reads).
-  const wrapPad = 4
+  const wrapPad = 8
 
   for (const group of matches) {
     for (const c of group.cells) {
