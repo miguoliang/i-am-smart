@@ -93,17 +93,25 @@ app.innerHTML = `
   <div class="shell">
     <div class="playfield">
       <header class="hud">
-        <div class="hud-level" id="level-chip">第 1 关</div>
-        <section class="goals-bar" aria-label="收集目标">
-          <div class="goal-grid" id="goals"></div>
-        </section>
+        <button class="settings-btn" type="button" id="settings-btn" aria-label="设置" aria-haspopup="dialog" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.2 7.2 0 0 0-1.63-.94L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5l-.36 2.54c-.59.22-1.14.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.6 8.16a.5.5 0 0 0 .12.64L4.75 10.4c-.04.31-.07.63-.07.94s.03.63.07.94L2.72 13.86a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.7.22l2.39-.96c.49.4 1.04.72 1.63.94l.36 2.54a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5l.36-2.54c.59-.22 1.14-.53 1.63-.94l2.39.96c.27.12.56.02.7-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
+            />
+          </svg>
+        </button>
+        <div class="hud-main">
+          <div class="hud-level" id="level-chip">第 1 关</div>
+          <section class="goals-bar" aria-label="收集目标">
+            <div class="goal-grid" id="goals"></div>
+          </section>
+        </div>
         <div class="hud-stat" aria-label="剩余步数" id="moves-badge">
-          <span class="hud-label">步数</span>
           <span class="hud-value" id="moves">28</span>
+          <span class="hud-label">步</span>
         </div>
       </header>
-
-      <nav class="theme-bar" id="theme-bar" aria-label="换装"></nav>
 
       <div class="board-stage">
         <div class="board-wrap">
@@ -156,6 +164,15 @@ app.innerHTML = `
         <div class="quiz-options" id="quiz-options"></div>
       </div>
     </div>
+    <div class="settings" id="settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <p class="settings-kicker">暂停</p>
+        <h2 class="settings-title" id="settings-title">设置</h2>
+        <p class="settings-section">场景</p>
+        <div class="settings-themes" id="settings-themes"></div>
+        <button class="btn end-btn settings-close" type="button" id="settings-close">继续游戏</button>
+      </div>
+    </div>
   </div>
 `
 
@@ -192,7 +209,10 @@ const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
 const quizEl = app.querySelector<HTMLDivElement>('#quiz')!
 const quizImg = app.querySelector<HTMLImageElement>('#quiz-img')!
 const quizOptions = app.querySelector<HTMLDivElement>('#quiz-options')!
-const themeBarEl = app.querySelector<HTMLElement>('#theme-bar')!
+const settingsEl = app.querySelector<HTMLDivElement>('#settings')!
+const settingsBtn = app.querySelector<HTMLButtonElement>('#settings-btn')!
+const settingsCloseBtn = app.querySelector<HTMLButtonElement>('#settings-close')!
+const settingsThemesEl = app.querySelector<HTMLDivElement>('#settings-themes')!
 const themeBackdropEl = app.querySelector<HTMLDivElement>('#theme-backdrop')!
 const themeMotifEl = app.querySelector<HTMLDivElement>('#theme-motif')!
 
@@ -222,27 +242,58 @@ function applyTheme(id: ThemeId): void {
     themeMotifEl.hidden = true
   }
 
-  themeBarEl.querySelectorAll<HTMLButtonElement>('.theme-chip').forEach((btn) => {
+  settingsThemesEl.querySelectorAll<HTMLButtonElement>('.settings-theme').forEach((btn) => {
     const active = btn.dataset.theme === theme.id
     btn.classList.toggle('is-active', active)
     btn.setAttribute('aria-pressed', active ? 'true' : 'false')
   })
 }
 
-function initThemeBar(): void {
-  themeBarEl.innerHTML = THEMES.map(
-    (theme) => `
+function otherOverlayOpen(): boolean {
+  return (
+    overlayEl.classList.contains('show') ||
+    learnEl.classList.contains('show') ||
+    !quizEl.hidden
+  )
+}
+
+function closeSettings(): void {
+  settingsEl.hidden = true
+  settingsEl.classList.remove('show')
+  settingsBtn.setAttribute('aria-expanded', 'false')
+}
+
+function openSettings(): void {
+  if (otherOverlayOpen()) return
+  settingsEl.hidden = false
+  settingsEl.classList.add('show')
+  settingsBtn.setAttribute('aria-expanded', 'true')
+  haptic(10)
+}
+
+function initSettings(): void {
+  settingsThemesEl.innerHTML = THEMES.map((theme) => {
+    const art = theme.backdrop
+      ? `style="background-image: url('${assetUrl(theme.backdrop)}')"`
+      : 'data-classic="true"'
+    return `
       <button
         type="button"
-        class="theme-chip"
+        class="settings-theme${theme.backdrop ? '' : ' is-classic'}"
         data-theme="${theme.id}"
         aria-pressed="false"
-      >${theme.label}</button>
-    `,
-  ).join('')
+      >
+        <span class="settings-theme-art" ${art}></span>
+        <span class="settings-theme-copy">
+          <span class="settings-theme-name">${theme.label}</span>
+          <span class="settings-theme-hint">${theme.hint}</span>
+        </span>
+      </button>
+    `
+  }).join('')
 
-  themeBarEl.addEventListener('click', (event) => {
-    const btn = (event.target as HTMLElement | null)?.closest?.('.theme-chip') as
+  settingsThemesEl.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement | null)?.closest?.('.settings-theme') as
       | HTMLButtonElement
       | null
     if (!btn?.dataset.theme) return
@@ -252,10 +303,24 @@ function initThemeBar(): void {
     applyTheme(next)
   })
 
+  settingsBtn.addEventListener('click', () => {
+    if (settingsEl.classList.contains('show')) closeSettings()
+    else openSettings()
+  })
+  settingsCloseBtn.addEventListener('click', closeSettings)
+  settingsEl.addEventListener('click', (event) => {
+    if (event.target === settingsEl) closeSettings()
+  })
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && settingsEl.classList.contains('show')) {
+      closeSettings()
+    }
+  })
+
   applyTheme(loadThemeId())
 }
 
-initThemeBar()
+initSettings()
 
 let pendingLearnWordId: string | null = null
 let overlayMode: 'win' | 'lose' | 'complete' | null = null
@@ -306,6 +371,7 @@ function bindBoardLayout(): void {
   ro.observe(boardStageEl)
   ro.observe(playfieldEl)
   window.addEventListener('orientationchange', () => {
+    window.setTimeout(() => layoutBoard(), 80)
     requestAnimationFrame(() => layoutBoard())
   })
   window.addEventListener('resize', layoutBoard)
@@ -1021,6 +1087,7 @@ function startPlay(setup: PlaySetup): void {
   hideOverlay()
   hideLearn()
   hideQuiz()
+  closeSettings()
   currentSetup = setup
   resetLevelClearCounts()
   quizUsedThisLevel = false
