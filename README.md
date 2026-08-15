@@ -31,17 +31,16 @@ npm run dev
 
 ### Netlify
 
-仓库根目录的 `netlify.toml` 会构建 `web/` 并发布 `web/dist`。在 Netlify 后台给站点加上构建时环境变量：
+在 Netlify 里 **Import 这个 GitHub 仓库** 即可，不需要 `NETLIFY_AUTH_TOKEN`。仓库根目录的 `netlify.toml` 会构建 `web/` 并发布 `web/dist`。
+
+站点 **Environment variables**（要给 Builds 用）加上：
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`（anon/publishable，不要放 service_role）
 
-两种发布方式（二选一即可，不要两个都开，否则会发两次）：
+然后 **Trigger deploy**。生产分支用 `main`（或你在 Netlify 里选的分支）。
 
-1. **Netlify 连接这个 GitHub 仓库**（以前的做法）：推到 `main` 就会构建。
-2. **GitHub Actions**（`.github/workflows/deploy-netlify.yml`）：再加仓库 Secrets `NETLIFY_AUTH_TOKEN`、`NETLIFY_SITE_ID`。
-
-把自定义域名（例如 `www.iamsmart.top`）指到该 Netlify 站点后，把同一个 origin 加进 Supabase Auth 的 Redirect URLs；本地 Vite 已包含 `localhost:5173`。
+把自定义域名（例如 `www.iamsmart.top`）指到该站点后，把同一个 origin 加进 Supabase Auth 的 Redirect URLs；本地 Vite 已包含 `localhost:5173`。
 
 ### Supabase（词包同步）
 
