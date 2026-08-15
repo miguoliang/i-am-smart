@@ -25,11 +25,17 @@ const extraRedirects = [
   'http://localhost:5173/**',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5173/**',
-  'https://miguoliang.github.io',
-  'https://miguoliang.github.io/**',
-  'https://miguoliang.github.io/i-am-smart',
-  'https://miguoliang.github.io/i-am-smart/**',
 ]
+
+const siteUrl = process.env.VITE_SUPABASE_URL?.replace(/\/$/, '')
+if (siteUrl) {
+  extraRedirects.push(
+    siteUrl,
+    `${siteUrl}/**`,
+    `${siteUrl}/functions/v1/app`,
+    `${siteUrl}/functions/v1/app/**`,
+  )
+}
 
 async function management(pathname, opts = {}) {
   const res = await fetch(`https://api.supabase.com/v1${pathname}`, {

@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 
-// Project Pages: https://<user>.github.io/i-am-smart/
+const assetBase = process.env.VITE_ASSET_BASE || '/'
+
 export default defineConfig({
-  base: '/i-am-smart/',
+  base: assetBase.endsWith('/') ? assetBase : `${assetBase}/`,
   server: {
     host: true,
   },
