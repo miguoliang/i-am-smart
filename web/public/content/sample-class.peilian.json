@@ -1,0 +1,63 @@
+{
+  "schema": "peilian-pack/v1",
+  "id": "sample-class",
+  "titleZh": "示例·一节外教课",
+  "titleEn": "Sample class",
+  "blurb": "家长旁听记下的词和句子 · 一课一份",
+  "words": [
+    {
+      "id": "apple",
+      "english": "apple",
+      "chinese": "苹果",
+      "pos": "noun",
+      "article": "an",
+      "image": "cards/apple.png"
+    },
+    {
+      "id": "water",
+      "english": "water",
+      "chinese": "水",
+      "pos": "noun",
+      "article": "a",
+      "image": "cards/water.png"
+    },
+    {
+      "id": "run",
+      "english": "run",
+      "chinese": "跑",
+      "pos": "verb"
+    },
+    {
+      "id": "happy",
+      "english": "happy",
+      "chinese": "开心的",
+      "pos": "adjective"
+    }
+  ],
+  "sentences": [
+    {
+      "id": "hello-how-are-you",
+      "english": "Hello, how are you?",
+      "chinese": "你好吗？"
+    },
+    {
+      "id": "i-like-apples",
+      "english": "I like apples.",
+      "chinese": "我喜欢苹果。"
+    },
+    {
+      "id": "can-i-have-water",
+      "english": "Can I have some water, please?"
+    },
+    {
+      "id": "he-is-running",
+      "english": "He is running.",
+      "chinese": "他在跑。"
+    },
+    {
+      "id": "i-am-happy",
+      "english": "I am happy today.",
+      "chinese": "我今天很开心。"
+    }
+  ]
+}

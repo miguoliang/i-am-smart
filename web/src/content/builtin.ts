@@ -1,6 +1,7 @@
 import {
   guessArticle,
   type LessonPack,
+  type SentenceDef,
   type WordDef,
   type WordPos,
 } from './types'
@@ -26,91 +27,30 @@ function word(
   }
 }
 
-/** Demo content only — replaceable by any peilian-pack/v1 document. */
+function sentence(id: string, english: string, chinese = ''): SentenceDef {
+  return { id, english, chinese }
+}
+
+/** One sample class — replaceable by any peilian-pack/v1 document. */
 export const BUILTIN_PACKS: LessonPack[] = [
   {
-    id: 'food',
-    titleZh: '食物饮品',
-    titleEn: 'Food & Drink',
-    blurb: '示例词包 · 可换成你家教材',
+    id: 'sample-class',
+    titleZh: '示例·一节外教课',
+    titleEn: 'Sample class',
+    blurb: '家长旁听记下的词和句子 · 一课一份',
     source: 'builtin',
     words: [
       word('apple', 'apple', '苹果', { article: 'an' }),
-      word('banana', 'banana', '香蕉'),
-      word('cake', 'cake', '蛋糕'),
-      word('egg', 'egg', '鸡蛋', { article: 'an' }),
-      word('milk', 'milk', '牛奶'),
-      word('juice', 'juice', '果汁'),
-      word('bread', 'bread', '面包'),
-      word('cheese', 'cheese', '奶酪'),
-    ],
-  },
-  {
-    id: 'animals',
-    titleZh: '动物',
-    titleEn: 'Animals',
-    blurb: '示例词包 · 可换成你家教材',
-    source: 'builtin',
-    words: [
-      word('cat', 'cat', '猫'),
-      word('dog', 'dog', '狗'),
-      word('bird', 'bird', '鸟'),
-      word('fish', 'fish', '鱼'),
-      word('bear', 'bear', '熊'),
-      word('horse', 'horse', '马'),
-      word('pig', 'pig', '猪'),
-      word('chicken', 'chicken', '鸡'),
-    ],
-  },
-  {
-    id: 'things',
-    titleZh: '日常事物',
-    titleEn: 'Things Around Us',
-    blurb: '示例词包 · 可换成你家教材',
-    source: 'builtin',
-    words: [
-      word('ball', 'ball', '球'),
-      word('book', 'book', '书'),
-      word('bag', 'bag', '包'),
-      word('bus', 'bus', '公交车'),
-      word('bicycle', 'bicycle', '自行车'),
-      word('car', 'car', '小汽车'),
-      word('house', 'house', '房子'),
-      word('tree', 'tree', '树'),
-    ],
-  },
-  {
-    id: 'actions',
-    titleZh: '动作动词',
-    titleEn: 'Actions',
-    blurb: '无配图示例 · 文字卡 + 动作句型',
-    source: 'builtin',
-    words: [
+      word('water', 'water', '水'),
       word('run', 'run', '跑', { pos: 'verb' }),
-      word('jump', 'jump', '跳', { pos: 'verb' }),
-      word('eat', 'eat', '吃', { pos: 'verb' }),
-      word('drink', 'drink', '喝', { pos: 'verb' }),
-      word('sleep', 'sleep', '睡觉', { pos: 'verb' }),
-      word('swim', 'swim', '游泳', { pos: 'verb' }),
-      word('read', 'read', '读', { pos: 'verb' }),
-      word('write', 'write', '写', { pos: 'verb' }),
+      word('happy', 'happy', '开心的', { pos: 'adjective' }),
     ],
-  },
-  {
-    id: 'describe',
-    titleZh: '描述形容词',
-    titleEn: 'Describe',
-    blurb: '无配图示例 · 文字卡 + It is / I am',
-    source: 'builtin',
-    words: [
-      word('hot', 'hot', '热的', { pos: 'adjective' }),
-      word('cold', 'cold', '冷的', { pos: 'adjective' }),
-      word('big', 'big', '大的', { pos: 'adjective' }),
-      word('small', 'small', '小的', { pos: 'adjective' }),
-      word('happy', 'happy', '快乐的', { pos: 'adjective' }),
-      word('sad', 'sad', '伤心的', { pos: 'adjective' }),
-      word('hungry', 'hungry', '饿的', { pos: 'adjective' }),
-      word('tired', 'tired', '累的', { pos: 'adjective' }),
+    sentences: [
+      sentence('hello-how-are-you', 'Hello, how are you?', '你好吗？'),
+      sentence('i-like-apples', 'I like apples.', '我喜欢苹果。'),
+      sentence('can-i-have-water', 'Can I have some water, please?'),
+      sentence('he-is-running', 'He is running.', '他在跑。'),
+      sentence('i-am-happy', 'I am happy today.', '我今天很开心。'),
     ],
   },
 ]

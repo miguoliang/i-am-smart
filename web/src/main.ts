@@ -5,12 +5,17 @@ import {
   reviewCueHidden,
   reviewCueRevealed,
   reviewFrames,
+  sentenceCue,
+  sentenceReviewCueHidden,
+  sentenceReviewCueRevealed,
   tipText,
   vocabCue,
   type QuestionTemplate,
 } from './data/questions'
 import { preloadPackImages, resolveImageSrc, wordImageSrc, fileToDataUrl } from './content/images'
 import {
+  MAX_SENTENCES,
+  MAX_WORDS,
   PackParseError,
   downloadPackJson,
   parseContentPackJson,
@@ -33,17 +38,23 @@ import {
   WORD_POS,
   guessArticle,
   hasImage,
+  packCountLabel,
+  packHasContent,
+  zhOrPending,
   type LessonPack,
+  type SentenceDef,
   type WordDef,
   type WordPos,
 } from './content/types'
 import {
   draftToPack,
   emptyDraft,
+  emptySentenceForm,
   emptyWordForm,
-  moveDraftWord,
+  moveDraftItem,
   packToDraft,
   posExtra,
+  sentenceFromForm,
   wordFromForm,
   type DraftWord,
   type PackDraft,
@@ -62,16 +73,23 @@ function requireApp(): HTMLDivElement {
 const app = requireApp()
 
 type Screen = 'home' | 'create' | 'session'
-type Phase = 'vocab' | 'talk' | 'review' | 'done'
+type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
+type Phase = PracticePhase | 'done'
 
 interface Session {
   pack: LessonPack
   phase: Phase
   wordIndex: number
   questionIndex: number
+  sentenceIndex: number
+  reviewIndex: number
   revealAnswer: boolean
   reviewReveal: boolean
 }
+
+type ReviewItem =
+  | { kind: 'word'; word: WordDef }
+  | { kind: 'sentence'; sentence: SentenceDef }
 
 let screen: Screen = 'home'
 let session: Session | null = null
@@ -82,11 +100,34 @@ let cloudBusy = false
 let cloudUserId: string | null = null
 let draft: PackDraft = emptyDraft()
 
-const PHASES: { id: Exclude<Phase, 'done'>; label: string }[] = [
-  { id: 'vocab', label: '词汇' },
-  { id: 'talk', label: '开口' },
-  { id: 'review', label: '巩固' },
-]
+function practicePhases(pack: LessonPack): { id: PracticePhase; label: string }[] {
+  const phases: { id: PracticePhase; label: string }[] = []
+  if (pack.words.length) {
+    phases.push({ id: 'vocab', label: '词汇' }, { id: 'talk', label: '开口' })
+  }
+  if (pack.sentences.length) {
+    phases.push({ id: 'sentences', label: '句子' })
+  }
+  phases.push({ id: 'review', label: '巩固' })
+  return phases
+}
+
+function firstPracticePhase(pack: LessonPack): PracticePhase {
+  return practicePhases(pack)[0]?.id ?? 'review'
+}
+
+function phaseAfter(pack: LessonPack, current: PracticePhase): Phase {
+  const ids = practicePhases(pack).map((p) => p.id)
+  const next = ids[ids.indexOf(current) + 1]
+  return next ?? 'done'
+}
+
+function reviewQueue(pack: LessonPack): ReviewItem[] {
+  return [
+    ...pack.words.map((word) => ({ kind: 'word' as const, word })),
+    ...pack.sentences.map((sentence) => ({ kind: 'sentence' as const, sentence })),
+  ]
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -126,7 +167,7 @@ async function connectCloud(): Promise<void> {
     const session = await ensureCloudSession()
     cloudUserId = session?.userId ?? null
     packCache = await syncFromCloud()
-    homeStatus = '已同步云端词包'
+    homeStatus = '已同步云端课包'
   } catch (err) {
     homeError = err instanceof Error ? err.message : '云端连接失败'
     homeStatus = ''
@@ -138,14 +179,16 @@ async function connectCloud(): Promise<void> {
 
 async function startPack(packId: string): Promise<void> {
   const pack = await getPackById(packId)
-  if (!pack || pack.words.length === 0) return
+  if (!pack || !packHasContent(pack)) return
   unlockAudio()
   void preloadPackImages(pack)
   session = {
     pack,
-    phase: 'vocab',
+    phase: firstPracticePhase(pack),
     wordIndex: 0,
     questionIndex: 0,
+    sentenceIndex: 0,
+    reviewIndex: 0,
     revealAnswer: false,
     reviewReveal: false,
   }
@@ -181,6 +224,16 @@ function openCopy(pack: LessonPack): void {
 function currentWord(): WordDef | null {
   if (!session) return null
   return session.pack.words[session.wordIndex] ?? null
+}
+
+function currentSentence(): SentenceDef | null {
+  if (!session) return null
+  return session.pack.sentences[session.sentenceIndex] ?? null
+}
+
+function currentReviewItem(): ReviewItem | null {
+  if (!session) return null
+  return reviewQueue(session.pack)[session.reviewIndex] ?? null
 }
 
 function talkQueue(word: WordDef | null): QuestionTemplate[] {
@@ -222,8 +275,9 @@ function nextTalk(): void {
     session.wordIndex += 1
     session.questionIndex = 0
   } else {
-    session.phase = 'review'
-    session.wordIndex = 0
+    session.phase = phaseAfter(session.pack, 'talk')
+    session.sentenceIndex = 0
+    session.reviewIndex = 0
     session.reviewReveal = false
   }
   render()
@@ -242,6 +296,24 @@ function prevTalk(): void {
   render()
 }
 
+function nextSentence(): void {
+  if (!session) return
+  if (session.sentenceIndex >= session.pack.sentences.length - 1) {
+    session.phase = 'review'
+    session.reviewIndex = 0
+    session.reviewReveal = false
+  } else {
+    session.sentenceIndex += 1
+  }
+  render()
+}
+
+function prevSentence(): void {
+  if (!session || session.sentenceIndex <= 0) return
+  session.sentenceIndex -= 1
+  render()
+}
+
 function nextReview(): void {
   if (!session) return
   if (!session.reviewReveal) {
@@ -249,28 +321,26 @@ function nextReview(): void {
     render()
     return
   }
-  if (session.wordIndex >= session.pack.words.length - 1) {
+  const total = reviewQueue(session.pack).length
+  if (session.reviewIndex >= total - 1) {
     session.phase = 'done'
   } else {
-    session.wordIndex += 1
+    session.reviewIndex += 1
     session.reviewReveal = false
   }
   render()
 }
 
-function renderPhaseRail(active: Phase): HTMLElement {
+function renderPhaseRail(pack: LessonPack, active: Phase): HTMLElement {
+  const phases = practicePhases(pack)
   const rail = el('nav', 'phase-rail')
   rail.setAttribute('aria-label', '练习阶段')
-  for (const phase of PHASES) {
+  const activeIdx =
+    active === 'done' ? phases.length : phases.findIndex((p) => p.id === active)
+  for (const [index, phase] of phases.entries()) {
     const item = el('div', 'phase-item')
     if (phase.id === active) item.classList.add('is-active')
-    if (
-      (active === 'talk' && phase.id === 'vocab') ||
-      (active === 'review' && (phase.id === 'vocab' || phase.id === 'talk')) ||
-      active === 'done'
-    ) {
-      item.classList.add('is-done')
-    }
+    if (active === 'done' || index < activeIdx) item.classList.add('is-done')
     item.append(el('span', 'phase-dot'), el('span', 'phase-label', phase.label))
     rail.append(item)
   }
@@ -284,6 +354,7 @@ function renderShell(opts: {
   body: HTMLElement
   footer?: HTMLElement
 }): void {
+  if (!session) return
   clearApp()
   const shell = el('div', 'shell')
 
@@ -296,7 +367,7 @@ function renderShell(opts: {
   top.append(back, el('div', 'brand-mark', '陪练本'))
   shell.append(top)
 
-  if (opts.phase !== 'done') shell.append(renderPhaseRail(opts.phase))
+  if (opts.phase !== 'done') shell.append(renderPhaseRail(session.pack, opts.phase))
 
   const main = el('main', 'main')
   const heading = el('div', 'heading')
@@ -332,9 +403,9 @@ async function importPackFile(file: File): Promise<void> {
 
 async function importSamplePack(): Promise<void> {
   try {
-    const url = `${import.meta.env.BASE_URL}content/sample-week-food.peilian.json`
+    const url = `${import.meta.env.BASE_URL}content/sample-class.peilian.json`
     const res = await fetch(url)
-    if (!res.ok) throw new Error('示例词包下载失败')
+    if (!res.ok) throw new Error('示例课包下载失败')
     await importPackText(await res.text())
   } catch (err) {
     homeError = err instanceof Error ? err.message : '示例导入失败'
@@ -342,14 +413,26 @@ async function importSamplePack(): Promise<void> {
   }
 }
 
+function renderPackThumbs(pack: LessonPack): HTMLElement {
+  const thumbs = el('div', 'pack-thumbs')
+  const words = pack.words.slice(0, 4)
+  if (words.length) {
+    for (const word of words) thumbs.append(renderThumb(word, 'pack-thumb'))
+    return thumbs
+  }
+  for (const sentence of pack.sentences.slice(0, 4)) {
+    const tile = el('div', 'pack-thumb pack-thumb-word')
+    tile.textContent = sentence.english.slice(0, 8)
+    tile.title = sentence.english
+    thumbs.append(tile)
+  }
+  return thumbs
+}
+
 function renderPackCard(pack: LessonPack): HTMLElement {
   const wrap = el('div', 'pack-card-wrap')
   const card = el('button', 'pack-card')
   card.type = 'button'
-  const thumbs = el('div', 'pack-thumbs')
-  for (const word of pack.words.slice(0, 4)) {
-    thumbs.append(renderThumb(word, 'pack-thumb'))
-  }
   const meta = el('div', 'pack-meta')
   const badge =
     pack.source === 'custom'
@@ -360,9 +443,9 @@ function renderPackCard(pack: LessonPack): HTMLElement {
   meta.append(
     titleRow,
     el('div', 'pack-en', pack.titleEn),
-    el('div', 'pack-blurb', `${pack.words.length} 词 · ${pack.blurb}`),
+    el('div', 'pack-blurb', `${packCountLabel(pack)} · ${pack.blurb}`),
   )
-  card.append(thumbs, meta)
+  card.append(renderPackThumbs(pack), meta)
   card.addEventListener('click', () => void startPack(pack.id))
   wrap.append(card)
 
@@ -414,7 +497,7 @@ function renderPackCard(pack: LessonPack): HTMLElement {
     del.type = 'button'
     del.addEventListener('click', (e) => {
       e.stopPropagation()
-      if (!confirm(`删除词包「${pack.titleZh}」？`)) return
+      if (!confirm(`删除这节课「${pack.titleZh}」？`)) return
       void deleteCustomPack(pack.id).then(async () => {
         await refreshPacks()
         render()
@@ -442,11 +525,11 @@ function renderHome(): void {
   const hero = el('section', 'hero')
   hero.append(
     el('p', 'hero-brand', '陪练本'),
-    el('h1', 'hero-title', '课后开口陪练'),
+    el('h1', 'hero-title', '一课一份陪练'),
     el(
       'p',
       'hero-lead',
-      '不用改 JSON。网页里新建或编辑词包；名词可配图，动词和形容词没有图也能练。',
+      '孩子上外教课，家长在旁边记下这节课用到的词和句子。一课一份，课后拿出来练。',
     ),
   )
   shell.append(hero)
@@ -457,7 +540,7 @@ function renderHome(): void {
       el(
         'p',
         'cloud-note',
-        '本机词包可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
+        '本机课包可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
       ),
     )
   } else {
@@ -466,7 +549,7 @@ function renderHome(): void {
       'cloud-note',
       cloudUserId
         ? `云端已连接 · ${cloudUserId.slice(0, 8)}…`
-        : '云端已配置，可匿名登录并同步词包',
+        : '云端已配置，可匿名登录并同步课包',
     )
     const syncBtn = el(
       'button',
@@ -493,15 +576,15 @@ function renderHome(): void {
   })
   importBtn.addEventListener('click', () => fileInput.click())
 
-  const createBtn = el('button', 'btn-primary', '新建词包')
+  const createBtn = el('button', 'btn-primary', '记一节课')
   createBtn.type = 'button'
   createBtn.addEventListener('click', openCreate)
 
-  const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例词包')
+  const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例课')
   sampleBtn.type = 'button'
   sampleBtn.addEventListener('click', () => void importSamplePack())
 
-  const sampleLink = el('a', 'sample-link', '查看词包格式说明')
+  const sampleLink = el('a', 'sample-link', '查看课包格式说明')
   sampleLink.href = `${import.meta.env.BASE_URL}content/README.md`
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
@@ -521,13 +604,13 @@ function renderHome(): void {
 
   if (custom.length) {
     const mine = el('section', 'pack-list')
-    mine.append(el('h2', 'section-label', '我的词包'))
+    mine.append(el('h2', 'section-label', '我的课'))
     for (const pack of custom) mine.append(renderPackCard(pack))
     shell.append(mine)
   }
 
   const demos = el('section', 'pack-list')
-  demos.append(el('h2', 'section-label', '示例词包（可替换）'))
+  demos.append(el('h2', 'section-label', '示例课'))
   for (const pack of builtin) demos.append(renderPackCard(pack))
   shell.append(demos)
 
@@ -535,31 +618,44 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '示例词包可「复制并编辑」。导入 / 导出只是备份，日常改词用编辑页。',
+      '上课时先记英文，中文课后可补。导入 / 导出只是备份，日常改内容用编辑页。',
     ),
   )
   app.append(shell)
 }
 
+function shiftEditIndex(
+  editIndex: number | null,
+  movedIndex: number,
+  dir: -1 | 1,
+): number | null {
+  if (editIndex === null) return null
+  const nextIndex = movedIndex + dir
+  if (editIndex === movedIndex) return nextIndex
+  if (editIndex === nextIndex) return movedIndex
+  return editIndex
+}
+
 function renderCreate(): void {
   const editing = Boolean(draft.packId)
   const editingWord = draft.wordForm.editIndex !== null
+  const editingSentence = draft.sentenceForm.editIndex !== null
   clearApp()
   const shell = el('div', 'shell')
   const top = el('header', 'topbar')
   const back = el('button', 'btn-ghost', '取消')
   back.type = 'button'
   back.addEventListener('click', goHome)
-  top.append(back, el('div', 'brand-mark', editing ? '编辑词包' : '新建词包'))
+  top.append(back, el('div', 'brand-mark', editing ? '改这节课' : '记一节课'))
   shell.append(top)
 
   const main = el('main', 'main create-main')
   main.append(
-    el('h1', 'title', editing ? '改本课内容' : '录入本课内容'),
+    el('h1', 'title', editing ? '改这节课记下的内容' : '记下这节课的词和句子'),
     el(
       'p',
       'subtitle',
-      '在网页里改词、词性和图片，不用打开 JSON。名词建议配图，动词和形容词可以不配图。',
+      '外教课上听到就记：英文必填，中文可课后补。一课一份，课后拿来练。',
     ),
   )
 
@@ -567,7 +663,7 @@ function renderCreate(): void {
 
   const titleZh = el('input', 'field') as HTMLInputElement
   titleZh.type = 'text'
-  titleZh.placeholder = '标题（中文）例如：本周外教课'
+  titleZh.placeholder = '标题，例如：3月15日外教课'
   titleZh.value = draft.titleZh
   titleZh.addEventListener('input', () => {
     draft.titleZh = titleZh.value
@@ -575,7 +671,7 @@ function renderCreate(): void {
 
   const titleEn = el('input', 'field') as HTMLInputElement
   titleEn.type = 'text'
-  titleEn.placeholder = '标题（英文，可选）'
+  titleEn.placeholder = '英文标题（可选）'
   titleEn.value = draft.titleEn
   titleEn.addEventListener('input', () => {
     draft.titleEn = titleEn.value
@@ -592,9 +688,9 @@ function renderCreate(): void {
   form.append(titleZh, titleEn, blurb)
 
   const wordList = el('div', 'draft-words')
-  wordList.append(el('h2', 'section-label', `词条（${draft.words.length}）`))
+  wordList.append(el('h2', 'section-label', `词汇（${draft.words.length}）`))
   if (draft.words.length === 0) {
-    wordList.append(el('p', 'draft-empty', '还没有词。在下方填写后点「加入词包」。'))
+    wordList.append(el('p', 'draft-empty', '还没有词。课上听到就先记下英文。'))
   }
   draft.words.forEach((w, index) => {
     const row = el('div', 'draft-row')
@@ -602,27 +698,31 @@ function renderCreate(): void {
     const info = el('div', 'draft-info')
     info.append(
       el('div', 'draft-en', w.english),
-      el('div', 'draft-zh', `${w.chinese} · ${posExtra(w)}`),
+      el('div', 'draft-zh', `${zhOrPending(w.chinese)} · ${posExtra(w)}`),
     )
     const actions = el('div', 'draft-row-actions')
     const up = el('button', 'btn-tiny', '上移')
     up.type = 'button'
     up.disabled = index === 0
     up.addEventListener('click', () => {
-      const nextIndex = index - 1
-      draft.words = moveDraftWord(draft.words, index, -1)
-      if (draft.wordForm.editIndex === index) draft.wordForm.editIndex = nextIndex
-      else if (draft.wordForm.editIndex === nextIndex) draft.wordForm.editIndex = index
+      draft.wordForm.editIndex = shiftEditIndex(
+        draft.wordForm.editIndex,
+        index,
+        -1,
+      )
+      draft.words = moveDraftItem(draft.words, index, -1)
       render()
     })
     const down = el('button', 'btn-tiny', '下移')
     down.type = 'button'
     down.disabled = index === draft.words.length - 1
     down.addEventListener('click', () => {
-      const nextIndex = index + 1
-      draft.words = moveDraftWord(draft.words, index, 1)
-      if (draft.wordForm.editIndex === index) draft.wordForm.editIndex = nextIndex
-      else if (draft.wordForm.editIndex === nextIndex) draft.wordForm.editIndex = index
+      draft.wordForm.editIndex = shiftEditIndex(
+        draft.wordForm.editIndex,
+        index,
+        1,
+      )
+      draft.words = moveDraftItem(draft.words, index, 1)
       render()
     })
     const editWord = el('button', 'btn-tiny', '改')
@@ -660,16 +760,16 @@ function renderCreate(): void {
 
   const addBox = el('div', 'add-word-box')
   addBox.append(
-    el('h2', 'section-label', editingWord ? '修改这个词' : '添加一个词'),
+    el('h2', 'section-label', editingWord ? '修改这个词' : '记一个词'),
   )
   const formState = draft.wordForm
   const enIn = el('input', 'field') as HTMLInputElement
   enIn.type = 'text'
-  enIn.placeholder = 'English'
+  enIn.placeholder = 'English（必填）'
   enIn.value = formState.english
   const zhIn = el('input', 'field') as HTMLInputElement
   zhIn.type = 'text'
-  zhIn.placeholder = '中文'
+  zhIn.placeholder = '中文（课后可补）'
   zhIn.value = formState.chinese
   const posIn = el('select', 'field') as HTMLSelectElement
   for (const pos of WORD_POS) {
@@ -716,7 +816,7 @@ function renderCreate(): void {
     img.alt = 'preview'
     imgPreview.append(img)
   } else {
-    imgPreview.textContent = '图片可选：动词、形容词常常不配图'
+    imgPreview.textContent = '图片可选，课后补也行'
   }
   const imgInput = el('input', 'sr-only') as HTMLInputElement
   imgInput.type = 'file'
@@ -751,7 +851,7 @@ function renderCreate(): void {
   const addWord = el(
     'button',
     'btn-secondary',
-    editingWord ? '保存这个词' : '加入词包',
+    editingWord ? '保存这个词' : '记下这个词',
   )
   addWord.type = 'button'
   addWord.addEventListener('click', () => {
@@ -762,14 +862,13 @@ function renderCreate(): void {
       : 'noun'
     formState.article = artIn.value === 'an' ? 'an' : 'a'
     const english = formState.english.trim()
-    const chinese = formState.chinese.trim()
-    if (!english || !chinese) {
-      draft.error = '请填写英文和中文'
+    if (!english) {
+      draft.error = '请填写英文单词'
       render()
       return
     }
-    if (formState.editIndex === null && draft.words.length >= 40) {
-      draft.error = '单个词包最多 40 个词'
+    if (formState.editIndex === null && draft.words.length >= MAX_WORDS) {
+      draft.error = `单课最多 ${MAX_WORDS} 个词`
       render()
       return
     }
@@ -806,19 +905,157 @@ function renderCreate(): void {
   )
   form.append(addBox)
 
+  const sentenceList = el('div', 'draft-words')
+  sentenceList.append(el('h2', 'section-label', `句子（${draft.sentences.length}）`))
+  if (draft.sentences.length === 0) {
+    sentenceList.append(
+      el('p', 'draft-empty', '还没有句子。课上老师带读的句子记在这里。'),
+    )
+  }
+  draft.sentences.forEach((s, index) => {
+    const row = el('div', 'draft-row draft-row-sentence')
+    if (draft.sentenceForm.editIndex === index) row.classList.add('is-editing')
+    const info = el('div', 'draft-info')
+    info.append(
+      el('div', 'draft-en', s.english),
+      el('div', 'draft-zh', zhOrPending(s.chinese)),
+    )
+    const actions = el('div', 'draft-row-actions')
+    const up = el('button', 'btn-tiny', '上移')
+    up.type = 'button'
+    up.disabled = index === 0
+    up.addEventListener('click', () => {
+      draft.sentenceForm.editIndex = shiftEditIndex(
+        draft.sentenceForm.editIndex,
+        index,
+        -1,
+      )
+      draft.sentences = moveDraftItem(draft.sentences, index, -1)
+      render()
+    })
+    const down = el('button', 'btn-tiny', '下移')
+    down.type = 'button'
+    down.disabled = index === draft.sentences.length - 1
+    down.addEventListener('click', () => {
+      draft.sentenceForm.editIndex = shiftEditIndex(
+        draft.sentenceForm.editIndex,
+        index,
+        1,
+      )
+      draft.sentences = moveDraftItem(draft.sentences, index, 1)
+      render()
+    })
+    const editSentence = el('button', 'btn-tiny', '改')
+    editSentence.type = 'button'
+    editSentence.addEventListener('click', () => {
+      draft.sentenceForm = {
+        editIndex: index,
+        english: s.english,
+        chinese: s.chinese,
+      }
+      draft.error = ''
+      render()
+    })
+    const remove = el('button', 'btn-tiny btn-tiny-danger', '移除')
+    remove.type = 'button'
+    remove.addEventListener('click', () => {
+      draft.sentences.splice(index, 1)
+      if (draft.sentenceForm.editIndex === index) {
+        draft.sentenceForm = emptySentenceForm()
+      } else if (
+        draft.sentenceForm.editIndex !== null &&
+        draft.sentenceForm.editIndex > index
+      ) {
+        draft.sentenceForm.editIndex -= 1
+      }
+      render()
+    })
+    actions.append(up, down, editSentence, remove)
+    row.append(renderDraftSentenceMark(), info, actions)
+    sentenceList.append(row)
+  })
+  form.append(sentenceList)
+
+  const addSentenceBox = el('div', 'add-word-box')
+  addSentenceBox.append(
+    el('h2', 'section-label', editingSentence ? '修改这句' : '记一句课堂句子'),
+  )
+  const sentenceState = draft.sentenceForm
+  const senEn = el('textarea', 'field field-area') as HTMLTextAreaElement
+  senEn.placeholder = 'English sentence（必填）'
+  senEn.rows = 2
+  senEn.value = sentenceState.english
+  const senZh = el('textarea', 'field field-area') as HTMLTextAreaElement
+  senZh.placeholder = '中文（课后可补）'
+  senZh.rows = 2
+  senZh.value = sentenceState.chinese
+  senEn.addEventListener('input', () => {
+    sentenceState.english = senEn.value
+  })
+  senZh.addEventListener('input', () => {
+    sentenceState.chinese = senZh.value
+  })
+  const addSentence = el(
+    'button',
+    'btn-secondary',
+    editingSentence ? '保存这句' : '记下这句',
+  )
+  addSentence.type = 'button'
+  addSentence.addEventListener('click', () => {
+    sentenceState.english = senEn.value
+    sentenceState.chinese = senZh.value
+    const english = sentenceState.english.trim()
+    if (!english) {
+      draft.error = '请填写英文句子'
+      render()
+      return
+    }
+    if (
+      sentenceState.editIndex === null &&
+      draft.sentences.length >= MAX_SENTENCES
+    ) {
+      draft.error = `单课最多 ${MAX_SENTENCES} 个句子`
+      render()
+      return
+    }
+    const existing =
+      sentenceState.editIndex !== null
+        ? draft.sentences[sentenceState.editIndex]
+        : undefined
+    const nextSentence = sentenceFromForm(sentenceState, existing)
+    if (sentenceState.editIndex === null) {
+      draft.sentences.push(nextSentence)
+    } else {
+      draft.sentences[sentenceState.editIndex] = nextSentence
+    }
+    draft.sentenceForm = emptySentenceForm()
+    draft.error = ''
+    render()
+  })
+  const cancelSentence = el('button', 'btn-tiny', '取消修改')
+  cancelSentence.type = 'button'
+  cancelSentence.hidden = !editingSentence
+  cancelSentence.addEventListener('click', () => {
+    draft.sentenceForm = emptySentenceForm()
+    draft.error = ''
+    render()
+  })
+  addSentenceBox.append(senEn, senZh, addSentence, cancelSentence)
+  form.append(addSentenceBox)
+
   if (draft.error) form.append(el('p', 'form-error', draft.error))
 
-  const save = el('button', 'btn-primary', editing ? '保存修改' : '保存到本机')
+  const save = el('button', 'btn-primary', editing ? '保存这节课' : '保存到本机')
   save.type = 'button'
   save.addEventListener('click', () => {
     void (async () => {
       if (!draft.titleZh.trim()) {
-        draft.error = '请填写中文标题'
+        draft.error = '请填写标题'
         render()
         return
       }
-      if (draft.words.length === 0) {
-        draft.error = '请至少添加 1 个词'
+      if (draft.words.length === 0 && draft.sentences.length === 0) {
+        draft.error = '请至少记 1 个词或 1 个句子'
         render()
         return
       }
@@ -827,7 +1064,7 @@ function renderCreate(): void {
         await refreshPacks()
         screen = 'home'
         homeError = ''
-        homeStatus = editing ? '词包已保存' : '已新建词包'
+        homeStatus = editing ? '这节课已保存' : '已记下这节课'
         render()
       } catch {
         draft.error = '保存失败（本机存储可能已满）'
@@ -868,6 +1105,12 @@ function renderDraftThumb(word: DraftWord): HTMLElement {
   return tile
 }
 
+function renderDraftSentenceMark(): HTMLElement {
+  const tile = el('div', 'draft-thumb pack-thumb-word')
+  tile.textContent = '句'
+  return tile
+}
+
 function renderPrompt(word: WordDef): HTMLElement {
   const frame = el('div', 'picture-frame')
   if (hasImage(word)) {
@@ -884,9 +1127,32 @@ function renderPrompt(word: WordDef): HTMLElement {
   card.append(
     el('span', 'word-card-pos', POS_LABEL_ZH[word.pos]),
     el('span', 'word-card-en', word.english),
-    el('span', 'word-card-zh', word.chinese),
+    el('span', 'word-card-zh', zhOrPending(word.chinese)),
   )
   card.addEventListener('click', () => speakEnglish(word.english))
+  frame.append(card)
+  return frame
+}
+
+function renderSentencePrompt(
+  sentence: SentenceDef,
+  opts: { hideEnglish?: boolean } = {},
+): HTMLElement {
+  const frame = el('div', 'picture-frame is-sentence-card')
+  const card = el('button', 'word-card sentence-card')
+  card.type = 'button'
+  card.title = opts.hideEnglish ? '先让孩子说' : '朗读英文'
+  card.append(el('span', 'word-card-pos', '句子'))
+  if (opts.hideEnglish) {
+    card.append(
+      el('span', 'sentence-card-en is-hidden', '……'),
+      el('span', 'word-card-zh', sentence.chinese.trim() || '说出这句'),
+    )
+  } else {
+    card.append(el('span', 'sentence-card-en', sentence.english))
+    card.append(el('span', 'word-card-zh', zhOrPending(sentence.chinese)))
+    card.addEventListener('click', () => speakEnglish(sentence.english))
+  }
   frame.append(card)
   return frame
 }
@@ -907,15 +1173,9 @@ function renderVocab(): void {
   en.addEventListener('click', () => speakEnglish(word.english))
   enRow.append(en, el('span', 'lex-speaker', '🔊'))
   enRow.addEventListener('click', () => speakEnglish(word.english))
-  lex.append(enRow, el('div', 'lex-zh', word.chinese))
+  lex.append(enRow, el('div', 'lex-zh', zhOrPending(word.chinese)))
   body.append(lex)
-  body.append(
-    el(
-      'p',
-      'parent-cue',
-      vocabCue(word),
-    ),
-  )
+  body.append(el('p', 'parent-cue', vocabCue(word)))
 
   const footer = el('footer', 'footer')
   const prev = el('button', 'btn-secondary', '上一个')
@@ -991,7 +1251,15 @@ function renderTalk(): void {
   prev.type = 'button'
   prev.disabled = session.wordIndex === 0 && session.questionIndex === 0
   prev.addEventListener('click', prevTalk)
-  const next = el('button', 'btn-primary', '下一题')
+  const lastTalk =
+    session.wordIndex >= session.pack.words.length - 1 &&
+    session.questionIndex >= talkQueue(word).length - 1
+  const nextLabel = lastTalk
+    ? session.pack.sentences.length
+      ? '进入句子练习'
+      : '进入口头巩固'
+    : '下一题'
+  const next = el('button', 'btn-primary', nextLabel)
   next.type = 'button'
   next.addEventListener('click', nextTalk)
   footer.append(prev, next)
@@ -999,7 +1267,50 @@ function renderTalk(): void {
   renderShell({
     phase: 'talk',
     title: '开口练习',
-    subtitle: `${POS_LABEL_ZH[word.pos]} · ${word.chinese} · 问题 ${session.questionIndex + 1}/${talkQueue(word).length}`,
+    subtitle: `${POS_LABEL_ZH[word.pos]} · ${zhOrPending(word.chinese)} · 问题 ${session.questionIndex + 1}/${talkQueue(word).length}`,
+    body,
+    footer,
+  })
+}
+
+function renderSentences(): void {
+  if (!session) return
+  const sentence = currentSentence()
+  if (!sentence) return
+  const total = session.pack.sentences.length
+  const body = el('div', 'stage')
+  body.append(renderSentencePrompt(sentence))
+
+  const lex = el('div', 'lex')
+  const enRow = el('div', 'lex-en-row')
+  const en = el('button', 'lex-en lex-en-sentence', sentence.english)
+  en.type = 'button'
+  en.title = '朗读英文'
+  en.addEventListener('click', () => speakEnglish(sentence.english))
+  enRow.append(en, el('span', 'lex-speaker', '🔊'))
+  enRow.addEventListener('click', () => speakEnglish(sentence.english))
+  lex.append(enRow, el('div', 'lex-zh', zhOrPending(sentence.chinese)))
+  body.append(lex)
+  body.append(el('p', 'parent-cue', sentenceCue(sentence)))
+
+  const footer = el('footer', 'footer')
+  const prev = el('button', 'btn-secondary', '上一句')
+  prev.type = 'button'
+  prev.disabled = session.sentenceIndex === 0
+  prev.addEventListener('click', prevSentence)
+  const next = el(
+    'button',
+    'btn-primary',
+    session.sentenceIndex >= total - 1 ? '进入口头巩固' : '下一句',
+  )
+  next.type = 'button'
+  next.addEventListener('click', nextSentence)
+  footer.append(prev, next)
+
+  renderShell({
+    phase: 'sentences',
+    title: '课堂句子',
+    subtitle: `${session.pack.titleZh} · ${session.sentenceIndex + 1}/${total}`,
     body,
     footer,
   })
@@ -1007,34 +1318,59 @@ function renderTalk(): void {
 
 function renderReview(): void {
   if (!session) return
-  const word = currentWord()
-  if (!word) return
-
+  const item = currentReviewItem()
+  if (!item) return
+  const total = reviewQueue(session.pack).length
   const body = el('div', 'stage')
-  body.append(renderPrompt(word))
-  body.append(
-    el(
-      'p',
-      'parent-cue',
-      session.reviewReveal ? reviewCueRevealed(word) : reviewCueHidden(word),
-    ),
-  )
 
-  if (session.reviewReveal) {
-    const lex = el('div', 'lex')
-    const en = el('button', 'lex-en', word.english)
-    en.type = 'button'
-    en.addEventListener('click', () => speakEnglish(word.english))
-    lex.append(en, el('div', 'lex-zh', word.chinese))
-    body.append(lex)
-    const frames = el('div', 'frame-list')
-    for (const line of reviewFrames(word)) {
-      const b = el('button', 'frame-line', line)
-      b.type = 'button'
-      b.addEventListener('click', () => speakEnglish(line))
-      frames.append(b)
+  if (item.kind === 'word') {
+    const word = item.word
+    body.append(renderPrompt(word))
+    body.append(
+      el(
+        'p',
+        'parent-cue',
+        session.reviewReveal ? reviewCueRevealed(word) : reviewCueHidden(word),
+      ),
+    )
+    if (session.reviewReveal) {
+      const lex = el('div', 'lex')
+      const en = el('button', 'lex-en', word.english)
+      en.type = 'button'
+      en.addEventListener('click', () => speakEnglish(word.english))
+      lex.append(en, el('div', 'lex-zh', zhOrPending(word.chinese)))
+      body.append(lex)
+      const frames = el('div', 'frame-list')
+      for (const line of reviewFrames(word)) {
+        const b = el('button', 'frame-line', line)
+        b.type = 'button'
+        b.addEventListener('click', () => speakEnglish(line))
+        frames.append(b)
+      }
+      body.append(frames)
     }
-    body.append(frames)
+  } else {
+    const sentence = item.sentence
+    body.append(
+      renderSentencePrompt(sentence, { hideEnglish: !session.reviewReveal }),
+    )
+    body.append(
+      el(
+        'p',
+        'parent-cue',
+        session.reviewReveal
+          ? sentenceReviewCueRevealed()
+          : sentenceReviewCueHidden(sentence),
+      ),
+    )
+    if (session.reviewReveal) {
+      const lex = el('div', 'lex')
+      const en = el('button', 'lex-en lex-en-sentence', sentence.english)
+      en.type = 'button'
+      en.addEventListener('click', () => speakEnglish(sentence.english))
+      lex.append(en, el('div', 'lex-zh', zhOrPending(sentence.chinese)))
+      body.append(lex)
+    }
   }
 
   const footer = el('footer', 'footer')
@@ -1042,9 +1378,11 @@ function renderReview(): void {
     'button',
     'btn-primary',
     session.reviewReveal
-      ? session.wordIndex >= session.pack.words.length - 1
+      ? session.reviewIndex >= total - 1
         ? '完成陪练'
-        : '下一个词'
+        : item.kind === 'sentence'
+          ? '下一句'
+          : '下一个词'
       : '揭晓英文',
   )
   next.type = 'button'
@@ -1054,7 +1392,7 @@ function renderReview(): void {
   renderShell({
     phase: 'review',
     title: '口头巩固',
-    subtitle: `${session.pack.titleZh} · ${session.wordIndex + 1}/${session.pack.words.length}`,
+    subtitle: `${session.pack.titleZh} · ${session.reviewIndex + 1}/${total}`,
     body,
     footer,
   })
@@ -1070,11 +1408,11 @@ function renderDone(): void {
     el(
       'p',
       'hero-lead',
-      `已练完「${session.pack.titleZh}」。换教材时导入新词包即可，陪练框架不用改。`,
+      `已练完「${session.pack.titleZh}」。下一节外教课再记一份新的即可。`,
     ),
   )
   const actions = el('div', 'done-actions')
-  const again = el('button', 'btn-primary', '再用本包练一次')
+  const again = el('button', 'btn-primary', '再用这节课练一次')
   again.type = 'button'
   again.addEventListener('click', () => void startPack(session!.pack.id))
   const home = el('button', 'btn-secondary', '回首页')
@@ -1100,6 +1438,9 @@ function render(): void {
       break
     case 'talk':
       renderTalk()
+      break
+    case 'sentences':
+      renderSentences()
       break
     case 'review':
       renderReview()

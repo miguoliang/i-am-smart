@@ -1,6 +1,6 @@
 # 陪练本（Web）
 
-家长课后英语巩固：词汇热身 → 开口练习（按词性套问句）→ 口头巩固。词包在网页里编辑，不用改 JSON。
+家长课后英语巩固：一课一份。上课记下词和句子，课后 词汇热身 → 开口练习 → 课堂句子 → 口头巩固。网页里编辑，不用改 JSON。
 
 ## 本地运行
 
@@ -18,6 +18,6 @@ npm run dev
 npm run build
 ```
 
-生产环境由 Netlify 读取仓库根目录 `netlify.toml` 构建。站点环境变量需要 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。Supabase 只同步词包，不托管网页。
+生产环境由 Netlify 读取仓库根目录 `netlify.toml` 构建。站点环境变量需要 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。Supabase 只同步课包，不托管网页。
 
-问题库（框架）在 `src/data/questions.ts`；词包（内容）在 `src/content/`，格式说明见 `public/content/README.md`。
+问题库（框架）在 `src/data/questions.ts`；课包（内容）在 `src/content/`，格式说明见 `public/content/README.md`。

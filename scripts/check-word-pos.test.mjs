@@ -18,14 +18,15 @@ function presentParticiple(verb) {
   return `${v}ing`
 }
 
-test('mixed sample allows verb and adjective without image', () => {
-  const pack = JSON.parse(
-    readFileSync(
-      join(root, 'web/public/content/sample-week-mixed.peilian.json'),
-      'utf8',
-    ),
-  )
+const pack = JSON.parse(
+  readFileSync(join(root, 'web/public/content/sample-class.peilian.json'), 'utf8'),
+)
+
+test('sample class is one lesson with words and sentences', () => {
   assert.equal(pack.schema, 'peilian-pack/v1')
+  assert.equal(pack.id, 'sample-class')
+  assert.ok(pack.words.length >= 1)
+  assert.ok(pack.sentences.length >= 1)
   const apple = pack.words.find((w) => w.english === 'apple')
   const run = pack.words.find((w) => w.english === 'run')
   const happy = pack.words.find((w) => w.english === 'happy')
@@ -35,6 +36,14 @@ test('mixed sample allows verb and adjective without image', () => {
   assert.equal(run.image, undefined)
   assert.equal(happy.pos, 'adjective')
   assert.equal(happy.image, undefined)
+})
+
+test('classroom sentence may omit chinese for later fill-in', () => {
+  const water = pack.sentences.find((s) => s.english.includes('water'))
+  assert.ok(water)
+  assert.equal(water.chinese, undefined)
+  const hello = pack.sentences.find((s) => s.english.startsWith('Hello'))
+  assert.ok(hello.chinese)
 })
 
 test('present participle matches KET action frames', () => {

@@ -1,8 +1,9 @@
-import type { WordDef } from '../content/types'
+import type { SentenceDef, WordDef } from '../content/types'
 import {
   hasImage,
   presentParticiple,
   withArticle,
+  zhOrPending,
 } from '../content/types'
 
 /** Fixed talk slots — questions stay; only the word (and optional image) changes. */
@@ -316,4 +317,20 @@ export function vocabCue(word: WordDef): string {
     return '家长：指着图，让孩子先听再跟读英文；可以说中文意思帮助理解。'
   }
   return '家长：看着单词，让孩子先听再跟读英文；可以说中文意思帮助理解。动词可边做动作边说。'
+}
+
+export function sentenceCue(sentence: SentenceDef): string {
+  return sentence.chinese.trim()
+    ? '家长：点喇叭先听，再让孩子跟读整句。'
+    : '家长：点喇叭先听，再让孩子跟读整句。中文意思课后可补。'
+}
+
+export function sentenceReviewCueHidden(sentence: SentenceDef): string {
+  return sentence.chinese.trim()
+    ? `遮住英文：用中文提示「${zhOrPending(sentence.chinese)}」，让孩子说出这句，再说完再揭晓。`
+    : '遮住英文：家长做口型或给一个词提示，让孩子说出这节课的这句。'
+}
+
+export function sentenceReviewCueRevealed(): string {
+  return '对照发音，再让孩子完整说一遍。点句子可听标准发音。'
 }
