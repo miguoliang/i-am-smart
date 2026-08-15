@@ -86,6 +86,28 @@ export function emptyDraft(): PackDraft {
   }
 }
 
+export function newEmptyClass(): LessonPack {
+  const titleZh = defaultLessonTitle()
+  return {
+    id: `class-${slugId(titleZh)}-${Date.now().toString(36)}`,
+    titleZh,
+    titleEn: titleZh,
+    blurb: '上课时再记词和句子',
+    source: 'custom',
+    words: [],
+    sentences: [],
+    cloudSynced: false,
+  }
+}
+
+/** Live capture: a space or sentence punctuation means it's a sentence. */
+export function guessCaptureKind(english: string): 'word' | 'sentence' {
+  const text = english.trim()
+  if (!text) return 'word'
+  if (/\s/.test(text) || /[.?!！？。]$/.test(text)) return 'sentence'
+  return 'word'
+}
+
 function ensureUniqueIds<T extends { id: string; english: string }>(
   items: T[],
   prefix: string,

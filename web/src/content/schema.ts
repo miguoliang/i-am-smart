@@ -107,9 +107,6 @@ export function parseContentPack(raw: unknown): LessonPack {
   const words = (rawWords ?? []).map((w) => normalizeWord(w))
   const sentences = (rawSentences ?? []).map((s) => normalizeSentence(s))
 
-  if (words.length === 0 && sentences.length === 0) {
-    throw new PackParseError('至少需要 1 个词或 1 个句子')
-  }
   if (words.length > MAX_WORDS) {
     throw new PackParseError(`单课最多 ${MAX_WORDS} 个词`)
   }

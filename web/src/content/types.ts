@@ -39,7 +39,7 @@ export interface SentenceDef {
 
 /**
  * One class = one material: words and/or sentences from that lesson.
- * At least one of `words` / `sentences` is non-empty.
+ * A new class may start empty; the parent fills it in during class.
  */
 export interface LessonPack {
   id: string
@@ -176,7 +176,7 @@ export function packCountLabel(pack: {
   const parts: string[] = []
   if (words) parts.push(`${words} 词`)
   if (sentences) parts.push(`${sentences} 句`)
-  return parts.join(' · ') || '空课'
+  return parts.join(' · ') || '还没记'
 }
 
 export function packHasContent(pack: {

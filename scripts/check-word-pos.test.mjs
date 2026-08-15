@@ -72,6 +72,18 @@ test('merged classes keep unique ids for 综合巩固', () => {
   assert.equal(wordIds.length, pack.words.length * 2)
 })
 
+test('live capture treats a phrase as a sentence', () => {
+  const kind = (english) => {
+    const text = english.trim()
+    if (!text) return 'word'
+    if (/\s/.test(text) || /[.?!！？。]$/.test(text)) return 'sentence'
+    return 'word'
+  }
+  assert.equal(kind('banana'), 'word')
+  assert.equal(kind('I like bananas.'), 'sentence')
+  assert.equal(kind('Hello!'), 'sentence')
+})
+
 test('present participle matches KET action frames', () => {
   assert.equal(presentParticiple('run'), 'running')
   assert.equal(presentParticiple('sit'), 'sitting')

@@ -49,7 +49,12 @@ export async function listCustomPacks(): Promise<LessonPack[]> {
           source: 'custom',
         }),
       )
-      packs.sort((a, b) => a.titleZh.localeCompare(b.titleZh, 'zh'))
+      packs.sort((a, b) => {
+        const tb = Date.parse(b.updatedAt ?? '') || 0
+        const ta = Date.parse(a.updatedAt ?? '') || 0
+        if (tb !== ta) return tb - ta
+        return a.titleZh.localeCompare(b.titleZh, 'zh')
+      })
       resolve(packs)
     }
     req.onerror = () => reject(req.error ?? new Error('list failed'))

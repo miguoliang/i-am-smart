@@ -937,6 +937,38 @@ select.field {
   color: var(--teal-deep);
 }
 
+.mode-chip.is-on {
+  background: rgba(31, 122, 108, 0.14);
+  border-color: rgba(31, 122, 108, 0.45);
+}
+
+.capture-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.capture-en {
+  min-height: 56px;
+  font-family: var(--font-en);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.capture-title {
+  font-weight: 700;
+}
+
+.capture-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .cloud-bar {
   display: flex;
   flex-direction: column;

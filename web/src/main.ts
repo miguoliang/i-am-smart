@@ -64,7 +64,9 @@ import {
   emptyDraft,
   emptySentenceForm,
   emptyWordForm,
+  guessCaptureKind,
   moveDraftItem,
+  newEmptyClass,
   packToDraft,
   posExtra,
   sentenceFromForm,
@@ -85,7 +87,7 @@ function requireApp(): HTMLDivElement {
 
 const app = requireApp()
 
-type Screen = 'home' | 'create' | 'start' | 'session'
+type Screen = 'home' | 'create' | 'capture' | 'start' | 'session'
 type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
 type Phase = PracticePhase | 'done'
 
@@ -114,6 +116,10 @@ let homeStatus = ''
 let cloudBusy = false
 let cloudUserId: string | null = null
 let draft: PackDraft = emptyDraft()
+let captureKind: 'word' | 'sentence' = 'word'
+let capturePos: WordPos = 'noun'
+let captureFocus = true
+let captureBusy = false
 
 function reviewQueue(): ReviewItem[] {
   return session?.reviewItems ?? []
@@ -243,10 +249,49 @@ function goHome(): void {
   void refreshPacks().then(render)
 }
 
-function openCreate(): void {
-  draft = emptyDraft()
-  screen = 'create'
+function openCapture(pack: LessonPack): void {
+  draft = packToDraft(pack)
+  captureKind = 'word'
+  capturePos = 'noun'
+  captureFocus = true
+  captureBusy = false
+  screen = 'capture'
   render()
+}
+
+async function createClassNow(): Promise<void> {
+  homeError = ''
+  homeStatus = '正在建课…'
+  render()
+  try {
+    const saved = await saveCustomPack(newEmptyClass())
+    homeStatus = ''
+    openCapture(saved)
+  } catch {
+    homeStatus = ''
+    homeError = '建课失败（本机存储可能已满）'
+    render()
+  }
+}
+
+async function persistCapture(): Promise<boolean> {
+  if (!draft.titleZh.trim()) {
+    draft.error = '请填写标题'
+    return false
+  }
+  try {
+    const saved = await saveCustomPack(draftToPack(draft))
+    draft.packId = saved.id
+    draft.error = ''
+    return true
+  } catch {
+    draft.error = '保存失败（本机存储可能已满）'
+    return false
+  }
+}
+
+function openCreate(): void {
+  void createClassNow()
 }
 
 function openEdit(pack: LessonPack): void {
@@ -461,12 +506,18 @@ function renderPackThumbs(pack: LessonPack): HTMLElement {
     for (const word of words) thumbs.append(renderThumb(word, 'pack-thumb'))
     return thumbs
   }
-  for (const sentence of pack.sentences.slice(0, 4)) {
-    const tile = el('div', 'pack-thumb pack-thumb-word')
-    tile.textContent = sentence.english.slice(0, 8)
-    tile.title = sentence.english
-    thumbs.append(tile)
+  if (pack.sentences.length) {
+    for (const sentence of pack.sentences.slice(0, 4)) {
+      const tile = el('div', 'pack-thumb pack-thumb-word')
+      tile.textContent = sentence.english.slice(0, 8)
+      tile.title = sentence.english
+      thumbs.append(tile)
+    }
+    return thumbs
   }
+  const tile = el('div', 'pack-thumb pack-thumb-word')
+  tile.textContent = '记'
+  thumbs.append(tile)
   return thumbs
 }
 
@@ -487,7 +538,10 @@ function renderPackCard(pack: LessonPack): HTMLElement {
     el('div', 'pack-blurb', `${packCountLabel(pack)} · ${pack.blurb}`),
   )
   card.append(renderPackThumbs(pack), meta)
-  card.addEventListener('click', () => openStart(pack))
+  card.addEventListener('click', () => {
+    if (pack.source === 'custom' && !packHasContent(pack)) openCapture(pack)
+    else openStart(pack)
+  })
   wrap.append(card)
 
   const tools = el('div', 'pack-tools')
@@ -544,7 +598,13 @@ function renderPackCard(pack: LessonPack): HTMLElement {
         render()
       })
     })
-    tools.append(edit, exp, del)
+    const note = el('button', 'btn-tiny', '上课记')
+    note.type = 'button'
+    note.addEventListener('click', (e) => {
+      e.stopPropagation()
+      openCapture(pack)
+    })
+    tools.append(note, edit, exp, del)
     wrap.append(tools)
   } else {
     const copy = el('button', 'btn-tiny', '复制并编辑')
@@ -570,7 +630,7 @@ function renderHome(): void {
     el(
       'p',
       'hero-lead',
-      '孩子上外教课，家长在旁边记下这节课用到的词和句子。一课一份，课后拿出来练。',
+      '先建好这节课。上课点进去，听到什么记什么；英文先记，中文课后补。',
     ),
   )
   shell.append(hero)
@@ -676,10 +736,247 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '上课时先记英文，中文课后可补。巩固时可以分科，也可以综合。导入 / 导出只是备份。',
+      '先建课，上课再点「上课记」。英文先记，中文课后可补。',
     ),
   )
   app.append(shell)
+}
+
+function focusCaptureInput(): void {
+  if (!captureFocus) return
+  const input = app.querySelector<HTMLInputElement>('[data-capture-en]')
+  if (!input) return
+  input.focus()
+  const len = input.value.length
+  input.setSelectionRange(len, len)
+}
+
+function addCapturedItem(english: string, chinese: string): void {
+  const text = english.trim()
+  if (!text) {
+    draft.error = '先写下英文'
+    render()
+    return
+  }
+  const kind =
+    captureKind === 'sentence' ? 'sentence' : guessCaptureKind(text)
+  if (kind === 'word') {
+    if (draft.words.length >= MAX_WORDS) {
+      draft.error = `单课最多 ${MAX_WORDS} 个词`
+      render()
+      return
+    }
+    draft.words.push(
+      wordFromForm({
+        editIndex: null,
+        english: text,
+        chinese,
+        pos: capturePos,
+        article: guessArticle(text),
+        imageDataUrl: '',
+      }),
+    )
+  } else {
+    if (draft.sentences.length >= MAX_SENTENCES) {
+      draft.error = `单课最多 ${MAX_SENTENCES} 个句子`
+      render()
+      return
+    }
+    draft.sentences.push(
+      sentenceFromForm({
+        editIndex: null,
+        english: text,
+        chinese,
+      }),
+    )
+  }
+  captureKind = kind
+  draft.error = ''
+  captureBusy = true
+  captureFocus = true
+  render()
+  void persistCapture().then(() => {
+    captureBusy = false
+    captureFocus = true
+    render()
+  })
+}
+
+function renderCapture(): void {
+  clearApp()
+  const shell = el('div', 'shell capture-shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '完成')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', '上课记'))
+  shell.append(top)
+
+  const main = el('main', 'main capture-main')
+  const title = el('input', 'field capture-title') as HTMLInputElement
+  title.type = 'text'
+  title.value = draft.titleZh
+  title.placeholder = '这节课叫什么'
+  title.addEventListener('focus', () => {
+    captureFocus = false
+  })
+  title.addEventListener('change', () => {
+    draft.titleZh = title.value
+    if (!draft.titleEn || draft.titleEn === draft.titleZh) {
+      draft.titleEn = title.value.trim()
+    }
+    void persistCapture().then(() => {
+      if (draft.error) render()
+    })
+  })
+  main.append(
+    title,
+    el('p', 'subtitle', '听到就记，回车保存。有空格的会当成句子。'),
+  )
+
+  const composer = el('div', 'capture-box')
+  const kindRow = el('div', 'mode-chips')
+  const wordChip = el(
+    'button',
+    captureKind === 'word' ? 'mode-chip is-on' : 'mode-chip',
+    '词',
+  ) as HTMLButtonElement
+  wordChip.type = 'button'
+  wordChip.addEventListener('click', () => {
+    captureKind = 'word'
+    captureFocus = true
+    render()
+  })
+  const senChip = el(
+    'button',
+    captureKind === 'sentence' ? 'mode-chip is-on' : 'mode-chip',
+    '句',
+  ) as HTMLButtonElement
+  senChip.type = 'button'
+  senChip.addEventListener('click', () => {
+    captureKind = 'sentence'
+    captureFocus = true
+    render()
+  })
+  kindRow.append(wordChip, senChip)
+  composer.append(kindRow)
+
+  if (captureKind === 'word') {
+    const posRow = el('div', 'mode-chips')
+    for (const pos of WORD_POS) {
+      const chip = el(
+        'button',
+        capturePos === pos ? 'mode-chip is-on' : 'mode-chip',
+        POS_LABEL_ZH[pos],
+      ) as HTMLButtonElement
+      chip.type = 'button'
+      chip.addEventListener('click', () => {
+        capturePos = pos
+        captureKind = 'word'
+        captureFocus = true
+        render()
+      })
+      posRow.append(chip)
+    }
+    composer.append(posRow)
+  }
+
+  const enIn = el('input', 'field capture-en') as HTMLInputElement
+  enIn.type = 'text'
+  enIn.placeholder =
+    captureKind === 'sentence' ? 'English sentence' : 'English'
+  enIn.autocomplete = 'off'
+  enIn.autocapitalize = 'off'
+  enIn.spellcheck = false
+  enIn.setAttribute('data-capture-en', '1')
+  enIn.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    addCapturedItem(enIn.value, zhIn.value)
+  })
+
+  const zhIn = el('input', 'field') as HTMLInputElement
+  zhIn.type = 'text'
+  zhIn.placeholder = '中文（课后可补）'
+  zhIn.autocomplete = 'off'
+
+  const addBtn = el(
+    'button',
+    'btn-primary',
+    captureBusy ? '正在保存…' : '记下',
+  )
+  addBtn.type = 'button'
+  addBtn.disabled = captureBusy
+  addBtn.addEventListener('click', () => {
+    addCapturedItem(enIn.value, zhIn.value)
+  })
+  composer.append(enIn, zhIn, addBtn)
+  main.append(composer)
+
+  if (draft.error) main.append(el('p', 'form-error', draft.error))
+
+  const log = el('div', 'capture-log')
+  if (!draft.words.length && !draft.sentences.length) {
+    log.append(el('p', 'draft-empty', '还是空的。老师一说，就在上面记下。'))
+  }
+
+  if (draft.words.length) {
+    log.append(el('h2', 'section-label', `词汇（${draft.words.length}）`))
+    for (let index = draft.words.length - 1; index >= 0; index -= 1) {
+      const word = draft.words[index]
+      if (!word) continue
+      const row = el('div', 'draft-row')
+      const info = el('div', 'draft-info')
+      info.append(
+        el('div', 'draft-en', word.english),
+        el('div', 'draft-zh', `${zhOrPending(word.chinese)} · ${posExtra(word)}`),
+      )
+      const remove = el('button', 'btn-tiny btn-tiny-danger', '删')
+      remove.type = 'button'
+      remove.addEventListener('click', () => {
+        draft.words.splice(index, 1)
+        captureFocus = true
+        render()
+        void persistCapture().then((ok) => {
+          if (!ok) render()
+        })
+      })
+      row.append(renderDraftThumb(word), info, remove)
+      log.append(row)
+    }
+  }
+
+  if (draft.sentences.length) {
+    log.append(el('h2', 'section-label', `句子（${draft.sentences.length}）`))
+    for (let index = draft.sentences.length - 1; index >= 0; index -= 1) {
+      const sentence = draft.sentences[index]
+      if (!sentence) continue
+      const row = el('div', 'draft-row draft-row-sentence')
+      const info = el('div', 'draft-info')
+      info.append(
+        el('div', 'draft-en', sentence.english),
+        el('div', 'draft-zh', zhOrPending(sentence.chinese)),
+      )
+      const remove = el('button', 'btn-tiny btn-tiny-danger', '删')
+      remove.type = 'button'
+      remove.addEventListener('click', () => {
+        draft.sentences.splice(index, 1)
+        captureFocus = true
+        render()
+        void persistCapture().then((ok) => {
+          if (!ok) render()
+        })
+      })
+      const mark = el('div', 'draft-thumb pack-thumb-word')
+      mark.textContent = '句'
+      row.append(mark, info, remove)
+      log.append(row)
+    }
+  }
+  main.append(log)
+  shell.append(main)
+  app.append(shell)
+  queueMicrotask(focusCaptureInput)
 }
 
 function renderModeButton(
@@ -726,10 +1023,33 @@ function renderStart(): void {
   const main = el('main', 'main create-main')
   main.append(
     el('h1', 'title', pack.titleZh),
-    el('p', 'subtitle', `${packCountLabel(pack)} · 分科专项练，也可以词句混着抽问。`),
+    el(
+      'p',
+      'subtitle',
+      packHasContent(pack)
+        ? `${packCountLabel(pack)} · 分科专项练，也可以词句混着抽问。`
+        : '这节课还是空的。上课听到什么，点下面记进去。',
+    ),
   )
 
   const list = el('div', 'mode-list')
+  if (pack.source === 'custom') {
+    list.append(
+      renderModeButton(
+        '上课记词和句子',
+        '听到就记，英文先写下，中文课后补。',
+        () => openCapture(pack),
+        { primary: !packHasContent(pack) },
+      ),
+    )
+  }
+
+  if (!packHasContent(pack)) {
+    main.append(list)
+    shell.append(main)
+    app.append(shell)
+    return
+  }
   list.append(el('h2', 'section-label', '分科巩固'))
 
   if (pack.words.length) {
@@ -1222,11 +1542,6 @@ function renderCreate(): void {
         render()
         return
       }
-      if (draft.words.length === 0 && draft.sentences.length === 0) {
-        draft.error = '请至少记 1 个词或 1 个句子'
-        render()
-        return
-      }
       try {
         await saveCustomPack(draftToPack(draft))
         await refreshPacks()
@@ -1612,6 +1927,10 @@ function renderDone(): void {
 function render(): void {
   if (screen === 'create') {
     renderCreate()
+    return
+  }
+  if (screen === 'capture') {
+    renderCapture()
     return
   }
   if (screen === 'start') {
