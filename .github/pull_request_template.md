@@ -3,7 +3,8 @@
 
 ## Test plan
 - [ ] `cd web && npm run build`
-- [ ] Smoke the parent coach flow: pick a pack → vocab → picture talk → review
+- [ ] Netlify 站点打开：选词包 → 词汇 → 看图说话 → 巩固
+- [ ] 「连接并同步云端」后自定义词包可上传
 
 ## Notes (optional)
 -

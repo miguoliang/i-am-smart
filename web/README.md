@@ -10,22 +10,14 @@ npm install
 npm run dev
 ```
 
-## 构建
+复制 `.env.example` 为 `.env.local`，填入 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY`。首页可点「连接并同步云端」。
+
+## 构建 / 发布
 
 ```bash
-cd web
 npm run build
 ```
 
-产物在 `web/dist/`。GitHub Pages 的 `base` 已设为 `/i-am-smart/`（见 `vite.config.ts`）。
-
-## 使用
-
-1. 选词包（食物 / 动物 / 日常事物）
-2. 词汇热身：看图听读
-3. 看图说话：家长照着固定英文问句问孩子（点问句可朗读）
-4. 口头巩固：遮词提问 → 揭晓 → 套句型
+生产环境由 Netlify 读取仓库根目录 `netlify.toml` 构建。站点环境变量需要 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。Supabase 只同步词包，不托管网页。
 
 问题库（框架）在 `src/data/questions.ts`；词包（内容）在 `src/content/`，格式说明见 `public/content/README.md`。
-
-可选云端同步：复制 `.env.example` 为 `.env.local`，填入 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY`（anon key）。首页点「连接并同步云端」。

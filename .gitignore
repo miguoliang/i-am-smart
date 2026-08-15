@@ -25,3 +25,5 @@ pnpm-debug.log*
 
 # Cursor / local tooling
 .aider*
+.supabase/
+supabase/.temp/

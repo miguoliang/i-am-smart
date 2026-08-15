@@ -1,0 +1,14 @@
+# Frontend on Netlify; Supabase is auth + lesson_packs + pack-images only.
+[build]
+  command = "npm ci --prefix web && npm run build --prefix web"
+  publish = "web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Vite inlines the anon key; it is public and gated by RLS.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

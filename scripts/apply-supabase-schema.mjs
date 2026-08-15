@@ -25,11 +25,12 @@ const extraRedirects = [
   'http://localhost:5173/**',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5173/**',
-  'https://miguoliang.github.io',
-  'https://miguoliang.github.io/**',
-  'https://miguoliang.github.io/i-am-smart',
-  'https://miguoliang.github.io/i-am-smart/**',
 ]
+
+const publicSite = process.env.PUBLIC_SITE_URL?.replace(/\/$/, '')
+if (publicSite) {
+  extraRedirects.push(publicSite, `${publicSite}/**`)
+}
 
 async function management(pathname, opts = {}) {
   const res = await fetch(`https://api.supabase.com/v1${pathname}`, {
