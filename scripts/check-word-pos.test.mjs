@@ -38,12 +38,16 @@ test('sample class is one lesson with words and sentences', () => {
   assert.equal(happy.image, undefined)
 })
 
-test('classroom sentence may omit chinese for later fill-in', () => {
+test('classroom Q&A may omit chinese and include an answer', () => {
   const water = pack.sentences.find((s) => s.english.includes('water'))
   assert.ok(water)
-  assert.equal(water.chinese, undefined)
+  assert.equal(water.answer, 'Yes, here you are.')
   const hello = pack.sentences.find((s) => s.english.startsWith('Hello'))
   assert.ok(hello.chinese)
+  assert.equal(hello.answer, "I'm fine, thank you.")
+  const like = pack.sentences.find((s) => s.english.includes('apples'))
+  assert.ok(like)
+  assert.equal(like.answer, undefined)
 })
 
 test('sample class can split by subject for 分科巩固', () => {
@@ -70,6 +74,18 @@ test('merged classes keep unique ids for 综合巩固', () => {
   assert.equal(new Set(wordIds).size, wordIds.length)
   assert.equal(new Set(sentenceIds).size, sentenceIds.length)
   assert.equal(wordIds.length, pack.words.length * 2)
+})
+
+test('live capture treats a phrase as a sentence', () => {
+  const kind = (english) => {
+    const text = english.trim()
+    if (!text) return 'word'
+    if (/\s/.test(text) || /[.?!！？。]$/.test(text)) return 'sentence'
+    return 'word'
+  }
+  assert.equal(kind('banana'), 'word')
+  assert.equal(kind('I like bananas.'), 'sentence')
+  assert.equal(kind('Hello!'), 'sentence')
 })
 
 test('present participle matches KET action frames', () => {

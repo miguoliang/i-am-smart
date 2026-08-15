@@ -5,7 +5,7 @@ import {
   type SentenceDef,
   type WordDef,
   type WordPos,
-} from './types'
+} from './types.ts'
 
 export type PracticeMode = 'full' | 'words' | 'sentences' | 'mixed'
 
@@ -50,7 +50,7 @@ export function slicePack(
   return pack
 }
 
-/** Merge several classes into one 综合巩固 pack. */
+/** Merge several classes into one 巩固 pack. */
 export function mergePacks(
   packs: LessonPack[],
   titles: { titleZh: string; titleEn: string },
@@ -72,6 +72,40 @@ export function mergePacks(
     words,
     sentences,
     source: 'custom',
+  }
+}
+
+export function takeRandom<T>(items: T[], count: number): T[] {
+  if (count <= 0) return []
+  return shuffleCopy(items).slice(0, Math.min(count, items.length))
+}
+
+export function defaultReviewCount(available: number): number {
+  if (available <= 0) return 0
+  return Math.min(10, available)
+}
+
+/** Presets plus “all”, never larger than what was recorded. */
+export function reviewCountChoices(available: number): number[] {
+  if (available <= 0) return []
+  const presets = [5, 10, 20]
+  const out = presets.filter((n) => n < available)
+  out.push(available)
+  return out
+}
+
+/** Draw a 巩固 round from recorded words and Q&A. */
+export function sliceReviewPack(
+  pack: LessonPack,
+  opts: { wordCount: number; sentenceCount: number },
+): LessonPack {
+  const words = takeRandom(pack.words, opts.wordCount)
+  const sentences = takeRandom(pack.sentences, opts.sentenceCount)
+  return {
+    ...pack,
+    words,
+    sentences,
+    blurb: packCountLabel({ words, sentences }),
   }
 }
 
@@ -107,7 +141,7 @@ export function phasesForMode(
   mode: PracticeMode,
 ): { id: PracticePhaseId; label: string }[] {
   if (mode === 'mixed') {
-    return [{ id: 'review', label: '综合' }]
+    return [{ id: 'review', label: '巩固' }]
   }
   if (mode === 'words') {
     const phases: { id: PracticePhaseId; label: string }[] = []
@@ -120,7 +154,7 @@ export function phasesForMode(
   if (mode === 'sentences') {
     const phases: { id: PracticePhaseId; label: string }[] = []
     if (pack.sentences.length) {
-      phases.push({ id: 'sentences', label: '句子' })
+      phases.push({ id: 'sentences', label: '问答' })
     }
     phases.push({ id: 'review', label: '巩固' })
     return phases
@@ -130,7 +164,7 @@ export function phasesForMode(
     phases.push({ id: 'vocab', label: '词汇' }, { id: 'talk', label: '开口' })
   }
   if (pack.sentences.length) {
-    phases.push({ id: 'sentences', label: '句子' })
+    phases.push({ id: 'sentences', label: '问答' })
   }
   phases.push({ id: 'review', label: '巩固' })
   return phases
@@ -156,8 +190,8 @@ export function modeLabelZh(
   mode: PracticeMode,
   pos?: WordPos,
 ): string {
-  if (mode === 'mixed') return '综合巩固'
-  if (mode === 'sentences') return '分科巩固 · 句子'
+  if (mode === 'mixed') return '巩固'
+  if (mode === 'sentences') return '分科巩固 · 问答'
   if (mode === 'words' && pos) return `分科巩固 · ${POS_LABEL_ZH[pos]}`
   if (mode === 'words') return '分科巩固 · 词汇'
   return '完整过一遍'

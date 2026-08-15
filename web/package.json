@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --test ../scripts/check-word-pos.test.mjs",
+    "test": "node --experimental-strip-types --test ../scripts/check-word-pos.test.mjs ../scripts/schedule.test.mjs ../scripts/review.test.mjs",
     "db:apply": "node ../scripts/apply-supabase-schema.mjs",
     "db:verify": "node ../scripts/verify-supabase-sync.mjs"
   },

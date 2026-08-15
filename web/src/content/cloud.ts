@@ -99,11 +99,15 @@ function rowToPack(row: CloudPackRow): LessonPack {
         id: s.id || `s-${i}`,
         english: s.english,
         chinese: s.chinese,
+        answer: s.answer,
+        answerZh: s.answerZh,
       }),
     ),
     source: 'custom',
     updatedAt: row.updated_at,
     cloudSynced: true,
+    ...(doc.courseId ? { courseId: doc.courseId } : {}),
+    ...(doc.scheduledOn ? { scheduledOn: doc.scheduledOn } : {}),
   }
 }
 
@@ -144,7 +148,7 @@ export async function listCloudPacks(): Promise<LessonPack[]> {
     .select('*')
     .eq('owner_id', session.userId)
     .order('updated_at', { ascending: false })
-  if (error) throw cloudError(error, '读取云端课包失败')
+  if (error) throw cloudError(error, '读取云端的课失败')
   return ((data ?? []) as CloudPackRow[]).map(rowToPack)
 }
 
@@ -171,7 +175,7 @@ export async function upsertCloudPack(pack: LessonPack): Promise<LessonPack> {
     .upsert(row, { onConflict: 'owner_id,id' })
     .select('*')
     .single()
-  if (error) throw cloudError(error, '上传课包失败')
+  if (error) throw cloudError(error, '上传失败')
   return rowToPack(data as CloudPackRow)
 }
 
@@ -185,7 +189,7 @@ export async function deleteCloudPack(id: string): Promise<void> {
     .delete()
     .eq('id', id)
     .eq('owner_id', session.userId)
-  if (error) throw cloudError(error, '删除云端课包失败')
+  if (error) throw cloudError(error, '删除云端的课失败')
 }
 
 /** Pull cloud packs into the returned list shape (caller persists locally). */

@@ -690,6 +690,10 @@ button:disabled {
   gap: 10px;
 }
 
+.home-actions > .btn-primary {
+  grid-column: 1 / -1;
+}
+
 .sample-link {
   color: var(--sky);
   font-size: 0.92rem;
@@ -730,6 +734,72 @@ button:disabled {
 .pack-badge-demo {
   background: var(--sky-soft);
   color: var(--sky);
+}
+
+.pack-badge-today {
+  background: rgba(47, 143, 91, 0.16);
+  color: var(--good);
+}
+
+.pack-card.is-today {
+  border-color: rgba(31, 122, 108, 0.45);
+}
+
+.pack-card.is-past {
+  opacity: 0.78;
+}
+
+.course-block {
+  gap: 10px;
+}
+
+.course-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.course-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.course-head-text .section-label {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.course-rule {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.course-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.schedule-preview {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px dashed rgba(31, 122, 108, 0.35);
+}
+
+.schedule-dates {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .pack-tools {
@@ -935,6 +1005,38 @@ select.field {
   font-size: 0.88rem;
   font-weight: 650;
   color: var(--teal-deep);
+}
+
+.mode-chip.is-on {
+  background: rgba(31, 122, 108, 0.14);
+  border-color: rgba(31, 122, 108, 0.45);
+}
+
+.capture-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.capture-en {
+  min-height: 56px;
+  font-family: var(--font-en);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.capture-title {
+  font-weight: 700;
+}
+
+.capture-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .cloud-bar {

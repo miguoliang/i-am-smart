@@ -21,11 +21,15 @@ import {
   parseContentPackJson,
 } from './content/schema'
 import {
+  deleteCourseAndLessons,
   deleteCustomPack,
   getPackById,
   listAllPacks,
+  listCourses,
   pushLocalPackToCloud,
+  saveCourse,
   saveCustomPack,
+  saveCustomPacks,
   syncFromCloud,
 } from './content/store'
 import {
@@ -38,9 +42,11 @@ import {
   WORD_POS,
   guessArticle,
   hasImage,
+  hasQaAnswer,
   packCountLabel,
   packHasContent,
   zhOrPending,
+  type Course,
   type LessonPack,
   type SentenceDef,
   type WordDef,
@@ -48,14 +54,15 @@ import {
 } from './content/types'
 import {
   buildReviewItems,
-  distinctPosCount,
+  defaultReviewCount,
   firstPhaseForMode,
   mergePacks,
   modeLabelZh,
   phaseAfterForMode,
   phasesForMode,
-  posCounts,
+  reviewCountChoices,
   slicePack,
+  sliceReviewPack,
   type PracticeMode,
   type ReviewItem,
 } from './content/practice'
@@ -64,7 +71,9 @@ import {
   emptyDraft,
   emptySentenceForm,
   emptyWordForm,
+  guessCaptureKind,
   moveDraftItem,
+  newEmptyClass,
   packToDraft,
   posExtra,
   sentenceFromForm,
@@ -72,6 +81,24 @@ import {
   type DraftWord,
   type PackDraft,
 } from './content/editor'
+import {
+  courseToDraft,
+  emptyCourseDraft,
+  groupPacksByCourse,
+  isYmdPast,
+  isYmdToday,
+  lessonTitleForYmd,
+  nextMissingYmds,
+  newCourseId,
+  SCHEDULE_WEEK_CHOICES,
+  scheduledYmdsForCourse,
+  scheduleNote,
+  lessonBlurbForSchedule,
+  WEEKDAY_ORDER,
+  weekdayLabel,
+  weekdaysLabel,
+  type CourseDraft,
+} from './content/schedule'
 import { bindViewport } from './practice/chrome'
 import { speakEnglish, unlockAudio } from './practice/tts'
 
@@ -85,7 +112,7 @@ function requireApp(): HTMLDivElement {
 
 const app = requireApp()
 
-type Screen = 'home' | 'create' | 'start' | 'session'
+type Screen = 'home' | 'create' | 'capture' | 'start' | 'session' | 'schedule' | 'drill'
 type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
 type Phase = PracticePhase | 'done'
 
@@ -93,7 +120,7 @@ interface Session {
   pack: LessonPack
   mode: PracticeMode
   posFilter?: WordPos
-  /** Original class id; empty when mixing several classes from home. */
+  /** Original class id; empty when consolidating all learned classes. */
   originPackId: string
   phase: Phase
   wordIndex: number
@@ -103,17 +130,34 @@ interface Session {
   reviewItems: ReviewItem[]
   revealAnswer: boolean
   reviewReveal: boolean
+  drillPackId?: string
+  drillWordCount?: number
+  drillSentenceCount?: number
+}
+
+interface DrillDraft {
+  packId: string
+  wordCount: number
+  sentenceCount: number
 }
 
 let screen: Screen = 'home'
 let session: Session | null = null
 let startPack: LessonPack | null = null
 let packCache: LessonPack[] = []
+let courseCache: Course[] = []
 let homeError = ''
 let homeStatus = ''
 let cloudBusy = false
 let cloudUserId: string | null = null
 let draft: PackDraft = emptyDraft()
+let courseDraft: CourseDraft = emptyCourseDraft()
+let captureKind: 'word' | 'sentence' = 'word'
+let capturePos: WordPos = 'noun'
+let captureFocus = true
+let captureBusy = false
+let captureAnswer = ''
+let drillDraft: DrillDraft = { packId: '', wordCount: 0, sentenceCount: 0 }
 
 function reviewQueue(): ReviewItem[] {
   return session?.reviewItems ?? []
@@ -144,6 +188,7 @@ function clearApp(): void {
 
 async function refreshPacks(): Promise<void> {
   packCache = await listAllPacks()
+  courseCache = await listCourses()
   if (isSupabaseConfigured()) {
     cloudUserId = await getCloudSessionUserId()
   } else {
@@ -165,7 +210,7 @@ async function connectCloud(): Promise<void> {
     const session = await ensureCloudSession()
     cloudUserId = session?.userId ?? null
     packCache = await syncFromCloud()
-    homeStatus = '已同步云端课包'
+    homeStatus = '已同步云端的课'
   } catch (err) {
     homeError = err instanceof Error ? err.message : '云端连接失败'
     homeStatus = ''
@@ -178,7 +223,11 @@ async function connectCloud(): Promise<void> {
 function beginPractice(
   source: LessonPack,
   mode: PracticeMode,
-  opts: { pos?: WordPos; originPackId?: string } = {},
+  opts: {
+    pos?: WordPos
+    originPackId?: string
+    drill?: DrillDraft
+  } = {},
 ): void {
   const working = slicePack(source, { mode, pos: opts.pos })
   if (!packHasContent(working)) return
@@ -198,10 +247,70 @@ function beginPractice(
     reviewItems: buildReviewItems(working, { shuffle: mixed }),
     revealAnswer: false,
     reviewReveal: false,
+    drillPackId: opts.drill?.packId,
+    drillWordCount: opts.drill?.wordCount,
+    drillSentenceCount: opts.drill?.sentenceCount,
   }
   startPack = null
   screen = 'session'
   render()
+}
+
+function recordedClasses(): LessonPack[] {
+  return packsForHomeMixed()
+}
+
+function drillSource(packId: string): LessonPack | null {
+  const packs = recordedClasses()
+  if (!packs.length) return null
+  if (!packId) {
+    return mergePacks(packs, {
+      titleZh: '已学全部',
+      titleEn: 'All learned',
+    })
+  }
+  return packs.find((pack) => pack.id === packId) ?? null
+}
+
+function openDrill(opts: { packId?: string } = {}): void {
+  const packs = recordedClasses()
+  if (!packs.length) return
+  const packId =
+    opts.packId && packs.some((pack) => pack.id === opts.packId) ? opts.packId : ''
+  const source = drillSource(packId)
+  if (!source) return
+  drillDraft = {
+    packId,
+    wordCount: defaultReviewCount(source.words.length),
+    sentenceCount: defaultReviewCount(source.sentences.length),
+  }
+  screen = 'drill'
+  render()
+}
+
+function setDrillPack(packId: string): void {
+  const source = drillSource(packId)
+  if (!source) return
+  drillDraft = {
+    packId,
+    wordCount: defaultReviewCount(source.words.length),
+    sentenceCount: defaultReviewCount(source.sentences.length),
+  }
+  render()
+}
+
+function startDrill(): void {
+  const source = drillSource(drillDraft.packId)
+  if (!source) return
+  const working = sliceReviewPack(source, {
+    wordCount: drillDraft.wordCount,
+    sentenceCount: drillDraft.sentenceCount,
+  })
+  if (!packHasContent(working)) return
+  beginPractice(working, 'mixed', {
+    originPackId: drillDraft.packId,
+    drill: { ...drillDraft },
+  })
 }
 
 function openStart(pack: LessonPack): void {
@@ -210,23 +319,22 @@ function openStart(pack: LessonPack): void {
   render()
 }
 
-function startHomeMixed(): void {
-  const packs = packsForHomeMixed()
-  if (!packs.length) return
-  const merged = mergePacks(packs, {
-    titleZh: '综合巩固',
-    titleEn: 'Mixed review',
-  })
-  beginPractice(merged, 'mixed', { originPackId: '' })
-}
-
 function replaySession(): void {
   if (!session) return
+  if (session.mode === 'mixed' && session.drillWordCount !== undefined) {
+    drillDraft = {
+      packId: session.drillPackId ?? '',
+      wordCount: session.drillWordCount,
+      sentenceCount: session.drillSentenceCount ?? 0,
+    }
+    startDrill()
+    return
+  }
   const mode = session.mode
   const pos = session.posFilter
   const originId = session.originPackId
   if (!originId) {
-    startHomeMixed()
+    openDrill()
     return
   }
   void getPackById(originId).then((pack) => {
@@ -243,10 +351,50 @@ function goHome(): void {
   void refreshPacks().then(render)
 }
 
-function openCreate(): void {
-  draft = emptyDraft()
-  screen = 'create'
+function openCapture(pack: LessonPack): void {
+  draft = packToDraft(pack)
+  captureKind = 'word'
+  capturePos = 'noun'
+  captureFocus = true
+  captureBusy = false
+  captureAnswer = ''
+  screen = 'capture'
   render()
+}
+
+async function createClassNow(): Promise<void> {
+  homeError = ''
+  homeStatus = '正在建课…'
+  render()
+  try {
+    const saved = await saveCustomPack(newEmptyClass())
+    homeStatus = ''
+    openCapture(saved)
+  } catch {
+    homeStatus = ''
+    homeError = '建课失败（本机存储可能已满）'
+    render()
+  }
+}
+
+async function persistCapture(): Promise<boolean> {
+  if (!draft.titleZh.trim()) {
+    draft.error = '请填写标题'
+    return false
+  }
+  try {
+    const saved = await saveCustomPack(draftToPack(draft))
+    draft.packId = saved.id
+    draft.error = ''
+    return true
+  } catch {
+    draft.error = '保存失败（本机存储可能已满）'
+    return false
+  }
+}
+
+function openCreate(): void {
+  void createClassNow()
 }
 
 function openEdit(pack: LessonPack): void {
@@ -259,6 +407,93 @@ function openCopy(pack: LessonPack): void {
   draft = packToDraft(pack, { asCopy: true })
   screen = 'create'
   render()
+}
+
+function openSchedule(course?: Course): void {
+  courseDraft = course ? courseToDraft(course) : emptyCourseDraft()
+  screen = 'schedule'
+  render()
+}
+
+async function extendCourse(course: Course, weeks = 4): Promise<void> {
+  homeError = ''
+  homeStatus = '正在排课…'
+  render()
+  try {
+    const ymds = nextMissingYmds(
+      course.weekdays,
+      scheduledYmdsForCourse(packCache, course.id),
+      weeks,
+    )
+    if (!ymds.length) {
+      homeStatus = '这几周的课都已排出'
+      render()
+      return
+    }
+    const lessons = ymds.map((ymd) =>
+      newEmptyClass({
+        courseId: course.id,
+        scheduledOn: ymd,
+        titleZh: lessonTitleForYmd(ymd),
+        blurb: lessonBlurbForSchedule(course),
+      }),
+    )
+    await saveCustomPacks(lessons, { syncCloud: false })
+    await refreshPacks()
+    homeStatus = `已再排出 ${lessons.length} 节课`
+    render()
+  } catch {
+    homeStatus = ''
+    homeError = '排课失败（本机存储可能已满）'
+    render()
+  }
+}
+
+async function submitSchedule(): Promise<void> {
+  const weekdays = courseDraft.weekdays
+  if (!weekdays.length) {
+    courseDraft.error = '请选择每周几上课'
+    render()
+    return
+  }
+  const titleZh = weekdaysLabel(weekdays)
+  const blurb = courseDraft.blurb.trim()
+  courseDraft.error = ''
+  try {
+    const saved = await saveCourse({
+      id: courseDraft.courseId || newCourseId(titleZh),
+      titleZh,
+      blurb,
+      weekdays,
+      createdAt: courseCache.find((c) => c.id === courseDraft.courseId)?.createdAt,
+    })
+    const ymds = nextMissingYmds(
+      saved.weekdays,
+      scheduledYmdsForCourse(packCache, saved.id),
+      courseDraft.weeks,
+    )
+    const lessons = ymds.map((ymd) =>
+      newEmptyClass({
+        courseId: saved.id,
+        scheduledOn: ymd,
+        titleZh: lessonTitleForYmd(ymd),
+        blurb: lessonBlurbForSchedule(saved),
+      }),
+    )
+    if (lessons.length) {
+      await saveCustomPacks(lessons, { syncCloud: false })
+    }
+    await refreshPacks()
+    screen = 'home'
+    homeError = ''
+    homeStatus = lessons.length
+      ? `已按${titleZh}排出 ${lessons.length} 节课`
+      : `${titleZh}的排课已保存`
+    render()
+  } catch {
+    courseDraft.error = '保存失败（本机存储可能已满）'
+    render()
+  }
 }
 
 function currentWord(): WordDef | null {
@@ -337,6 +572,7 @@ function prevTalk(): void {
 
 function nextSentence(): void {
   if (!session) return
+  session.revealAnswer = false
   if (session.sentenceIndex >= session.pack.sentences.length - 1) {
     session.phase = phaseAfterForMode(session.pack, session.mode, 'sentences')
     session.reviewIndex = 0
@@ -349,6 +585,7 @@ function nextSentence(): void {
 
 function prevSentence(): void {
   if (!session || session.sentenceIndex <= 0) return
+  session.revealAnswer = false
   session.sentenceIndex -= 1
   render()
 }
@@ -446,7 +683,7 @@ async function importSamplePack(): Promise<void> {
   try {
     const url = `${import.meta.env.BASE_URL}content/sample-class.peilian.json`
     const res = await fetch(url)
-    if (!res.ok) throw new Error('示例课包下载失败')
+    if (!res.ok) throw new Error('示例课下载失败')
     await importPackText(await res.text())
   } catch (err) {
     homeError = err instanceof Error ? err.message : '示例导入失败'
@@ -461,12 +698,18 @@ function renderPackThumbs(pack: LessonPack): HTMLElement {
     for (const word of words) thumbs.append(renderThumb(word, 'pack-thumb'))
     return thumbs
   }
-  for (const sentence of pack.sentences.slice(0, 4)) {
-    const tile = el('div', 'pack-thumb pack-thumb-word')
-    tile.textContent = sentence.english.slice(0, 8)
-    tile.title = sentence.english
-    thumbs.append(tile)
+  if (pack.sentences.length) {
+    for (const sentence of pack.sentences.slice(0, 4)) {
+      const tile = el('div', 'pack-thumb pack-thumb-word')
+      tile.textContent = sentence.english.slice(0, 8)
+      tile.title = sentence.english
+      thumbs.append(tile)
+    }
+    return thumbs
   }
+  const tile = el('div', 'pack-thumb pack-thumb-word')
+  tile.textContent = '记'
+  thumbs.append(tile)
   return thumbs
 }
 
@@ -481,13 +724,29 @@ function renderPackCard(pack: LessonPack): HTMLElement {
       : el('span', 'pack-badge pack-badge-demo', '示例')
   const titleRow = el('div', 'pack-title-row')
   titleRow.append(el('div', 'pack-title', pack.titleZh), badge)
+  if (pack.scheduledOn && isYmdToday(pack.scheduledOn)) {
+    titleRow.append(el('span', 'pack-badge pack-badge-today', '今天'))
+  }
+  const blurbBits = [packCountLabel(pack)]
+  if (pack.scheduledOn && isYmdPast(pack.scheduledOn) && !packHasContent(pack)) {
+    blurbBits.push('还没记')
+  }
+  blurbBits.push(pack.blurb)
   meta.append(
     titleRow,
     el('div', 'pack-en', pack.titleEn),
-    el('div', 'pack-blurb', `${packCountLabel(pack)} · ${pack.blurb}`),
+    el('div', 'pack-blurb', blurbBits.join(' · ')),
   )
   card.append(renderPackThumbs(pack), meta)
-  card.addEventListener('click', () => openStart(pack))
+  if (pack.scheduledOn && isYmdToday(pack.scheduledOn)) {
+    card.classList.add('is-today')
+  } else if (pack.scheduledOn && isYmdPast(pack.scheduledOn)) {
+    card.classList.add('is-past')
+  }
+  card.addEventListener('click', () => {
+    if (pack.source === 'custom' && !packHasContent(pack)) openCapture(pack)
+    else openStart(pack)
+  })
   wrap.append(card)
 
   const tools = el('div', 'pack-tools')
@@ -544,7 +803,13 @@ function renderPackCard(pack: LessonPack): HTMLElement {
         render()
       })
     })
-    tools.append(edit, exp, del)
+    const note = el('button', 'btn-tiny', '上课记')
+    note.type = 'button'
+    note.addEventListener('click', (e) => {
+      e.stopPropagation()
+      openCapture(pack)
+    })
+    tools.append(note, edit, exp, del)
     wrap.append(tools)
   } else {
     const copy = el('button', 'btn-tiny', '复制并编辑')
@@ -566,11 +831,15 @@ function renderHome(): void {
   const hero = el('section', 'hero')
   hero.append(
     el('p', 'hero-brand', '陪练本'),
-    el('h1', 'hero-title', '一课一份陪练'),
+    el(
+      'h1',
+      'hero-title',
+      '按每周几排课',
+    ),
     el(
       'p',
       'hero-lead',
-      '孩子上外教课，家长在旁边记下这节课用到的词和句子。一课一份，课后拿出来练。',
+      '例如每周二、周四，先排出几周空课。上课点进去记词汇和问答。',
     ),
   )
   shell.append(hero)
@@ -581,7 +850,7 @@ function renderHome(): void {
       el(
         'p',
         'cloud-note',
-        '本机课包可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
+        '本机的课可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
       ),
     )
   } else {
@@ -590,7 +859,7 @@ function renderHome(): void {
       'cloud-note',
       cloudUserId
         ? `云端已连接 · ${cloudUserId.slice(0, 8)}…`
-        : '云端已配置，可匿名登录并同步课包',
+        : '云端已配置，可匿名登录并同步这些课',
     )
     const syncBtn = el(
       'button',
@@ -617,24 +886,28 @@ function renderHome(): void {
   })
   importBtn.addEventListener('click', () => fileInput.click())
 
-  const createBtn = el('button', 'btn-primary', '记一节课')
+  const createCourseBtn = el('button', 'btn-primary', '排课')
+  createCourseBtn.type = 'button'
+  createCourseBtn.addEventListener('click', () => openSchedule())
+
+  const createBtn = el('button', 'btn-secondary', '记一节课')
   createBtn.type = 'button'
   createBtn.addEventListener('click', openCreate)
 
-  actions.append(importBtn, createBtn, fileInput)
+  actions.append(createCourseBtn, importBtn, createBtn, fileInput)
   shell.append(actions)
 
   const mixedPacks = packsForHomeMixed()
   if (mixedPacks.length) {
-    const mixedBtn = el('button', 'btn-ghost-block', '综合巩固')
+    const mixedBtn = el('button', 'btn-ghost-block', '巩固')
     mixedBtn.type = 'button'
-    mixedBtn.addEventListener('click', startHomeMixed)
+    mixedBtn.addEventListener('click', () => openDrill())
     const mixedHint = el(
       'p',
       'home-note',
       mixedPacks.some((p) => p.source === 'custom')
-        ? '把记下的几节课混在一起抽问。点某一节课，也可以分科只练词或只练句。'
-        : '先用示例课综合抽问。记下自己的课后，会改成混练你的课。',
+        ? '用记下的课来巩固。可选一节课或已学全部，并设定这次练多少词汇、多少问答。'
+        : '先用示例课巩固。记下自己的课后，会改成练你的课。',
     )
     shell.append(mixedBtn, mixedHint)
   }
@@ -643,7 +916,7 @@ function renderHome(): void {
   sampleBtn.type = 'button'
   sampleBtn.addEventListener('click', () => void importSamplePack())
 
-  const sampleLink = el('a', 'sample-link', '查看课包格式说明')
+  const sampleLink = el('a', 'sample-link', '查看备份格式说明')
   sampleLink.href = `${import.meta.env.BASE_URL}content/README.md`
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
@@ -659,12 +932,58 @@ function renderHome(): void {
 
   const custom = packCache.filter((p) => p.source === 'custom')
   const builtin = packCache.filter((p) => p.source !== 'custom')
+  const grouped = groupPacksByCourse(custom, courseCache)
 
-  if (custom.length) {
-    const mine = el('section', 'pack-list')
-    mine.append(el('h2', 'section-label', '我的课'))
-    for (const pack of custom) mine.append(renderPackCard(pack))
-    shell.append(mine)
+  if (grouped.courses.length || grouped.oneOffs.length) {
+    for (const { course, packs } of grouped.courses) {
+      const mine = el('section', 'pack-list course-block')
+      const head = el('div', 'course-head')
+      const titles = el('div', 'course-head-text')
+      titles.append(el('h2', 'section-label', weekdaysLabel(course.weekdays)))
+      const note = scheduleNote(course)
+      if (note) titles.append(el('p', 'course-rule', note))
+      const tools = el('div', 'course-tools')
+      const extend = el('button', 'btn-tiny', '再排4周')
+      extend.type = 'button'
+      extend.addEventListener('click', () => void extendCourse(course, 4))
+      const edit = el('button', 'btn-tiny', '改上课日')
+      edit.type = 'button'
+      edit.addEventListener('click', () => openSchedule(course))
+      const del = el('button', 'btn-tiny btn-tiny-danger', '删除这些课')
+      del.type = 'button'
+      del.addEventListener('click', () => {
+        const n = packs.length
+        const rule = weekdaysLabel(course.weekdays)
+        if (
+          !confirm(
+            n
+              ? `删除${rule}下面的 ${n} 节课？`
+              : `删除${rule}的排课？`,
+          )
+        ) {
+          return
+        }
+        void deleteCourseAndLessons(course.id).then(async () => {
+          await refreshPacks()
+          render()
+        })
+      })
+      tools.append(extend, edit, del)
+      head.append(titles, tools)
+      mine.append(head)
+      if (!packs.length) {
+        mine.append(el('p', 'draft-empty', '还没有排期。点「再排4周」生成空课。'))
+      }
+      for (const pack of packs) mine.append(renderPackCard(pack))
+      shell.append(mine)
+    }
+
+    if (grouped.oneOffs.length) {
+      const mine = el('section', 'pack-list')
+      mine.append(el('h2', 'section-label', '单独记的课'))
+      for (const pack of grouped.oneOffs) mine.append(renderPackCard(pack))
+      shell.append(mine)
+    }
   }
 
   const demos = el('section', 'pack-list')
@@ -676,10 +995,279 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '上课时先记英文，中文课后可补。巩固时可以分科，也可以综合。导入 / 导出只是备份。',
+      '先按每周几排出空课，上课再点「上课记」。知识就记词汇和问答。',
     ),
   )
   app.append(shell)
+}
+
+function focusCaptureInput(): void {
+  if (!captureFocus) return
+  const input = app.querySelector<HTMLInputElement>('[data-capture-en]')
+  if (!input) return
+  input.focus()
+  const len = input.value.length
+  input.setSelectionRange(len, len)
+}
+
+function addCapturedItem(english: string, chinese: string, answer = ''): void {
+  const text = english.trim()
+  if (!text) {
+    draft.error = '先写下英文'
+    render()
+    return
+  }
+  const kind =
+    captureKind === 'sentence' ? 'sentence' : guessCaptureKind(text)
+  if (kind === 'word') {
+    if (draft.words.length >= MAX_WORDS) {
+      draft.error = `单课最多 ${MAX_WORDS} 个词`
+      render()
+      return
+    }
+    draft.words.push(
+      wordFromForm({
+        editIndex: null,
+        english: text,
+        chinese,
+        pos: capturePos,
+        article: guessArticle(text),
+        imageDataUrl: '',
+      }),
+    )
+  } else {
+    if (draft.sentences.length >= MAX_SENTENCES) {
+      draft.error = `单课最多 ${MAX_SENTENCES} 组问答`
+      render()
+      return
+    }
+    draft.sentences.push(
+      sentenceFromForm({
+        editIndex: null,
+        english: text,
+        chinese,
+        answer,
+        answerZh: '',
+      }),
+    )
+  }
+  captureKind = kind
+  captureAnswer = ''
+  draft.error = ''
+  captureBusy = true
+  captureFocus = true
+  render()
+  void persistCapture().then(() => {
+    captureBusy = false
+    captureFocus = true
+    render()
+  })
+}
+
+function renderCapture(): void {
+  clearApp()
+  const shell = el('div', 'shell capture-shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '完成')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', '上课记'))
+  shell.append(top)
+
+  const main = el('main', 'main capture-main')
+  const title = el('input', 'field capture-title') as HTMLInputElement
+  title.type = 'text'
+  title.value = draft.titleZh
+  title.placeholder = '这节课叫什么'
+  title.addEventListener('focus', () => {
+    captureFocus = false
+  })
+  title.addEventListener('change', () => {
+    draft.titleZh = title.value
+    if (!draft.titleEn || draft.titleEn === draft.titleZh) {
+      draft.titleEn = title.value.trim()
+    }
+    void persistCapture().then(() => {
+      if (draft.error) render()
+    })
+  })
+  main.append(
+    title,
+    el('p', 'subtitle', '听到就记，回车保存。有空格的会当成问答。'),
+  )
+
+  const composer = el('div', 'capture-box')
+  const kindRow = el('div', 'mode-chips')
+  const wordChip = el(
+    'button',
+    captureKind === 'word' ? 'mode-chip is-on' : 'mode-chip',
+    '词',
+  ) as HTMLButtonElement
+  wordChip.type = 'button'
+  wordChip.addEventListener('click', () => {
+    captureKind = 'word'
+    captureFocus = true
+    render()
+  })
+  const senChip = el(
+    'button',
+    captureKind === 'sentence' ? 'mode-chip is-on' : 'mode-chip',
+    '问',
+  ) as HTMLButtonElement
+  senChip.type = 'button'
+  senChip.addEventListener('click', () => {
+    captureKind = 'sentence'
+    captureFocus = true
+    render()
+  })
+  kindRow.append(wordChip, senChip)
+  composer.append(kindRow)
+
+  if (captureKind === 'word') {
+    const posRow = el('div', 'mode-chips')
+    for (const pos of WORD_POS) {
+      const chip = el(
+        'button',
+        capturePos === pos ? 'mode-chip is-on' : 'mode-chip',
+        POS_LABEL_ZH[pos],
+      ) as HTMLButtonElement
+      chip.type = 'button'
+      chip.addEventListener('click', () => {
+        capturePos = pos
+        captureKind = 'word'
+        captureFocus = true
+        render()
+      })
+      posRow.append(chip)
+    }
+    composer.append(posRow)
+  }
+
+  const enIn = el('input', 'field capture-en') as HTMLInputElement
+  enIn.type = 'text'
+  enIn.placeholder =
+    captureKind === 'sentence' ? 'English question' : 'English'
+  enIn.autocomplete = 'off'
+  enIn.autocapitalize = 'off'
+  enIn.spellcheck = false
+  enIn.setAttribute('data-capture-en', '1')
+  enIn.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    addCapturedItem(enIn.value, zhIn.value, ansIn?.value ?? captureAnswer)
+  })
+
+  const zhIn = el('input', 'field') as HTMLInputElement
+  zhIn.type = 'text'
+  zhIn.placeholder =
+    captureKind === 'sentence' ? '问句中文（课后可补）' : '中文（课后可补）'
+  zhIn.autocomplete = 'off'
+
+  let ansIn: HTMLInputElement | undefined
+  if (captureKind === 'sentence') {
+    ansIn = el('input', 'field') as HTMLInputElement
+    ansIn.type = 'text'
+    ansIn.placeholder = '答句 English（可补）'
+    ansIn.autocomplete = 'off'
+    ansIn.value = captureAnswer
+    ansIn.addEventListener('focus', () => {
+      captureFocus = false
+    })
+    ansIn.addEventListener('input', () => {
+      captureAnswer = ansIn?.value ?? ''
+    })
+    ansIn.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return
+      event.preventDefault()
+      addCapturedItem(enIn.value, zhIn.value, ansIn?.value ?? '')
+    })
+  }
+
+  const addBtn = el(
+    'button',
+    'btn-primary',
+    captureBusy ? '正在保存…' : '记下',
+  )
+  addBtn.type = 'button'
+  addBtn.disabled = captureBusy
+  addBtn.addEventListener('click', () => {
+    addCapturedItem(enIn.value, zhIn.value, ansIn?.value ?? captureAnswer)
+  })
+  composer.append(enIn)
+  if (ansIn) composer.append(ansIn)
+  composer.append(zhIn, addBtn)
+  main.append(composer)
+
+  if (draft.error) main.append(el('p', 'form-error', draft.error))
+
+  const log = el('div', 'capture-log')
+  if (!draft.words.length && !draft.sentences.length) {
+    log.append(el('p', 'draft-empty', '还是空的。老师一说，就在上面记下。'))
+  }
+
+  if (draft.words.length) {
+    log.append(el('h2', 'section-label', `词汇（${draft.words.length}）`))
+    for (let index = draft.words.length - 1; index >= 0; index -= 1) {
+      const word = draft.words[index]
+      if (!word) continue
+      const row = el('div', 'draft-row')
+      const info = el('div', 'draft-info')
+      info.append(
+        el('div', 'draft-en', word.english),
+        el('div', 'draft-zh', `${zhOrPending(word.chinese)} · ${posExtra(word)}`),
+      )
+      const remove = el('button', 'btn-tiny btn-tiny-danger', '删')
+      remove.type = 'button'
+      remove.addEventListener('click', () => {
+        draft.words.splice(index, 1)
+        captureFocus = true
+        render()
+        void persistCapture().then((ok) => {
+          if (!ok) render()
+        })
+      })
+      row.append(renderDraftThumb(word), info, remove)
+      log.append(row)
+    }
+  }
+
+  if (draft.sentences.length) {
+    log.append(el('h2', 'section-label', `问答（${draft.sentences.length}）`))
+    for (let index = draft.sentences.length - 1; index >= 0; index -= 1) {
+      const sentence = draft.sentences[index]
+      if (!sentence) continue
+      const row = el('div', 'draft-row draft-row-sentence')
+      const info = el('div', 'draft-info')
+      info.append(
+        el('div', 'draft-en', sentence.english),
+        el(
+          'div',
+          'draft-zh',
+          sentence.answer.trim()
+            ? `答：${sentence.answer}${sentence.chinese ? ` · ${zhOrPending(sentence.chinese)}` : ''}`
+            : zhOrPending(sentence.chinese),
+        ),
+      )
+      const remove = el('button', 'btn-tiny btn-tiny-danger', '删')
+      remove.type = 'button'
+      remove.addEventListener('click', () => {
+        draft.sentences.splice(index, 1)
+        captureFocus = true
+        render()
+        void persistCapture().then((ok) => {
+          if (!ok) render()
+        })
+      })
+      const mark = el('div', 'draft-thumb pack-thumb-word')
+      mark.textContent = '问'
+      row.append(mark, info, remove)
+      log.append(row)
+    }
+  }
+  main.append(log)
+  shell.append(main)
+  app.append(shell)
+  queueMicrotask(focusCaptureInput)
 }
 
 function renderModeButton(
@@ -700,12 +1288,127 @@ function renderModeButton(
 function renderChip(
   label: string,
   onClick: () => void,
+  opts: { on?: boolean } = {},
 ): HTMLButtonElement {
-  const chip = el('button', 'mode-chip') as HTMLButtonElement
+  const chip = el(
+    'button',
+    opts.on ? 'mode-chip is-on' : 'mode-chip',
+  ) as HTMLButtonElement
   chip.type = 'button'
   chip.textContent = label
   chip.addEventListener('click', onClick)
   return chip
+}
+
+function renderCountRow(
+  title: string,
+  available: number,
+  current: number,
+  onChange: (count: number) => void,
+): HTMLElement {
+  const box = el('div', 'add-word-box')
+  box.append(el('h2', 'section-label', `${title} · 共 ${available}`))
+  if (!available) {
+    box.append(el('p', 'draft-empty', '记下的课里还没有这项。'))
+    return box
+  }
+  const row = el('div', 'mode-chips')
+  row.append(
+    renderChip('不练', () => onChange(0), { on: current === 0 }),
+  )
+  for (const count of reviewCountChoices(available)) {
+    const label = count === available ? `全部 · ${count}` : `${count}`
+    row.append(
+      renderChip(label, () => onChange(count), { on: current === count }),
+    )
+  }
+  box.append(row)
+  return box
+}
+
+function renderDrill(): void {
+  const source = drillSource(drillDraft.packId)
+  const packs = recordedClasses()
+  if (!source || !packs.length) {
+    goHome()
+    return
+  }
+  const wordN = Math.min(drillDraft.wordCount, source.words.length)
+  const senN = Math.min(drillDraft.sentenceCount, source.sentences.length)
+  const canStart = wordN + senN > 0
+  clearApp()
+  const shell = el('div', 'shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '返回')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', '巩固'))
+  shell.append(top)
+
+  const main = el('main', 'main create-main')
+  main.append(
+    el('h1', 'title', '巩固记下的课'),
+    el(
+      'p',
+      'subtitle',
+      '内容来自课程记录。选一节课或已学全部，再定这次练多少。',
+    ),
+  )
+
+  const form = el('div', 'create-form')
+  const scopeBox = el('div', 'add-word-box')
+  scopeBox.append(el('h2', 'section-label', '巩固哪部分'))
+  const scopeRow = el('div', 'mode-chips')
+  scopeRow.append(
+    renderChip('已学全部', () => setDrillPack(''), {
+      on: drillDraft.packId === '',
+    }),
+  )
+  for (const pack of packs) {
+    scopeRow.append(
+      renderChip(pack.titleZh, () => setDrillPack(pack.id), {
+        on: drillDraft.packId === pack.id,
+      }),
+    )
+  }
+  scopeBox.append(scopeRow)
+  if (!drillDraft.packId) {
+    scopeBox.append(
+      el('p', 'draft-empty', `${packs.length} 节课 · ${packCountLabel(source)}`),
+    )
+  }
+  form.append(scopeBox)
+
+  form.append(
+    renderCountRow('词汇', source.words.length, drillDraft.wordCount, (count) => {
+      drillDraft.wordCount = count
+      render()
+    }),
+    renderCountRow(
+      '问答',
+      source.sentences.length,
+      drillDraft.sentenceCount,
+      (count) => {
+        drillDraft.sentenceCount = count
+        render()
+      },
+    ),
+  )
+
+  const save = el(
+    'button',
+    'btn-primary',
+    canStart
+      ? `开始巩固 · ${wordN} 词 + ${senN} 问`
+      : '请至少选一些词汇或问答',
+  )
+  save.type = 'button'
+  save.disabled = !canStart
+  save.addEventListener('click', startDrill)
+  form.append(save)
+  main.append(form)
+  shell.append(main)
+  app.append(shell)
 }
 
 function renderStart(): void {
@@ -726,54 +1429,39 @@ function renderStart(): void {
   const main = el('main', 'main create-main')
   main.append(
     el('h1', 'title', pack.titleZh),
-    el('p', 'subtitle', `${packCountLabel(pack)} · 分科专项练，也可以词句混着抽问。`),
+    el(
+      'p',
+      'subtitle',
+      packHasContent(pack)
+        ? `${packCountLabel(pack)} · 可以巩固这一节，也可以先完整过一遍。`
+        : '这节课还是空的。上课听到什么，点下面记进去。',
+    ),
   )
 
   const list = el('div', 'mode-list')
-  list.append(el('h2', 'section-label', '分科巩固'))
-
-  if (pack.words.length) {
-    const wordCard = el('div', 'mode-card')
-    wordCard.append(
-      el('div', 'mode-title', `词汇 · ${pack.words.length} 词`),
-      el('p', 'mode-blurb', '热身、开口、再巩固这一科。'),
-    )
-    const chips = el('div', 'mode-chips')
-    chips.append(
-      renderChip('全部词汇', () => beginPractice(pack, 'words')),
-    )
-    if (distinctPosCount(pack) >= 2) {
-      const counts = posCounts(pack)
-      for (const pos of WORD_POS) {
-        const n = counts[pos]
-        if (!n) continue
-        chips.append(
-          renderChip(`${POS_LABEL_ZH[pos]} · ${n}`, () =>
-            beginPractice(pack, 'words', { pos }),
-          ),
-        )
-      }
-    }
-    wordCard.append(chips)
-    list.append(wordCard)
-  }
-
-  if (pack.sentences.length) {
+  if (pack.source === 'custom') {
     list.append(
       renderModeButton(
-        `句子 · ${pack.sentences.length} 句`,
-        '跟读这节课记下的句子，再遮句抽问。',
-        () => beginPractice(pack, 'sentences'),
+        '上课记词汇和问答',
+        '听到就记，英文先写下，中文和答句课后补。',
+        () => openCapture(pack),
+        { primary: !packHasContent(pack) },
       ),
     )
   }
 
-  list.append(el('h2', 'section-label', '综合巩固'))
+  if (!packHasContent(pack)) {
+    main.append(list)
+    shell.append(main)
+    app.append(shell)
+    return
+  }
+  list.append(el('h2', 'section-label', '巩固'))
   list.append(
     renderModeButton(
-      '词和句子混着抽问',
-      '遮住英文，打乱顺序，看孩子还记不记得。',
-      () => beginPractice(pack, 'mixed'),
+      '用这节课记下的内容抽问',
+      '可选词汇和问答的数量。遮住英文，看还记不记得。',
+      () => openDrill({ packId: pack.id }),
       { primary: true },
     ),
   )
@@ -781,7 +1469,7 @@ function renderStart(): void {
   list.append(el('h2', 'section-label', '完整过一遍'))
   list.append(
     renderModeButton(
-      '热身 → 开口 → 句子 → 巩固',
+      '热身 → 开口 → 问答 → 巩固',
       '刚记完的第一遍，按整节课走。',
       () => beginPractice(pack, 'full'),
     ),
@@ -819,11 +1507,11 @@ function renderCreate(): void {
 
   const main = el('main', 'main create-main')
   main.append(
-    el('h1', 'title', editing ? '改这节课记下的内容' : '记下这节课的词和句子'),
+    el('h1', 'title', editing ? '改这节课记下的内容' : '记下这节课的词汇和问答'),
     el(
       'p',
       'subtitle',
-      '外教课上听到就记：英文必填，中文可课后补。一课一份，课后拿来练。',
+      '外教课上听到就记：词汇和问答。英文必填，中文和答句可课后补。',
     ),
   )
 
@@ -1074,10 +1762,10 @@ function renderCreate(): void {
   form.append(addBox)
 
   const sentenceList = el('div', 'draft-words')
-  sentenceList.append(el('h2', 'section-label', `句子（${draft.sentences.length}）`))
+  sentenceList.append(el('h2', 'section-label', `问答（${draft.sentences.length}）`))
   if (draft.sentences.length === 0) {
     sentenceList.append(
-      el('p', 'draft-empty', '还没有句子。课上老师带读的句子记在这里。'),
+      el('p', 'draft-empty', '还没有问答。课上老师问的、孩子答的记在这里。'),
     )
   }
   draft.sentences.forEach((s, index) => {
@@ -1086,7 +1774,13 @@ function renderCreate(): void {
     const info = el('div', 'draft-info')
     info.append(
       el('div', 'draft-en', s.english),
-      el('div', 'draft-zh', zhOrPending(s.chinese)),
+      el(
+        'div',
+        'draft-zh',
+        s.answer.trim()
+          ? `答：${s.answer} · ${zhOrPending(s.chinese)}`
+          : zhOrPending(s.chinese),
+      ),
     )
     const actions = el('div', 'draft-row-actions')
     const up = el('button', 'btn-tiny', '上移')
@@ -1120,6 +1814,8 @@ function renderCreate(): void {
         editIndex: index,
         english: s.english,
         chinese: s.chinese,
+        answer: s.answer,
+        answerZh: s.answerZh,
       }
       draft.error = ''
       render()
@@ -1146,35 +1842,51 @@ function renderCreate(): void {
 
   const addSentenceBox = el('div', 'add-word-box')
   addSentenceBox.append(
-    el('h2', 'section-label', editingSentence ? '修改这句' : '记一句课堂句子'),
+    el('h2', 'section-label', editingSentence ? '修改这组问答' : '记一组课堂问答'),
   )
   const sentenceState = draft.sentenceForm
   const senEn = el('textarea', 'field field-area') as HTMLTextAreaElement
-  senEn.placeholder = 'English sentence（必填）'
+  senEn.placeholder = '问句 English（必填）'
   senEn.rows = 2
   senEn.value = sentenceState.english
   const senZh = el('textarea', 'field field-area') as HTMLTextAreaElement
-  senZh.placeholder = '中文（课后可补）'
+  senZh.placeholder = '问句中文（课后可补）'
   senZh.rows = 2
   senZh.value = sentenceState.chinese
+  const senAns = el('textarea', 'field field-area') as HTMLTextAreaElement
+  senAns.placeholder = '答句 English（可补）'
+  senAns.rows = 2
+  senAns.value = sentenceState.answer
+  const senAnsZh = el('textarea', 'field field-area') as HTMLTextAreaElement
+  senAnsZh.placeholder = '答句中文（课后可补）'
+  senAnsZh.rows = 2
+  senAnsZh.value = sentenceState.answerZh
   senEn.addEventListener('input', () => {
     sentenceState.english = senEn.value
   })
   senZh.addEventListener('input', () => {
     sentenceState.chinese = senZh.value
   })
+  senAns.addEventListener('input', () => {
+    sentenceState.answer = senAns.value
+  })
+  senAnsZh.addEventListener('input', () => {
+    sentenceState.answerZh = senAnsZh.value
+  })
   const addSentence = el(
     'button',
     'btn-secondary',
-    editingSentence ? '保存这句' : '记下这句',
+    editingSentence ? '保存这组问答' : '记下这组问答',
   )
   addSentence.type = 'button'
   addSentence.addEventListener('click', () => {
     sentenceState.english = senEn.value
     sentenceState.chinese = senZh.value
+    sentenceState.answer = senAns.value
+    sentenceState.answerZh = senAnsZh.value
     const english = sentenceState.english.trim()
     if (!english) {
-      draft.error = '请填写英文句子'
+      draft.error = '请填写英文问句'
       render()
       return
     }
@@ -1182,7 +1894,7 @@ function renderCreate(): void {
       sentenceState.editIndex === null &&
       draft.sentences.length >= MAX_SENTENCES
     ) {
-      draft.error = `单课最多 ${MAX_SENTENCES} 个句子`
+      draft.error = `单课最多 ${MAX_SENTENCES} 组问答`
       render()
       return
     }
@@ -1208,7 +1920,7 @@ function renderCreate(): void {
     draft.error = ''
     render()
   })
-  addSentenceBox.append(senEn, senZh, addSentence, cancelSentence)
+  addSentenceBox.append(senEn, senZh, senAns, senAnsZh, addSentence, cancelSentence)
   form.append(addSentenceBox)
 
   if (draft.error) form.append(el('p', 'form-error', draft.error))
@@ -1219,11 +1931,6 @@ function renderCreate(): void {
     void (async () => {
       if (!draft.titleZh.trim()) {
         draft.error = '请填写标题'
-        render()
-        return
-      }
-      if (draft.words.length === 0 && draft.sentences.length === 0) {
-        draft.error = '请至少记 1 个词或 1 个句子'
         render()
         return
       }
@@ -1275,7 +1982,7 @@ function renderDraftThumb(word: DraftWord): HTMLElement {
 
 function renderDraftSentenceMark(): HTMLElement {
   const tile = el('div', 'draft-thumb pack-thumb-word')
-  tile.textContent = '句'
+  tile.textContent = '问'
   return tile
 }
 
@@ -1317,11 +2024,15 @@ function renderSentencePrompt(
   const card = el('button', 'word-card sentence-card')
   card.type = 'button'
   card.title = opts.hideEnglish ? '先让孩子说' : '朗读英文'
-  card.append(el('span', 'word-card-pos', '句子'))
+  card.append(el('span', 'word-card-pos', '问答'))
   if (opts.hideEnglish) {
     card.append(
       el('span', 'sentence-card-en is-hidden', '……'),
-      el('span', 'word-card-zh', sentence.chinese.trim() || '说出这句'),
+      el(
+        'span',
+        'word-card-zh',
+        sentence.chinese.trim() || (hasQaAnswer(sentence) ? '先问再答' : '说出这句'),
+      ),
     )
   } else {
     card.append(el('span', 'sentence-card-en', sentence.english))
@@ -1431,7 +2142,7 @@ function renderTalk(): void {
     session.questionIndex >= talkQueue(word).length - 1
   const nextLabel = lastTalk
     ? session.pack.sentences.length
-      ? '进入句子练习'
+      ? '进入问答练习'
       : '进入口头巩固'
     : '下一题'
   const next = el('button', 'btn-primary', nextLabel)
@@ -1466,17 +2177,43 @@ function renderSentences(): void {
   enRow.addEventListener('click', () => speakEnglish(sentence.english))
   lex.append(enRow, el('div', 'lex-zh', zhOrPending(sentence.chinese)))
   body.append(lex)
+  if (hasQaAnswer(sentence)) {
+    const reveal = el(
+      'button',
+      'btn-reveal',
+      session.revealAnswer ? '收起答句' : '显示答句',
+    )
+    reveal.type = 'button'
+    reveal.addEventListener('click', () => {
+      if (!session) return
+      session.revealAnswer = !session.revealAnswer
+      render()
+    })
+    body.append(reveal)
+    if (session.revealAnswer) {
+      const ans = el('div', 'answer-box')
+      ans.append(el('div', 'answer-label', '答句'))
+      const line = el('button', 'answer-line', sentence.answer)
+      line.type = 'button'
+      line.addEventListener('click', () => speakEnglish(sentence.answer))
+      ans.append(line)
+      if (sentence.answerZh.trim()) {
+        ans.append(el('div', 'lex-zh', sentence.answerZh))
+      }
+      body.append(ans)
+    }
+  }
   body.append(el('p', 'parent-cue', sentenceCue(sentence)))
 
   const footer = el('footer', 'footer')
-  const prev = el('button', 'btn-secondary', '上一句')
+  const prev = el('button', 'btn-secondary', '上一问')
   prev.type = 'button'
   prev.disabled = session.sentenceIndex === 0
   prev.addEventListener('click', prevSentence)
   const next = el(
     'button',
     'btn-primary',
-    session.sentenceIndex >= total - 1 ? '进入口头巩固' : '下一句',
+    session.sentenceIndex >= total - 1 ? '进入口头巩固' : '下一问',
   )
   next.type = 'button'
   next.addEventListener('click', nextSentence)
@@ -1484,7 +2221,7 @@ function renderSentences(): void {
 
   renderShell({
     phase: 'sentences',
-    title: '课堂句子',
+    title: '课堂问答',
     subtitle: `${session.pack.titleZh} · ${session.sentenceIndex + 1}/${total}`,
     body,
     footer,
@@ -1545,6 +2282,18 @@ function renderReview(): void {
       en.addEventListener('click', () => speakEnglish(sentence.english))
       lex.append(en, el('div', 'lex-zh', zhOrPending(sentence.chinese)))
       body.append(lex)
+      if (hasQaAnswer(sentence)) {
+        const ans = el('div', 'answer-box')
+        ans.append(el('div', 'answer-label', '答句'))
+        const line = el('button', 'answer-line', sentence.answer)
+        line.type = 'button'
+        line.addEventListener('click', () => speakEnglish(sentence.answer))
+        ans.append(line)
+        if (sentence.answerZh.trim()) {
+          ans.append(el('div', 'lex-zh', sentence.answerZh))
+        }
+        body.append(ans)
+      }
     }
   }
 
@@ -1558,7 +2307,7 @@ function renderReview(): void {
         : session.mode === 'mixed'
           ? '下一题'
           : item.kind === 'sentence'
-            ? '下一句'
+            ? '下一问'
             : '下一个词'
       : '揭晓英文',
   )
@@ -1568,7 +2317,7 @@ function renderReview(): void {
 
   renderShell({
     phase: 'review',
-    title: session.mode === 'mixed' ? '综合巩固' : '口头巩固',
+    title: session.mode === 'mixed' ? '巩固' : '口头巩固',
     subtitle: `${session.pack.titleZh} · ${session.reviewIndex + 1}/${total}`,
     body,
     footer,
@@ -1609,9 +2358,140 @@ function renderDone(): void {
   app.append(shell)
 }
 
+function renderSchedule(): void {
+  const editing = Boolean(courseDraft.courseId)
+  const preview = nextMissingYmds(
+    courseDraft.weekdays,
+    scheduledYmdsForCourse(packCache, courseDraft.courseId || '__new__'),
+    courseDraft.weeks,
+  )
+  clearApp()
+  const shell = el('div', 'shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '取消')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', editing ? '改排课' : '排课'))
+  shell.append(top)
+
+  const main = el('main', 'main create-main')
+  main.append(
+    el('h1', 'title', editing ? '改上课日，再排出还没有的课' : '按每周几排出空课'),
+    el(
+      'p',
+      'subtitle',
+      '例如每周二、周四，先排四周。上课再点进去记词汇和问答。',
+    ),
+  )
+
+  const form = el('div', 'create-form')
+  const blurb = el('input', 'field') as HTMLInputElement
+  blurb.type = 'text'
+  blurb.placeholder = '备注（可选）例如：外教口语'
+  blurb.value = courseDraft.blurb
+  blurb.addEventListener('input', () => {
+    courseDraft.blurb = blurb.value
+  })
+  form.append(blurb)
+
+  const dayBox = el('div', 'add-word-box')
+  dayBox.append(el('h2', 'section-label', '每周几上课'))
+  const dayRow = el('div', 'mode-chips')
+  for (const day of WEEKDAY_ORDER) {
+    const on = courseDraft.weekdays.includes(day)
+    const chip = el(
+      'button',
+      on ? 'mode-chip is-on' : 'mode-chip',
+      weekdayLabel(day),
+    ) as HTMLButtonElement
+    chip.type = 'button'
+    chip.addEventListener('click', () => {
+      const set = new Set(courseDraft.weekdays)
+      if (set.has(day)) set.delete(day)
+      else set.add(day)
+      courseDraft.weekdays = [...set]
+      render()
+    })
+    dayRow.append(chip)
+  }
+  dayBox.append(dayRow)
+  form.append(dayBox)
+
+  const weekBox = el('div', 'add-word-box')
+  weekBox.append(
+    el('h2', 'section-label', editing ? '再排出几周（还没有的课）' : '先排出几周'),
+  )
+  const weekRow = el('div', 'mode-chips')
+  for (const weeks of SCHEDULE_WEEK_CHOICES) {
+    const chip = el(
+      'button',
+      courseDraft.weeks === weeks ? 'mode-chip is-on' : 'mode-chip',
+      `${weeks} 周`,
+    ) as HTMLButtonElement
+    chip.type = 'button'
+    chip.addEventListener('click', () => {
+      courseDraft.weeks = weeks
+      render()
+    })
+    weekRow.append(chip)
+  }
+  weekBox.append(weekRow)
+  form.append(weekBox)
+
+  const previewBox = el('div', 'schedule-preview')
+  previewBox.append(
+    el(
+      'h2',
+      'section-label',
+      preview.length
+        ? `将排出 ${preview.length} 节空课 · ${weekdaysLabel(courseDraft.weekdays)}`
+        : courseDraft.weekdays.length
+          ? '这几周的课都已排出'
+          : '先选上课日',
+    ),
+  )
+  if (preview.length) {
+    const list = el('ul', 'schedule-dates')
+    for (const ymd of preview.slice(0, 16)) {
+      list.append(el('li', undefined, lessonTitleForYmd(ymd)))
+    }
+    if (preview.length > 16) {
+      list.append(el('li', undefined, `……还有 ${preview.length - 16} 节`))
+    }
+    previewBox.append(list)
+  }
+  form.append(previewBox)
+
+  if (courseDraft.error) form.append(el('p', 'form-error', courseDraft.error))
+
+  const save = el(
+    'button',
+    'btn-primary',
+    preview.length ? `排出 ${preview.length} 节课` : '保存排课',
+  )
+  save.type = 'button'
+  save.addEventListener('click', () => void submitSchedule())
+  form.append(save)
+  main.append(form)
+  shell.append(main)
+  app.append(shell)
+}
+
 function render(): void {
   if (screen === 'create') {
     renderCreate()
+    return
+  }
+  if (screen === 'capture') {
+    renderCapture()
+    return
+  }
+  if (screen === 'schedule') {
+    renderSchedule()
+    return
+  }
+  if (screen === 'drill') {
+    renderDrill()
     return
   }
   if (screen === 'start') {

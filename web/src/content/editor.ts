@@ -1,3 +1,4 @@
+import { lessonTitleForYmd, scheduledLessonId } from './schedule'
 import {
   POS_LABEL_ZH,
   defaultLessonTitle,
@@ -22,6 +23,8 @@ export interface DraftSentence {
   id: string
   english: string
   chinese: string
+  answer: string
+  answerZh: string
 }
 
 export interface WordForm {
@@ -37,6 +40,8 @@ export interface SentenceForm {
   editIndex: number | null
   english: string
   chinese: string
+  answer: string
+  answerZh: string
 }
 
 export interface PackDraft {
@@ -45,6 +50,8 @@ export interface PackDraft {
   titleZh: string
   titleEn: string
   blurb: string
+  courseId: string
+  scheduledOn: string
   words: DraftWord[]
   sentences: DraftSentence[]
   wordForm: WordForm
@@ -68,6 +75,8 @@ export function emptySentenceForm(): SentenceForm {
     editIndex: null,
     english: '',
     chinese: '',
+    answer: '',
+    answerZh: '',
   }
 }
 
@@ -78,12 +87,54 @@ export function emptyDraft(): PackDraft {
     titleZh,
     titleEn: '',
     blurb: '',
+    courseId: '',
+    scheduledOn: '',
     words: [],
     sentences: [],
     wordForm: emptyWordForm(),
     sentenceForm: emptySentenceForm(),
     error: '',
   }
+}
+
+export function newEmptyClass(
+  opts: {
+    titleZh?: string
+    titleEn?: string
+    blurb?: string
+    courseId?: string
+    scheduledOn?: string
+  } = {},
+): LessonPack {
+  const scheduledOn = opts.scheduledOn?.trim() || ''
+  const courseId = opts.courseId?.trim() || ''
+  const titleZh =
+    opts.titleZh?.trim() ||
+    (scheduledOn ? lessonTitleForYmd(scheduledOn) : defaultLessonTitle())
+  const id =
+    courseId && scheduledOn
+      ? scheduledLessonId(courseId, scheduledOn)
+      : `class-${slugId(titleZh)}-${Date.now().toString(36)}`
+  return {
+    id,
+    titleZh,
+    titleEn: opts.titleEn?.trim() || titleZh,
+    blurb: opts.blurb?.trim() || '上课时再记词汇和问答',
+    source: 'custom',
+    words: [],
+    sentences: [],
+    cloudSynced: false,
+    ...(courseId ? { courseId } : {}),
+    ...(scheduledOn ? { scheduledOn } : {}),
+  }
+}
+
+/** Live capture: a space or sentence punctuation means it's a sentence. */
+export function guessCaptureKind(english: string): 'word' | 'sentence' {
+  const text = english.trim()
+  if (!text) return 'word'
+  if (/\s/.test(text) || /[.?!！？。]$/.test(text)) return 'sentence'
+  return 'word'
 }
 
 function ensureUniqueIds<T extends { id: string; english: string }>(
@@ -122,6 +173,8 @@ export function packToDraft(
     titleZh: asCopy ? `${pack.titleZh}（副本）` : pack.titleZh,
     titleEn: asCopy ? `${pack.titleEn} copy` : pack.titleEn,
     blurb: pack.blurb,
+    courseId: asCopy ? '' : pack.courseId ?? '',
+    scheduledOn: asCopy ? '' : pack.scheduledOn ?? '',
     words: pack.words.map((w) => ({
       id: w.id,
       english: w.english,
@@ -134,6 +187,8 @@ export function packToDraft(
       id: s.id,
       english: s.english,
       chinese: s.chinese,
+      answer: s.answer ?? '',
+      answerZh: s.answerZh ?? '',
     })),
     wordForm: emptyWordForm(),
     sentenceForm: emptySentenceForm(),
@@ -158,17 +213,23 @@ export function draftToPack(draft: PackDraft): LessonPack {
       id: s.id.trim() || `s-${slugId(s.english)}`,
       english: s.english.trim(),
       chinese: s.chinese.trim(),
+      answer: s.answer.trim(),
+      answerZh: s.answerZh.trim(),
     })),
   )
+  const courseId = draft.courseId.trim()
+  const scheduledOn = draft.scheduledOn.trim()
   return {
     id: draft.packId || `class-${slugId(titleZh)}-${Date.now().toString(36)}`,
     titleZh,
     titleEn: draft.titleEn.trim() || titleZh,
-    blurb: draft.blurb.trim() || '一节外教课记下的词和句子',
+    blurb: draft.blurb.trim() || '一节外教课记下的词汇和问答',
     source: 'custom',
     words,
     sentences,
     cloudSynced: false,
+    ...(courseId ? { courseId } : {}),
+    ...(scheduledOn ? { scheduledOn } : {}),
   }
 }
 
@@ -193,6 +254,8 @@ export function sentenceFromForm(
     id: existing?.id || `s-${slugId(english)}`,
     english,
     chinese: form.chinese.trim(),
+    answer: form.answer.trim(),
+    answerZh: form.answerZh.trim(),
   }
 }
 

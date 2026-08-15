@@ -3,7 +3,7 @@
   "id": "sample-class",
   "titleZh": "示例·一节外教课",
   "titleEn": "Sample class",
-  "blurb": "家长旁听记下的词和句子 · 一课一份",
+  "blurb": "家长旁听记下的词汇和问答 · 一课一份",
   "words": [
     {
       "id": "apple",
@@ -38,7 +38,9 @@
     {
       "id": "hello-how-are-you",
       "english": "Hello, how are you?",
-      "chinese": "你好吗？"
+      "chinese": "你好吗？",
+      "answer": "I'm fine, thank you.",
+      "answerZh": "我很好，谢谢。"
     },
     {
       "id": "i-like-apples",
@@ -47,7 +49,10 @@
     },
     {
       "id": "can-i-have-water",
-      "english": "Can I have some water, please?"
+      "english": "Can I have some water, please?",
+      "chinese": "我能喝点水吗？",
+      "answer": "Yes, here you are.",
+      "answerZh": "好的，给你。"
     },
     {
       "id": "he-is-running",
