@@ -320,17 +320,27 @@ export function vocabCue(word: WordDef): string {
 }
 
 export function sentenceCue(sentence: SentenceDef): string {
+  if (sentence.answer.trim()) {
+    return sentence.chinese.trim()
+      ? '家长：先听问句，让孩子跟读；再试着答。点「显示答句」对照。'
+      : '家长：先听问句，让孩子跟读；有答句就让孩子试着答。中文课后可补。'
+  }
   return sentence.chinese.trim()
-    ? '家长：点喇叭先听，再让孩子跟读整句。'
-    : '家长：点喇叭先听，再让孩子跟读整句。中文意思课后可补。'
+    ? '家长：点喇叭先听，再让孩子跟读这句问答。'
+    : '家长：点喇叭先听，再让孩子跟读。中文意思课后可补。'
 }
 
 export function sentenceReviewCueHidden(sentence: SentenceDef): string {
+  if (sentence.answer.trim()) {
+    return sentence.chinese.trim()
+      ? `遮住英文：用中文提示「${zhOrPending(sentence.chinese)}」，让孩子先问再答。`
+      : '遮住英文：给一个词提示，让孩子说出这组问答。'
+  }
   return sentence.chinese.trim()
     ? `遮住英文：用中文提示「${zhOrPending(sentence.chinese)}」，让孩子说出这句，再说完再揭晓。`
     : '遮住英文：家长做口型或给一个词提示，让孩子说出这节课的这句。'
 }
 
 export function sentenceReviewCueRevealed(): string {
-  return '对照发音，再让孩子完整说一遍。点句子可听标准发音。'
+  return '对照发音，再让孩子把问答完整说一遍。点英文可听标准发音。'
 }

@@ -99,11 +99,15 @@ function rowToPack(row: CloudPackRow): LessonPack {
         id: s.id || `s-${i}`,
         english: s.english,
         chinese: s.chinese,
+        answer: s.answer,
+        answerZh: s.answerZh,
       }),
     ),
     source: 'custom',
     updatedAt: row.updated_at,
     cloudSynced: true,
+    ...(doc.courseId ? { courseId: doc.courseId } : {}),
+    ...(doc.scheduledOn ? { scheduledOn: doc.scheduledOn } : {}),
   }
 }
 

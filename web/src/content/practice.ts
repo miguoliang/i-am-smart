@@ -120,7 +120,7 @@ export function phasesForMode(
   if (mode === 'sentences') {
     const phases: { id: PracticePhaseId; label: string }[] = []
     if (pack.sentences.length) {
-      phases.push({ id: 'sentences', label: '句子' })
+      phases.push({ id: 'sentences', label: '问答' })
     }
     phases.push({ id: 'review', label: '巩固' })
     return phases
@@ -130,7 +130,7 @@ export function phasesForMode(
     phases.push({ id: 'vocab', label: '词汇' }, { id: 'talk', label: '开口' })
   }
   if (pack.sentences.length) {
-    phases.push({ id: 'sentences', label: '句子' })
+    phases.push({ id: 'sentences', label: '问答' })
   }
   phases.push({ id: 'review', label: '巩固' })
   return phases
@@ -157,7 +157,7 @@ export function modeLabelZh(
   pos?: WordPos,
 ): string {
   if (mode === 'mixed') return '综合巩固'
-  if (mode === 'sentences') return '分科巩固 · 句子'
+  if (mode === 'sentences') return '分科巩固 · 问答'
   if (mode === 'words' && pos) return `分科巩固 · ${POS_LABEL_ZH[pos]}`
   if (mode === 'words') return '分科巩固 · 词汇'
   return '完整过一遍'

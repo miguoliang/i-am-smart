@@ -66,6 +66,8 @@ function normalizeSentence(raw: unknown): SentenceDef {
     id: optionalString(obj.id) || undefined,
     english,
     chinese: optionalString(obj.chinese),
+    answer: optionalString(obj.answer),
+    answerZh: optionalString(obj.answerZh),
   })
 }
 
@@ -93,7 +95,7 @@ export function parseContentPack(raw: unknown): LessonPack {
   const blurb =
     typeof obj.blurb === 'string' && obj.blurb.trim()
       ? obj.blurb.trim()
-      : '一节外教课记下的词和句子'
+      : '一节外教课记下的词汇和问答'
 
   const rawWords = obj.words
   const rawSentences = obj.sentences
@@ -111,12 +113,25 @@ export function parseContentPack(raw: unknown): LessonPack {
     throw new PackParseError(`单课最多 ${MAX_WORDS} 个词`)
   }
   if (sentences.length > MAX_SENTENCES) {
-    throw new PackParseError(`单课最多 ${MAX_SENTENCES} 个句子`)
+    throw new PackParseError(`单课最多 ${MAX_SENTENCES} 组问答`)
   }
   uniqueIds(words.map((w) => w.id), '词条')
-  uniqueIds(sentences.map((s) => s.id), '句子')
+  uniqueIds(sentences.map((s) => s.id), '问答')
 
-  return { id, titleZh, titleEn, blurb, words, sentences, source: 'custom' }
+  const courseId = optionalString(obj.courseId)
+  const scheduledOn = optionalString(obj.scheduledOn)
+
+  return {
+    id,
+    titleZh,
+    titleEn,
+    blurb,
+    words,
+    sentences,
+    source: 'custom',
+    ...(courseId ? { courseId } : {}),
+    ...(scheduledOn ? { scheduledOn } : {}),
+  }
 }
 
 export function parseContentPackJson(text: string): LessonPack {
@@ -139,6 +154,17 @@ function omitEmptyChinese<T extends { chinese: string }>(
   return item
 }
 
+function omitEmptyFields<T extends Record<string, string | undefined>>(
+  item: T,
+  keys: (keyof T)[],
+): T {
+  const next = { ...item }
+  for (const key of keys) {
+    if (!next[key]) delete next[key]
+  }
+  return next
+}
+
 export function toContentPackFile(pack: LessonPack): ContentPackFile {
   return {
     schema: PACK_SCHEMA,
@@ -146,6 +172,8 @@ export function toContentPackFile(pack: LessonPack): ContentPackFile {
     titleZh: pack.titleZh,
     titleEn: pack.titleEn,
     blurb: pack.blurb,
+    ...(pack.courseId ? { courseId: pack.courseId } : {}),
+    ...(pack.scheduledOn ? { scheduledOn: pack.scheduledOn } : {}),
     words: pack.words.map((w) =>
       omitEmptyChinese({
         id: w.id,
@@ -157,11 +185,16 @@ export function toContentPackFile(pack: LessonPack): ContentPackFile {
       }),
     ),
     sentences: pack.sentences.map((s) =>
-      omitEmptyChinese({
-        id: s.id,
-        english: s.english,
-        chinese: s.chinese,
-      }),
+      omitEmptyFields(
+        omitEmptyChinese({
+          id: s.id,
+          english: s.english,
+          chinese: s.chinese,
+          answer: s.answer,
+          answerZh: s.answerZh,
+        }),
+        ['answer', 'answerZh'],
+      ),
     ),
   }
 }

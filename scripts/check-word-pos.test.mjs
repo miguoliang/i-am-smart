@@ -38,12 +38,16 @@ test('sample class is one lesson with words and sentences', () => {
   assert.equal(happy.image, undefined)
 })
 
-test('classroom sentence may omit chinese for later fill-in', () => {
+test('classroom Q&A may omit chinese and include an answer', () => {
   const water = pack.sentences.find((s) => s.english.includes('water'))
   assert.ok(water)
-  assert.equal(water.chinese, undefined)
+  assert.equal(water.answer, 'Yes, here you are.')
   const hello = pack.sentences.find((s) => s.english.startsWith('Hello'))
   assert.ok(hello.chinese)
+  assert.equal(hello.answer, "I'm fine, thank you.")
+  const like = pack.sentences.find((s) => s.english.includes('apples'))
+  assert.ok(like)
+  assert.equal(like.answer, undefined)
 })
 
 test('sample class can split by subject for 分科巩固', () => {

@@ -29,16 +29,36 @@ export interface WordDef {
   article: 'a' | 'an'
 }
 
-/** One classroom sentence the parent wrote down in this class. */
+/**
+ * One classroom Q&A turn. `english` is the question (or a line the teacher said);
+ * `answer` is optional — fill in when the class actually has a reply.
+ */
 export interface SentenceDef {
   id: string
   english: string
   /** Optional — parent can fill in after class. */
   chinese: string
+  /** Optional English reply. */
+  answer: string
+  /** Optional Chinese for the reply. */
+  answerZh: string
 }
 
 /**
- * One class = one material: words and/or sentences from that lesson.
+ * A planned course (课包): weekday rule first, then dated empty classes (排期).
+ */
+export interface Course {
+  id: string
+  titleZh: string
+  blurb: string
+  /** JS getDay() values: 0 Sunday … 6 Saturday. */
+  weekdays: number[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+/**
+ * One class = one material: vocabulary and Q&A from that lesson.
  * A new class may start empty; the parent fills it in during class.
  */
 export interface LessonPack {
@@ -48,6 +68,10 @@ export interface LessonPack {
   blurb: string
   words: WordDef[]
   sentences: SentenceDef[]
+  /** Parent course when this class was generated from a weekday rule. */
+  courseId?: string
+  /** Local calendar date YYYY-MM-DD when this class is scheduled. */
+  scheduledOn?: string
   /** Present on user-imported / created packs */
   source?: 'builtin' | 'custom'
   /** ISO timestamp when last changed (local or cloud) */
@@ -69,6 +93,8 @@ export interface ContentPackSentenceFile {
   id?: string
   english: string
   chinese?: string
+  answer?: string
+  answerZh?: string
 }
 
 /** On-disk / import JSON shape (may omit runtime-only fields). */
@@ -78,6 +104,8 @@ export interface ContentPackFile {
   titleZh: string
   titleEn?: string
   blurb?: string
+  courseId?: string
+  scheduledOn?: string
   words?: ContentPackWordFile[]
   sentences?: ContentPackSentenceFile[]
 }
@@ -133,21 +161,33 @@ export function hydrateSentence(raw: {
   id?: string
   english: string
   chinese?: string
+  answer?: string
+  answerZh?: string
 }): SentenceDef {
   const english = raw.english.trim()
   return {
     id: raw.id?.trim() || `s-${slugId(english)}`,
     english,
     chinese: raw.chinese?.trim() || '',
+    answer: raw.answer?.trim() || '',
+    answerZh: raw.answerZh?.trim() || '',
   }
 }
 
 export function hydratePack(pack: LessonPack): LessonPack {
+  const courseId = pack.courseId?.trim()
+  const scheduledOn = pack.scheduledOn?.trim()
   return {
     ...pack,
     words: (pack.words ?? []).map(hydrateWord),
     sentences: (pack.sentences ?? []).map(hydrateSentence),
+    ...(courseId ? { courseId } : {}),
+    ...(scheduledOn ? { scheduledOn } : {}),
   }
+}
+
+export function hasQaAnswer(sentence: { answer?: string }): boolean {
+  return Boolean(sentence.answer?.trim())
 }
 
 export function defaultLessonTitle(date = new Date()): string {
@@ -175,7 +215,7 @@ export function packCountLabel(pack: {
   const { words, sentences } = packCounts(pack)
   const parts: string[] = []
   if (words) parts.push(`${words} 词`)
-  if (sentences) parts.push(`${sentences} 句`)
+  if (sentences) parts.push(`${sentences} 问`)
   return parts.join(' · ') || '还没记'
 }
 

@@ -1,11 +1,13 @@
 import { BUILTIN_PACKS } from './builtin'
 import { deleteCloudPack, listCloudPacks, upsertCloudPack } from './cloud'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { hydratePack, type LessonPack } from './types'
+import { hydrateCourse } from './schedule'
+import { hydratePack, type Course, type LessonPack } from './types'
 
 const DB_NAME = 'peilian-content'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE = 'packs'
+const COURSE_STORE = 'courses'
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -14,6 +16,9 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(COURSE_STORE)) {
+        db.createObjectStore(COURSE_STORE, { keyPath: 'id' })
       }
     }
     req.onsuccess = () => resolve(req.result)
@@ -140,6 +145,69 @@ export async function syncFromCloud(): Promise<LessonPack[]> {
     await txDone(tx)
   }
   return [...merged, ...BUILTIN_PACKS]
+}
+
+function stampCourse(course: Course): Course {
+  const now = new Date().toISOString()
+  return {
+    ...hydrateCourse(course),
+    createdAt: course.createdAt || now,
+    updatedAt: now,
+  }
+}
+
+export async function listCourses(): Promise<Course[]> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COURSE_STORE, 'readonly')
+    const req = tx.objectStore(COURSE_STORE).getAll()
+    req.onsuccess = () => {
+      const courses = (req.result as Course[]).map(hydrateCourse)
+      courses.sort((a, b) => {
+        const tb = Date.parse(b.updatedAt ?? '') || 0
+        const ta = Date.parse(a.updatedAt ?? '') || 0
+        if (tb !== ta) return tb - ta
+        return a.titleZh.localeCompare(b.titleZh, 'zh')
+      })
+      resolve(courses)
+    }
+    req.onerror = () => reject(req.error ?? new Error('list courses failed'))
+  })
+}
+
+export async function saveCourse(course: Course): Promise<Course> {
+  const next = stampCourse(course)
+  const db = await openDb()
+  const tx = db.transaction(COURSE_STORE, 'readwrite')
+  tx.objectStore(COURSE_STORE).put(next)
+  await txDone(tx)
+  return next
+}
+
+export async function deleteCourseRecord(id: string): Promise<void> {
+  const db = await openDb()
+  const tx = db.transaction(COURSE_STORE, 'readwrite')
+  tx.objectStore(COURSE_STORE).delete(id)
+  await txDone(tx)
+}
+
+export async function saveCustomPacks(
+  packs: LessonPack[],
+  opts: { syncCloud?: boolean } = {},
+): Promise<LessonPack[]> {
+  const saved: LessonPack[] = []
+  for (const pack of packs) {
+    saved.push(await saveCustomPack(pack, opts))
+  }
+  return saved
+}
+
+export async function deleteCourseAndLessons(courseId: string): Promise<void> {
+  const packs = await listCustomPacks()
+  for (const pack of packs) {
+    if (pack.courseId === courseId) await deleteCustomPack(pack.id)
+  }
+  await deleteCourseRecord(courseId)
 }
 
 export async function listAllPacks(): Promise<LessonPack[]> {
