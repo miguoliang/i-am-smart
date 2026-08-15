@@ -26,4 +26,6 @@ npm run build
 3. 看图说话：家长照着固定英文问句问孩子（点问句可朗读）
 4. 口头巩固：遮词提问 → 揭晓 → 套句型
 
-问题库在 `src/data/questions.ts`，词包在 `src/data/words.ts`。
+问题库（框架）在 `src/data/questions.ts`；词包（内容）在 `src/content/`，格式说明见 `public/content/README.md`。
+
+可选云端同步：复制 `.env.example` 为 `.env.local`，填入 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY`（anon key）。首页点「连接并同步云端」。

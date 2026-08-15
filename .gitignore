@@ -13,6 +13,8 @@ pnpm-debug.log*
 
 # Secrets
 .env*
+!.env.example
+!web/.env.example
 *.pem
 
 # IDE
