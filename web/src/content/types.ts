@@ -25,6 +25,10 @@ export interface LessonPack {
   words: WordDef[]
   /** Present on user-imported / created packs */
   source?: 'builtin' | 'custom'
+  /** ISO timestamp when last changed (local or cloud) */
+  updatedAt?: string
+  /** True when this revision exists on Supabase */
+  cloudSynced?: boolean
 }
 
 /** On-disk / import JSON shape (may omit runtime-only fields). */

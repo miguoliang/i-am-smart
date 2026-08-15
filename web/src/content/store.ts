@@ -1,4 +1,6 @@
 import { BUILTIN_PACKS } from './builtin'
+import { deleteCloudPack, listCloudPacks, upsertCloudPack } from './cloud'
+import { isSupabaseConfigured } from '../lib/supabase'
 import type { LessonPack } from './types'
 
 const DB_NAME = 'peilian-content'
@@ -27,6 +29,14 @@ function txDone(tx: IDBTransaction): Promise<void> {
   })
 }
 
+function stamp(pack: LessonPack): LessonPack {
+  return {
+    ...pack,
+    source: 'custom',
+    updatedAt: pack.updatedAt ?? new Date().toISOString(),
+  }
+}
+
 export async function listCustomPacks(): Promise<LessonPack[]> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
@@ -44,15 +54,35 @@ export async function listCustomPacks(): Promise<LessonPack[]> {
   })
 }
 
-export async function saveCustomPack(pack: LessonPack): Promise<void> {
+export async function saveCustomPack(
+  pack: LessonPack,
+  opts: { syncCloud?: boolean } = {},
+): Promise<LessonPack> {
+  let next = stamp(pack)
+  if (opts.syncCloud !== false && isSupabaseConfigured()) {
+    try {
+      next = await upsertCloudPack(next)
+    } catch (err) {
+      // Keep local save even if cloud fails; surface later via UI.
+      console.warn('cloud upsert failed', err)
+      next = { ...next, cloudSynced: false }
+    }
+  }
   const db = await openDb()
-  const record: LessonPack = { ...pack, source: 'custom' }
   const tx = db.transaction(STORE, 'readwrite')
-  tx.objectStore(STORE).put(record)
+  tx.objectStore(STORE).put(next)
   await txDone(tx)
+  return next
 }
 
 export async function deleteCustomPack(id: string): Promise<void> {
+  if (isSupabaseConfigured()) {
+    try {
+      await deleteCloudPack(id)
+    } catch (err) {
+      console.warn('cloud delete failed', err)
+    }
+  }
   const db = await openDb()
   const tx = db.transaction(STORE, 'readwrite')
   tx.objectStore(STORE).delete(id)
@@ -72,6 +102,39 @@ export async function getCustomPack(id: string): Promise<LessonPack | undefined>
   })
 }
 
+function mergePacks(local: LessonPack[], cloud: LessonPack[]): LessonPack[] {
+  const map = new Map<string, LessonPack>()
+  for (const p of local) map.set(p.id, p)
+  for (const p of cloud) {
+    const prev = map.get(p.id)
+    if (!prev) {
+      map.set(p.id, p)
+      continue
+    }
+    const prevTs = Date.parse(prev.updatedAt ?? '') || 0
+    const nextTs = Date.parse(p.updatedAt ?? '') || 0
+    map.set(p.id, nextTs >= prevTs ? { ...p, source: 'custom' } : prev)
+  }
+  return [...map.values()].sort((a, b) =>
+    a.titleZh.localeCompare(b.titleZh, 'zh'),
+  )
+}
+
+/** Pull from Supabase into IndexedDB, then return local+builtin list. */
+export async function syncFromCloud(): Promise<LessonPack[]> {
+  if (!isSupabaseConfigured()) return listAllPacks()
+  const cloud = await listCloudPacks()
+  const local = await listCustomPacks()
+  const merged = mergePacks(local, cloud)
+  for (const pack of cloud) {
+    const db = await openDb()
+    const tx = db.transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put({ ...pack, source: 'custom' })
+    await txDone(tx)
+  }
+  return [...merged, ...BUILTIN_PACKS]
+}
+
 export async function listAllPacks(): Promise<LessonPack[]> {
   const custom = await listCustomPacks()
   return [...custom, ...BUILTIN_PACKS]
@@ -81,4 +144,15 @@ export async function getPackById(id: string): Promise<LessonPack | undefined> {
   const custom = await getCustomPack(id)
   if (custom) return custom
   return BUILTIN_PACKS.find((p) => p.id === id)
+}
+
+export async function pushLocalPackToCloud(id: string): Promise<LessonPack> {
+  const pack = await getCustomPack(id)
+  if (!pack) throw new Error('词包不存在')
+  const saved = await upsertCloudPack(pack)
+  const db = await openDb()
+  const tx = db.transaction(STORE, 'readwrite')
+  tx.objectStore(STORE).put(saved)
+  await txDone(tx)
+  return saved
 }

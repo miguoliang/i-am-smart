@@ -12,7 +12,18 @@ V1 面向家长陪练：
 2. **看图说话** — 固定问题库（问句不变，只换图和词）  
 3. **口头巩固** — 遮词提问 → 揭晓 → 套句型  
 
-内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除。格式见 `web/public/content/README.md`。
+内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；可选 **Supabase 云端同步**（IndexedDB 本地缓存 + 云端备份）。格式见 `web/public/content/README.md`。
+
+### Supabase（可选）
+
+环境变量见 `web/.env.example`。应用库表：
+
+```bash
+# 需要 SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF
+node scripts/apply-supabase-schema.mjs
+```
+
+并在 Dashboard → Authentication → Providers 开启 **Anonymous** 登录。
 
 ## 本地运行
 

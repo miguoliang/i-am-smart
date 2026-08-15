@@ -10,8 +10,15 @@ import {
   deleteCustomPack,
   getPackById,
   listAllPacks,
+  pushLocalPackToCloud,
   saveCustomPack,
+  syncFromCloud,
 } from './content/store'
+import {
+  ensureCloudSession,
+  getCloudSessionUserId,
+} from './content/cloud'
+import { isSupabaseConfigured } from './lib/supabase'
 import {
   guessArticle,
   slugId,
@@ -56,6 +63,9 @@ let screen: Screen = 'home'
 let session: Session | null = null
 let packCache: LessonPack[] = []
 let homeError = ''
+let homeStatus = ''
+let cloudBusy = false
+let cloudUserId: string | null = null
 let draft: {
   titleZh: string
   titleEn: string
@@ -97,6 +107,35 @@ function clearApp(): void {
 
 async function refreshPacks(): Promise<void> {
   packCache = await listAllPacks()
+  if (isSupabaseConfigured()) {
+    cloudUserId = await getCloudSessionUserId()
+  } else {
+    cloudUserId = null
+  }
+}
+
+async function connectCloud(): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    homeError = '未配置 Supabase（缺少 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY）'
+    render()
+    return
+  }
+  cloudBusy = true
+  homeError = ''
+  homeStatus = '正在连接云端…'
+  render()
+  try {
+    const session = await ensureCloudSession()
+    cloudUserId = session?.userId ?? null
+    packCache = await syncFromCloud()
+    homeStatus = '已同步云端词包'
+  } catch (err) {
+    homeError = err instanceof Error ? err.message : '云端连接失败'
+    homeStatus = ''
+  } finally {
+    cloudBusy = false
+    render()
+  }
 }
 
 async function startPack(packId: string): Promise<void> {
@@ -321,6 +360,36 @@ function renderPackCard(pack: LessonPack): HTMLElement {
       e.stopPropagation()
       downloadPackJson(pack)
     })
+    if (isSupabaseConfigured()) {
+      const sync = el(
+        'button',
+        'btn-tiny',
+        pack.cloudSynced ? '已上云' : '上传云端',
+      )
+      sync.type = 'button'
+      sync.disabled = Boolean(pack.cloudSynced) || cloudBusy
+      sync.addEventListener('click', (e) => {
+        e.stopPropagation()
+        cloudBusy = true
+        homeStatus = '正在上传…'
+        render()
+        void pushLocalPackToCloud(pack.id)
+          .then(async () => {
+            homeStatus = '已上传到云端'
+            homeError = ''
+            await refreshPacks()
+          })
+          .catch((err) => {
+            homeError = err instanceof Error ? err.message : '上传失败'
+            homeStatus = ''
+          })
+          .finally(() => {
+            cloudBusy = false
+            render()
+          })
+      })
+      tools.append(sync)
+    }
     const del = el('button', 'btn-tiny btn-tiny-danger', '删除')
     del.type = 'button'
     del.addEventListener('click', (e) => {
@@ -353,6 +422,35 @@ function renderHome(): void {
   )
   shell.append(hero)
 
+  const cloudBar = el('div', 'cloud-bar')
+  if (!isSupabaseConfigured()) {
+    cloudBar.append(
+      el(
+        'p',
+        'cloud-note',
+        '本机词包可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
+      ),
+    )
+  } else {
+    const label = el(
+      'p',
+      'cloud-note',
+      cloudUserId
+        ? `云端已连接 · ${cloudUserId.slice(0, 8)}…`
+        : '云端已配置，可匿名登录并同步词包',
+    )
+    const syncBtn = el(
+      'button',
+      'btn-secondary',
+      cloudBusy ? '同步中…' : cloudUserId ? '重新同步' : '连接并同步云端',
+    )
+    syncBtn.type = 'button'
+    syncBtn.disabled = cloudBusy
+    syncBtn.addEventListener('click', () => void connectCloud())
+    cloudBar.append(label, syncBtn)
+  }
+  shell.append(cloudBar)
+
   const actions = el('div', 'home-actions')
   const importBtn = el('button', 'btn-secondary', '导入词包')
   importBtn.type = 'button'
@@ -384,6 +482,9 @@ function renderHome(): void {
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))
+  }
+  if (homeStatus) {
+    shell.append(el('p', 'home-status', homeStatus))
   }
 
   const custom = packCache.filter((p) => p.source === 'custom')
