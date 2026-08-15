@@ -1,14 +1,18 @@
-# 词图三消
+# 陪练本（I Am Smart）
 
-纯前端英语学习小游戏：用 KET 闪卡图片玩三消，顺带认英文。打开即玩，无需登录。
+家长课后英语巩固工具：把外教课里稳定的骨架（看图说话 + 固定问句 + 词汇）变成可照着练的流程。打开即用，无需登录。
 
-## 玩法
+## 为什么做这个
 
-- 相邻交换，横向 / 纵向 ≥3 个相同词条即可消除（棋盘为图片格）
-- 四连出火箭、五连或 L/T 出炸弹；特效可连锁
-- 连击 x3+ 加步；完成目标后有机会看图选英文再加步
-- 消除时显示中英对照并朗读英文
-- MVP 主题：食物（8 词）
+外教课故事会换，但问句和句型几乎不变。每周两三节、每节约 20 分钟不够形成能力——**课程给框架，课后专项巩固才是效果基础**。
+
+V1 面向家长陪练，先做：
+
+1. **词汇热身** — 看图、听读、认中英  
+2. **看图说话** — 固定问题库（问句不变，只换图和词）  
+3. **口头巩固** — 遮词提问 → 揭晓 → 套句型再说一遍  
+
+故事 Q&A / retell、老师备课出课后续再做。
 
 ## 本地运行
 
@@ -29,25 +33,16 @@ npm run build
 
 产物在 `web/dist/`。推到 `main`（或手动 Run workflow）后由 `.github/workflows/deploy-web.yml` 部署。
 
-### 首次启用 GitHub Pages（必做一次）
-
-当前仓库若未开启 Pages，部署会在 deploy 阶段 404。请仓库管理员：
-
-1. 打开 [Settings → Pages](https://github.com/miguoliang/i-am-smart/settings/pages)
-2. **Build and deployment → Source** 选 **GitHub Actions**
-3. 若仓库是 **private**：需要 GitHub Pro/Team，或把仓库改为 **public**（免费可用 Pages）
-4. 到 Actions 里重新运行 **Deploy web game to GitHub Pages**
-
-预期地址：`https://miguoliang.github.io/i-am-smart/`（若配置了自定义域名则走该域名）。
+预期地址：`https://miguoliang.github.io/i-am-smart/`。
 
 ## 项目结构
 
 ```
-web/          # 网页游戏（Vite + TypeScript）
-data/         # CEFR 词库 JSON
+web/          # 陪练本网页（Vite + TypeScript）
+  src/data/   # 词包、看图说话问题库
+  src/practice/
+data/         # CEFR 词库 JSON（素材层）
 printables/   # KET 闪卡贴纸素材（图片源）
 ```
 
-## 许可证
-
-MIT — 见 [LICENSE](LICENSE)
+旧版「词图三消」游戏代码仍留在 `web/src/game/`，当前入口已改为陪练本。
