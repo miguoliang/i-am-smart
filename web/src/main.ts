@@ -1279,25 +1279,32 @@ function renderDraftSentenceMark(): HTMLElement {
   return tile
 }
 
-function renderPrompt(word: WordDef): HTMLElement {
+function renderPrompt(word: WordDef, opts: { hideEnglish?: boolean } = {}): HTMLElement {
   const frame = el('div', 'picture-frame')
   if (hasImage(word)) {
     const img = el('img', 'picture')
     img.src = wordImageSrc(word)
-    img.alt = word.english
+    img.alt = opts.hideEnglish ? POS_LABEL_ZH[word.pos] : word.english
     frame.append(img)
     return frame
   }
   frame.classList.add('is-word-card')
   const card = el('button', 'word-card')
   card.type = 'button'
-  card.title = '朗读英文'
-  card.append(
-    el('span', 'word-card-pos', POS_LABEL_ZH[word.pos]),
-    el('span', 'word-card-en', word.english),
-    el('span', 'word-card-zh', zhOrPending(word.chinese)),
-  )
-  card.addEventListener('click', () => speakEnglish(word.english))
+  card.title = opts.hideEnglish ? '先让孩子说' : '朗读英文'
+  card.append(el('span', 'word-card-pos', POS_LABEL_ZH[word.pos]))
+  if (opts.hideEnglish) {
+    card.append(
+      el('span', 'word-card-en is-hidden', '……'),
+      el('span', 'word-card-zh', word.chinese.trim() || '说出这个词'),
+    )
+  } else {
+    card.append(
+      el('span', 'word-card-en', word.english),
+      el('span', 'word-card-zh', zhOrPending(word.chinese)),
+    )
+    card.addEventListener('click', () => speakEnglish(word.english))
+  }
   frame.append(card)
   return frame
 }
@@ -1493,7 +1500,7 @@ function renderReview(): void {
 
   if (item.kind === 'word') {
     const word = item.word
-    body.append(renderPrompt(word))
+    body.append(renderPrompt(word, { hideEnglish: !session.reviewReveal }))
     body.append(
       el(
         'p',

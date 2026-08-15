@@ -418,7 +418,8 @@ button:disabled {
   text-align: center;
 }
 
-.sentence-card-en.is-hidden {
+.sentence-card-en.is-hidden,
+.word-card-en.is-hidden {
   letter-spacing: 0.28em;
   color: var(--muted);
 }
