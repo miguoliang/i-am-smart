@@ -46,6 +46,32 @@ test('classroom sentence may omit chinese for later fill-in', () => {
   assert.ok(hello.chinese)
 })
 
+test('sample class can split by subject for 分科巩固', () => {
+  const pos = { noun: 0, verb: 0, adjective: 0 }
+  for (const word of pack.words) pos[word.pos] += 1
+  assert.ok(pos.noun >= 1)
+  assert.ok(pos.verb >= 1)
+  assert.ok(pos.adjective >= 1)
+  assert.equal(
+    pos.noun + pos.verb + pos.adjective,
+    pack.words.length,
+  )
+  assert.ok(pack.sentences.length >= 1)
+})
+
+test('merged classes keep unique ids for 综合巩固', () => {
+  const other = { ...pack, id: 'class-b' }
+  const wordIds = [pack, other].flatMap((p) =>
+    p.words.map((w) => `${p.id}__${w.id}`),
+  )
+  const sentenceIds = [pack, other].flatMap((p) =>
+    p.sentences.map((s) => `${p.id}__${s.id}`),
+  )
+  assert.equal(new Set(wordIds).size, wordIds.length)
+  assert.equal(new Set(sentenceIds).size, sentenceIds.length)
+  assert.equal(wordIds.length, pack.words.length * 2)
+})
+
 test('present participle matches KET action frames', () => {
   assert.equal(presentParticiple('run'), 'running')
   assert.equal(presentParticiple('sit'), 'sitting')

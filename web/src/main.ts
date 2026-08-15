@@ -47,6 +47,19 @@ import {
   type WordPos,
 } from './content/types'
 import {
+  buildReviewItems,
+  distinctPosCount,
+  firstPhaseForMode,
+  mergePacks,
+  modeLabelZh,
+  phaseAfterForMode,
+  phasesForMode,
+  posCounts,
+  slicePack,
+  type PracticeMode,
+  type ReviewItem,
+} from './content/practice'
+import {
   draftToPack,
   emptyDraft,
   emptySentenceForm,
@@ -72,27 +85,29 @@ function requireApp(): HTMLDivElement {
 
 const app = requireApp()
 
-type Screen = 'home' | 'create' | 'session'
+type Screen = 'home' | 'create' | 'start' | 'session'
 type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
 type Phase = PracticePhase | 'done'
 
 interface Session {
   pack: LessonPack
+  mode: PracticeMode
+  posFilter?: WordPos
+  /** Original class id; empty when mixing several classes from home. */
+  originPackId: string
   phase: Phase
   wordIndex: number
   questionIndex: number
   sentenceIndex: number
   reviewIndex: number
+  reviewItems: ReviewItem[]
   revealAnswer: boolean
   reviewReveal: boolean
 }
 
-type ReviewItem =
-  | { kind: 'word'; word: WordDef }
-  | { kind: 'sentence'; sentence: SentenceDef }
-
 let screen: Screen = 'home'
 let session: Session | null = null
+let startPack: LessonPack | null = null
 let packCache: LessonPack[] = []
 let homeError = ''
 let homeStatus = ''
@@ -100,33 +115,16 @@ let cloudBusy = false
 let cloudUserId: string | null = null
 let draft: PackDraft = emptyDraft()
 
-function practicePhases(pack: LessonPack): { id: PracticePhase; label: string }[] {
-  const phases: { id: PracticePhase; label: string }[] = []
-  if (pack.words.length) {
-    phases.push({ id: 'vocab', label: '词汇' }, { id: 'talk', label: '开口' })
-  }
-  if (pack.sentences.length) {
-    phases.push({ id: 'sentences', label: '句子' })
-  }
-  phases.push({ id: 'review', label: '巩固' })
-  return phases
+function reviewQueue(): ReviewItem[] {
+  return session?.reviewItems ?? []
 }
 
-function firstPracticePhase(pack: LessonPack): PracticePhase {
-  return practicePhases(pack)[0]?.id ?? 'review'
-}
-
-function phaseAfter(pack: LessonPack, current: PracticePhase): Phase {
-  const ids = practicePhases(pack).map((p) => p.id)
-  const next = ids[ids.indexOf(current) + 1]
-  return next ?? 'done'
-}
-
-function reviewQueue(pack: LessonPack): ReviewItem[] {
-  return [
-    ...pack.words.map((word) => ({ kind: 'word' as const, word })),
-    ...pack.sentences.map((sentence) => ({ kind: 'sentence' as const, sentence })),
-  ]
+function packsForHomeMixed(): LessonPack[] {
+  const custom = packCache.filter(
+    (pack) => pack.source === 'custom' && packHasContent(pack),
+  )
+  if (custom.length) return custom
+  return packCache.filter(packHasContent)
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -177,27 +175,69 @@ async function connectCloud(): Promise<void> {
   }
 }
 
-async function startPack(packId: string): Promise<void> {
-  const pack = await getPackById(packId)
-  if (!pack || !packHasContent(pack)) return
+function beginPractice(
+  source: LessonPack,
+  mode: PracticeMode,
+  opts: { pos?: WordPos; originPackId?: string } = {},
+): void {
+  const working = slicePack(source, { mode, pos: opts.pos })
+  if (!packHasContent(working)) return
   unlockAudio()
-  void preloadPackImages(pack)
+  void preloadPackImages(working)
+  const mixed = mode === 'mixed'
   session = {
-    pack,
-    phase: firstPracticePhase(pack),
+    pack: working,
+    mode,
+    posFilter: opts.pos,
+    originPackId: opts.originPackId ?? (source.id === 'mixed-review' ? '' : source.id),
+    phase: firstPhaseForMode(working, mode),
     wordIndex: 0,
     questionIndex: 0,
     sentenceIndex: 0,
     reviewIndex: 0,
+    reviewItems: buildReviewItems(working, { shuffle: mixed }),
     revealAnswer: false,
     reviewReveal: false,
   }
+  startPack = null
   screen = 'session'
   render()
 }
 
+function openStart(pack: LessonPack): void {
+  startPack = pack
+  screen = 'start'
+  render()
+}
+
+function startHomeMixed(): void {
+  const packs = packsForHomeMixed()
+  if (!packs.length) return
+  const merged = mergePacks(packs, {
+    titleZh: '综合巩固',
+    titleEn: 'Mixed review',
+  })
+  beginPractice(merged, 'mixed', { originPackId: '' })
+}
+
+function replaySession(): void {
+  if (!session) return
+  const mode = session.mode
+  const pos = session.posFilter
+  const originId = session.originPackId
+  if (!originId) {
+    startHomeMixed()
+    return
+  }
+  void getPackById(originId).then((pack) => {
+    if (!pack) return
+    beginPractice(pack, mode, { pos, originPackId: originId })
+  })
+}
+
 function goHome(): void {
   session = null
+  startPack = null
   screen = 'home'
   homeError = ''
   void refreshPacks().then(render)
@@ -232,8 +272,7 @@ function currentSentence(): SentenceDef | null {
 }
 
 function currentReviewItem(): ReviewItem | null {
-  if (!session) return null
-  return reviewQueue(session.pack)[session.reviewIndex] ?? null
+  return reviewQueue()[session?.reviewIndex ?? -1] ?? null
 }
 
 function talkQueue(word: WordDef | null): QuestionTemplate[] {
@@ -275,7 +314,7 @@ function nextTalk(): void {
     session.wordIndex += 1
     session.questionIndex = 0
   } else {
-    session.phase = phaseAfter(session.pack, 'talk')
+    session.phase = phaseAfterForMode(session.pack, session.mode, 'talk')
     session.sentenceIndex = 0
     session.reviewIndex = 0
     session.reviewReveal = false
@@ -299,7 +338,7 @@ function prevTalk(): void {
 function nextSentence(): void {
   if (!session) return
   if (session.sentenceIndex >= session.pack.sentences.length - 1) {
-    session.phase = 'review'
+    session.phase = phaseAfterForMode(session.pack, session.mode, 'sentences')
     session.reviewIndex = 0
     session.reviewReveal = false
   } else {
@@ -321,7 +360,7 @@ function nextReview(): void {
     render()
     return
   }
-  const total = reviewQueue(session.pack).length
+  const total = reviewQueue().length
   if (session.reviewIndex >= total - 1) {
     session.phase = 'done'
   } else {
@@ -332,7 +371,9 @@ function nextReview(): void {
 }
 
 function renderPhaseRail(pack: LessonPack, active: Phase): HTMLElement {
-  const phases = practicePhases(pack)
+  const phases = session
+    ? phasesForMode(pack, session.mode)
+    : phasesForMode(pack, 'full')
   const rail = el('nav', 'phase-rail')
   rail.setAttribute('aria-label', '练习阶段')
   const activeIdx =
@@ -446,7 +487,7 @@ function renderPackCard(pack: LessonPack): HTMLElement {
     el('div', 'pack-blurb', `${packCountLabel(pack)} · ${pack.blurb}`),
   )
   card.append(renderPackThumbs(pack), meta)
-  card.addEventListener('click', () => void startPack(pack.id))
+  card.addEventListener('click', () => openStart(pack))
   wrap.append(card)
 
   const tools = el('div', 'pack-tools')
@@ -580,6 +621,24 @@ function renderHome(): void {
   createBtn.type = 'button'
   createBtn.addEventListener('click', openCreate)
 
+  actions.append(importBtn, createBtn, fileInput)
+  shell.append(actions)
+
+  const mixedPacks = packsForHomeMixed()
+  if (mixedPacks.length) {
+    const mixedBtn = el('button', 'btn-ghost-block', '综合巩固')
+    mixedBtn.type = 'button'
+    mixedBtn.addEventListener('click', startHomeMixed)
+    const mixedHint = el(
+      'p',
+      'home-note',
+      mixedPacks.some((p) => p.source === 'custom')
+        ? '把记下的几节课混在一起抽问。点某一节课，也可以分科只练词或只练句。'
+        : '先用示例课综合抽问。记下自己的课后，会改成混练你的课。',
+    )
+    shell.append(mixedBtn, mixedHint)
+  }
+
   const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例课')
   sampleBtn.type = 'button'
   sampleBtn.addEventListener('click', () => void importSamplePack())
@@ -589,8 +648,7 @@ function renderHome(): void {
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
 
-  actions.append(importBtn, createBtn, fileInput)
-  shell.append(actions, sampleBtn, sampleLink)
+  shell.append(sampleBtn, sampleLink)
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))
@@ -618,9 +676,119 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '上课时先记英文，中文课后可补。导入 / 导出只是备份，日常改内容用编辑页。',
+      '上课时先记英文，中文课后可补。巩固时可以分科，也可以综合。导入 / 导出只是备份。',
     ),
   )
+  app.append(shell)
+}
+
+function renderModeButton(
+  title: string,
+  blurb: string,
+  onClick: () => void,
+  opts: { primary?: boolean } = {},
+): HTMLElement {
+  const card = el('div', opts.primary ? 'mode-card is-primary' : 'mode-card')
+  card.append(el('div', 'mode-title', title), el('p', 'mode-blurb', blurb))
+  const go = el('button', opts.primary ? 'btn-primary' : 'btn-secondary', '开始')
+  go.type = 'button'
+  go.addEventListener('click', onClick)
+  card.append(go)
+  return card
+}
+
+function renderChip(
+  label: string,
+  onClick: () => void,
+): HTMLButtonElement {
+  const chip = el('button', 'mode-chip') as HTMLButtonElement
+  chip.type = 'button'
+  chip.textContent = label
+  chip.addEventListener('click', onClick)
+  return chip
+}
+
+function renderStart(): void {
+  const pack = startPack
+  if (!pack) {
+    renderHome()
+    return
+  }
+  clearApp()
+  const shell = el('div', 'shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '返回')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', '怎么练'))
+  shell.append(top)
+
+  const main = el('main', 'main create-main')
+  main.append(
+    el('h1', 'title', pack.titleZh),
+    el('p', 'subtitle', `${packCountLabel(pack)} · 分科专项练，也可以词句混着抽问。`),
+  )
+
+  const list = el('div', 'mode-list')
+  list.append(el('h2', 'section-label', '分科巩固'))
+
+  if (pack.words.length) {
+    const wordCard = el('div', 'mode-card')
+    wordCard.append(
+      el('div', 'mode-title', `词汇 · ${pack.words.length} 词`),
+      el('p', 'mode-blurb', '热身、开口、再巩固这一科。'),
+    )
+    const chips = el('div', 'mode-chips')
+    chips.append(
+      renderChip('全部词汇', () => beginPractice(pack, 'words')),
+    )
+    if (distinctPosCount(pack) >= 2) {
+      const counts = posCounts(pack)
+      for (const pos of WORD_POS) {
+        const n = counts[pos]
+        if (!n) continue
+        chips.append(
+          renderChip(`${POS_LABEL_ZH[pos]} · ${n}`, () =>
+            beginPractice(pack, 'words', { pos }),
+          ),
+        )
+      }
+    }
+    wordCard.append(chips)
+    list.append(wordCard)
+  }
+
+  if (pack.sentences.length) {
+    list.append(
+      renderModeButton(
+        `句子 · ${pack.sentences.length} 句`,
+        '跟读这节课记下的句子，再遮句抽问。',
+        () => beginPractice(pack, 'sentences'),
+      ),
+    )
+  }
+
+  list.append(el('h2', 'section-label', '综合巩固'))
+  list.append(
+    renderModeButton(
+      '词和句子混着抽问',
+      '遮住英文，打乱顺序，看孩子还记不记得。',
+      () => beginPractice(pack, 'mixed'),
+      { primary: true },
+    ),
+  )
+
+  list.append(el('h2', 'section-label', '完整过一遍'))
+  list.append(
+    renderModeButton(
+      '热身 → 开口 → 句子 → 巩固',
+      '刚记完的第一遍，按整节课走。',
+      () => beginPractice(pack, 'full'),
+    ),
+  )
+
+  main.append(list)
+  shell.append(main)
   app.append(shell)
 }
 
@@ -1320,7 +1488,7 @@ function renderReview(): void {
   if (!session) return
   const item = currentReviewItem()
   if (!item) return
-  const total = reviewQueue(session.pack).length
+  const total = reviewQueue().length
   const body = el('div', 'stage')
 
   if (item.kind === 'word') {
@@ -1380,9 +1548,11 @@ function renderReview(): void {
     session.reviewReveal
       ? session.reviewIndex >= total - 1
         ? '完成陪练'
-        : item.kind === 'sentence'
-          ? '下一句'
-          : '下一个词'
+        : session.mode === 'mixed'
+          ? '下一题'
+          : item.kind === 'sentence'
+            ? '下一句'
+            : '下一个词'
       : '揭晓英文',
   )
   next.type = 'button'
@@ -1391,7 +1561,7 @@ function renderReview(): void {
 
   renderShell({
     phase: 'review',
-    title: '口头巩固',
+    title: session.mode === 'mixed' ? '综合巩固' : '口头巩固',
     subtitle: `${session.pack.titleZh} · ${session.reviewIndex + 1}/${total}`,
     body,
     footer,
@@ -1408,17 +1578,26 @@ function renderDone(): void {
     el(
       'p',
       'hero-lead',
-      `已练完「${session.pack.titleZh}」。下一节外教课再记一份新的即可。`,
+      `已练完「${modeLabelZh(session.mode, session.posFilter)} · ${session.pack.titleZh}」。`,
     ),
   )
   const actions = el('div', 'done-actions')
-  const again = el('button', 'btn-primary', '再用这节课练一次')
+  const again = el('button', 'btn-primary', '用同样方式再练一次')
   again.type = 'button'
-  again.addEventListener('click', () => void startPack(session!.pack.id))
-  const home = el('button', 'btn-secondary', '回首页')
-  home.type = 'button'
-  home.addEventListener('click', goHome)
-  actions.append(again, home)
+  again.addEventListener('click', replaySession)
+  const other = el('button', 'btn-secondary', session.originPackId ? '换一种练法' : '回首页')
+  other.type = 'button'
+  other.addEventListener('click', () => {
+    if (session?.originPackId) {
+      void getPackById(session.originPackId).then((pack) => {
+        if (pack) openStart(pack)
+        else goHome()
+      })
+      return
+    }
+    goHome()
+  })
+  actions.append(again, other)
   shell.append(actions)
   app.append(shell)
 }
@@ -1426,6 +1605,10 @@ function renderDone(): void {
 function render(): void {
   if (screen === 'create') {
     renderCreate()
+    return
+  }
+  if (screen === 'start') {
+    renderStart()
     return
   }
   if (screen === 'home' || !session) {
