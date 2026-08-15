@@ -1,4 +1,5 @@
--- Public bucket for the Vite SPA (JS/CSS/images). HTML is served by Edge Function `app`.
+-- Public Storage bucket leftover from an earlier HTML-hosting experiment.
+-- The Vite SPA is served by Netlify; pack images use `pack-images`.
 
 insert into storage.buckets (id, name, public)
 values ('site', 'site', true)

@@ -1,0 +1,50 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'netlify.toml'
+      - '.github/workflows/deploy-netlify.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build
+        working-directory: web
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${VITE_SUPABASE_ANON_KEY}" ]; then
+            echo "::error::Add GitHub secrets VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+            exit 1
+          fi
+          npm ci
+          npm run build
+
+      - name: Publish
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NETLIFY_AUTH_TOKEN}" ] || [ -z "${NETLIFY_SITE_ID}" ]; then
+            echo "::error::Add GitHub secrets NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID (or connect this repo in the Netlify UI and skip this workflow)."
+            exit 1
+          fi
+          npx --yes netlify-cli deploy --prod --dir=web/dist --site="${NETLIFY_SITE_ID}"

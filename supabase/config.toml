@@ -1,7 +1,2 @@
 # A string used to distinguish different Supabase projects.
 project_id = "iamsmart"
-
-[functions.app]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/app/index.ts"

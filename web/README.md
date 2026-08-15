@@ -16,9 +16,8 @@ npm run dev
 
 ```bash
 npm run build
-npm run deploy   # 上传到 Supabase Storage + Edge Function app
 ```
 
-生产入口：`https://<project-ref>.supabase.co/functions/v1/app`
+生产环境把 `web/dist` 发到 **Netlify**（见仓库根目录 `netlify.toml`）。Supabase 只同步词包，不托管网页。
 
 问题库（框架）在 `src/data/questions.ts`；词包（内容）在 `src/content/`，格式说明见 `public/content/README.md`。

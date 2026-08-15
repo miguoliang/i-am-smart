@@ -27,14 +27,9 @@ const extraRedirects = [
   'http://127.0.0.1:5173/**',
 ]
 
-const siteUrl = process.env.VITE_SUPABASE_URL?.replace(/\/$/, '')
-if (siteUrl) {
-  extraRedirects.push(
-    siteUrl,
-    `${siteUrl}/**`,
-    `${siteUrl}/functions/v1/app`,
-    `${siteUrl}/functions/v1/app/**`,
-  )
+const publicSite = process.env.PUBLIC_SITE_URL?.replace(/\/$/, '')
+if (publicSite) {
+  extraRedirects.push(publicSite, `${publicSite}/**`)
 }
 
 async function management(pathname, opts = {}) {

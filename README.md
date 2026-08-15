@@ -12,7 +12,7 @@ V1 面向家长陪练：
 2. **看图说话** — 固定问题库（问句不变，只换图和词）  
 3. **口头巩固** — 遮词提问 → 揭晓 → 套句型  
 
-内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；**Supabase** 同时托管网页并同步自定义词包。格式见 `web/public/content/README.md`。
+内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；**Supabase** 同步自定义词包。格式见 `web/public/content/README.md`。
 
 ## 本地运行
 
@@ -25,36 +25,45 @@ npm run dev
 
 浏览器打开 Vite 给出的本地地址（默认 `/`）。
 
-## 托管到 Supabase
+## 托管：Netlify（网页）+ Supabase（后端）
 
-网页由 Edge Function `app` 输出 HTML，JS/CSS/闪卡图放在 Storage 桶 `site`。词包同步用表 `lesson_packs` 和桶 `pack-images`。
+网页发到 **Netlify**。Supabase 只负责匿名登录、`lesson_packs` 和 `pack-images`，不托管 HTML。
+
+### Netlify
+
+仓库根目录的 `netlify.toml` 会构建 `web/` 并发布 `web/dist`。在 Netlify 后台给站点加上构建时环境变量：
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`（anon/publishable，不要放 service_role）
+
+两种发布方式（二选一即可，不要两个都开，否则会发两次）：
+
+1. **Netlify 连接这个 GitHub 仓库**（以前的做法）：推到 `main` 就会构建。
+2. **GitHub Actions**（`.github/workflows/deploy-netlify.yml`）：再加仓库 Secrets `NETLIFY_AUTH_TOKEN`、`NETLIFY_SITE_ID`。
+
+把自定义域名（例如 `www.iamsmart.top`）指到该 Netlify 站点后，把同一个 origin 加进 Supabase Auth 的 Redirect URLs；本地 Vite 已包含 `localhost:5173`。
+
+### Supabase（词包同步）
 
 ```bash
 # 建表 + 开匿名登录
 node scripts/apply-supabase-schema.mjs
-
-# 构建并发布（需要上面四个环境变量）
-node scripts/deploy-supabase-web.mjs
 ```
 
-发布地址：`https://<project-ref>.supabase.co/functions/v1/app`
-
-GitHub Actions（`.github/workflows/deploy-supabase.yml`）在推到 `main` 时做同样的发布。仓库 Secrets 需要：
+仓库 Secrets 里词包同步还需要：
 
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`（anon/publishable，不要放 service_role）
-- `SUPABASE_ACCESS_TOKEN`
-- `SUPABASE_PROJECT_REF`
+- `VITE_SUPABASE_ANON_KEY`
 
 ## 项目结构
 
 ```
-web/            # 陪练本（Vite）
+web/            # 陪练本（Vite），发到 Netlify
   src/content/  # 词包类型、校验、内置示例、本机 + 云端存储
   src/data/     # 框架层：看图说话问题库
   src/practice/
   public/cards  # 内置词包配图
-supabase/       # 迁移 + Edge Function
+supabase/       # 迁移（lesson_packs 等）
 data/           # CEFR 词库 JSON（素材层，不进网页运行时）
 printables/     # KET 闪卡贴纸素材
 ```
