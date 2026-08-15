@@ -251,9 +251,8 @@ function renderShell(opts: {
   app.append(shell)
 }
 
-async function importPackFile(file: File): Promise<void> {
+async function importPackText(text: string): Promise<void> {
   try {
-    const text = await file.text()
     const pack = parseContentPackJson(text)
     await saveCustomPack(pack)
     homeError = ''
@@ -266,6 +265,22 @@ async function importPackFile(file: File): Promise<void> {
         : err instanceof Error
           ? err.message
           : '导入失败'
+    render()
+  }
+}
+
+async function importPackFile(file: File): Promise<void> {
+  await importPackText(await file.text())
+}
+
+async function importSamplePack(): Promise<void> {
+  try {
+    const url = `${import.meta.env.BASE_URL}content/sample-week-food.peilian.json`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('示例词包下载失败')
+    await importPackText(await res.text())
+  } catch (err) {
+    homeError = err instanceof Error ? err.message : '示例导入失败'
     render()
   }
 }
@@ -355,13 +370,17 @@ function renderHome(): void {
   createBtn.type = 'button'
   createBtn.addEventListener('click', openCreate)
 
+  const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例词包')
+  sampleBtn.type = 'button'
+  sampleBtn.addEventListener('click', () => void importSamplePack())
+
   const sampleLink = el('a', 'sample-link', '查看词包格式说明')
   sampleLink.href = `${import.meta.env.BASE_URL}content/README.md`
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
 
   actions.append(importBtn, createBtn, fileInput)
-  shell.append(actions, sampleLink)
+  shell.append(actions, sampleBtn, sampleLink)
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))

@@ -746,3 +746,12 @@ select.field {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.btn-ghost-block {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px dashed rgba(31, 122, 108, 0.35);
+  color: var(--teal-deep);
+  font-weight: 650;
+  background: rgba(31, 122, 108, 0.04);
+}
