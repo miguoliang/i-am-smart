@@ -13,6 +13,24 @@ export interface CloudPackRow {
   created_at: string
 }
 
+function cloudError(err: unknown, fallback: string): Error {
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: string }).message)
+      : err instanceof Error
+        ? err.message
+        : ''
+  if (/anonymous sign-ins are disabled/i.test(message)) {
+    return new Error(
+      '云端未开启匿名登录（Dashboard → Authentication → Providers → Anonymous）',
+    )
+  }
+  if (/Failed to fetch|NetworkError/i.test(message)) {
+    return new Error('连不上云端，请检查网络')
+  }
+  return new Error(message || fallback)
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, data] = dataUrl.split(',', 2)
   const mime = /data:([^;]+)/.exec(header)?.[1] ?? 'image/jpeg'
@@ -38,7 +56,7 @@ async function uploadWordImage(
     upsert: true,
     contentType: blob.type,
   })
-  if (error) throw error
+  if (error) throw cloudError(error, '上传图片失败')
   const { data } = sb.storage.from('pack-images').getPublicUrl(path)
   return data.publicUrl
 }
@@ -84,7 +102,7 @@ export async function ensureCloudSession(): Promise<{ userId: string } | null> {
     return { userId: existing.session.user.id }
   }
   const { data, error } = await sb.auth.signInAnonymously()
-  if (error) throw error
+  if (error) throw cloudError(error, '匿名登录失败')
   if (!data.user) throw new Error('匿名登录失败')
   return { userId: data.user.id }
 }
@@ -112,7 +130,7 @@ export async function listCloudPacks(): Promise<LessonPack[]> {
     .select('*')
     .eq('owner_id', session.userId)
     .order('updated_at', { ascending: false })
-  if (error) throw error
+  if (error) throw cloudError(error, '读取云端词包失败')
   return ((data ?? []) as CloudPackRow[]).map(rowToPack)
 }
 
@@ -136,10 +154,10 @@ export async function upsertCloudPack(pack: LessonPack): Promise<LessonPack> {
   }
   const { data, error } = await sb
     .from('lesson_packs')
-    .upsert(row, { onConflict: 'id' })
+    .upsert(row, { onConflict: 'owner_id,id' })
     .select('*')
     .single()
-  if (error) throw error
+  if (error) throw cloudError(error, '上传词包失败')
   return rowToPack(data as CloudPackRow)
 }
 
@@ -153,7 +171,7 @@ export async function deleteCloudPack(id: string): Promise<void> {
     .delete()
     .eq('id', id)
     .eq('owner_id', session.userId)
-  if (error) throw error
+  if (error) throw cloudError(error, '删除云端词包失败')
 }
 
 /** Pull cloud packs into the returned list shape (caller persists locally). */

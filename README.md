@@ -14,16 +14,18 @@ V1 面向家长陪练：
 
 内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；可选 **Supabase 云端同步**（IndexedDB 本地缓存 + 云端备份）。格式见 `web/public/content/README.md`。
 
-### Supabase（可选）
+### Supabase（可选，跨设备同步词包）
 
-环境变量见 `web/.env.example`。应用库表：
+环境变量见 `web/.env.example`。本地复制为 `web/.env.local` 后重启 `npm run dev`。
 
 ```bash
-# 需要 SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF
+# 建表 + 开匿名登录（需要 SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF）
 node scripts/apply-supabase-schema.mjs
 ```
 
-并在 Dashboard → Authentication → Providers 开启 **Anonymous** 登录。
+家长点「连接并同步云端」会匿名登录，把自定义词包存到 `lesson_packs`，图片存到 `pack-images`。内置词包仍在仓库里，不上云。
+
+GitHub Pages 构建需要仓库 Secrets：`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`（只用 anon/publishable，不要放 service_role）。
 
 ## 本地运行
 
