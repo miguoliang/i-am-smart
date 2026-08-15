@@ -1,11 +1,17 @@
 import {
   PACK_SCHEMA,
   guessArticle,
+  hydrateSentence,
+  parsePos,
   slugId,
   type ContentPackFile,
   type LessonPack,
+  type SentenceDef,
   type WordDef,
 } from './types'
+
+export const MAX_WORDS = 40
+export const MAX_SENTENCES = 40
 
 export class PackParseError extends Error {
   constructor(message: string) {
@@ -16,7 +22,7 @@ export class PackParseError extends Error {
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new PackParseError('词包必须是 JSON 对象')
+    throw new PackParseError('课包必须是 JSON 对象')
   }
   return value as Record<string, unknown>
 }
@@ -29,14 +35,19 @@ function requireString(obj: Record<string, unknown>, key: string): string {
   return v.trim()
 }
 
-function normalizeWord(raw: unknown, index: number): WordDef {
+function optionalString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeWord(raw: unknown): WordDef {
   const obj = asRecord(raw)
   const english = requireString(obj, 'english')
-  const chinese = requireString(obj, 'chinese')
+  const chinese = optionalString(obj.chinese)
   const id =
     typeof obj.id === 'string' && obj.id.trim()
       ? obj.id.trim()
       : slugId(english)
+  const pos = parsePos(obj.pos)
   const article =
     obj.article === 'a' || obj.article === 'an'
       ? obj.article
@@ -45,10 +56,23 @@ function normalizeWord(raw: unknown, index: number): WordDef {
     typeof obj.image === 'string' && obj.image.trim()
       ? obj.image.trim()
       : ''
-  if (!image) {
-    throw new PackParseError(`第 ${index + 1} 个词「${english}」缺少 image`)
+  return { id, english, chinese, pos, article, image }
+}
+
+function normalizeSentence(raw: unknown): SentenceDef {
+  const obj = asRecord(raw)
+  const english = requireString(obj, 'english')
+  return hydrateSentence({
+    id: optionalString(obj.id) || undefined,
+    english,
+    chinese: optionalString(obj.chinese),
+  })
+}
+
+function uniqueIds(ids: string[], label: string): void {
+  if (new Set(ids).size !== ids.length) {
+    throw new PackParseError(`${label} id 不能重复`)
   }
-  return { id, english, chinese, article, image }
 }
 
 /** Parse and normalize a peilian-pack/v1 JSON document. */
@@ -69,19 +93,33 @@ export function parseContentPack(raw: unknown): LessonPack {
   const blurb =
     typeof obj.blurb === 'string' && obj.blurb.trim()
       ? obj.blurb.trim()
-      : '自定义课程内容'
-  if (!Array.isArray(obj.words) || obj.words.length === 0) {
-    throw new PackParseError('words 至少需要 1 个词')
+      : '一节外教课记下的词和句子'
+
+  const rawWords = obj.words
+  const rawSentences = obj.sentences
+  if (rawWords !== undefined && !Array.isArray(rawWords)) {
+    throw new PackParseError('words 必须是数组')
   }
-  if (obj.words.length > 40) {
-    throw new PackParseError('单个词包最多 40 个词')
+  if (rawSentences !== undefined && !Array.isArray(rawSentences)) {
+    throw new PackParseError('sentences 必须是数组')
   }
-  const words = obj.words.map((w, i) => normalizeWord(w, i))
-  const ids = new Set(words.map((w) => w.id))
-  if (ids.size !== words.length) {
-    throw new PackParseError('词条 id 不能重复')
+
+  const words = (rawWords ?? []).map((w) => normalizeWord(w))
+  const sentences = (rawSentences ?? []).map((s) => normalizeSentence(s))
+
+  if (words.length === 0 && sentences.length === 0) {
+    throw new PackParseError('至少需要 1 个词或 1 个句子')
   }
-  return { id, titleZh, titleEn, blurb, words, source: 'custom' }
+  if (words.length > MAX_WORDS) {
+    throw new PackParseError(`单课最多 ${MAX_WORDS} 个词`)
+  }
+  if (sentences.length > MAX_SENTENCES) {
+    throw new PackParseError(`单课最多 ${MAX_SENTENCES} 个句子`)
+  }
+  uniqueIds(words.map((w) => w.id), '词条')
+  uniqueIds(sentences.map((s) => s.id), '句子')
+
+  return { id, titleZh, titleEn, blurb, words, sentences, source: 'custom' }
 }
 
 export function parseContentPackJson(text: string): LessonPack {
@@ -94,6 +132,16 @@ export function parseContentPackJson(text: string): LessonPack {
   return parseContentPack(raw)
 }
 
+function omitEmptyChinese<T extends { chinese: string }>(
+  item: T,
+): Omit<T, 'chinese'> & { chinese?: string } {
+  if (!item.chinese) {
+    const { chinese: _omit, ...rest } = item
+    return rest
+  }
+  return item
+}
+
 export function toContentPackFile(pack: LessonPack): ContentPackFile {
   return {
     schema: PACK_SCHEMA,
@@ -101,13 +149,23 @@ export function toContentPackFile(pack: LessonPack): ContentPackFile {
     titleZh: pack.titleZh,
     titleEn: pack.titleEn,
     blurb: pack.blurb,
-    words: pack.words.map((w) => ({
-      id: w.id,
-      english: w.english,
-      chinese: w.chinese,
-      article: w.article,
-      image: w.image,
-    })),
+    words: pack.words.map((w) =>
+      omitEmptyChinese({
+        id: w.id,
+        english: w.english,
+        chinese: w.chinese,
+        pos: w.pos,
+        article: w.article,
+        ...(w.image ? { image: w.image } : {}),
+      }),
+    ),
+    sentences: pack.sentences.map((s) =>
+      omitEmptyChinese({
+        id: s.id,
+        english: s.english,
+        chinese: s.chinese,
+      }),
+    ),
   }
 }
 
@@ -117,7 +175,7 @@ export function downloadPackJson(pack: LessonPack): void {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${pack.id || 'pack'}.peilian.json`
+  a.download = `${pack.id || 'class'}.peilian.json`
   a.click()
   URL.revokeObjectURL(url)
 }

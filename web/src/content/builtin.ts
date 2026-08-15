@@ -1,71 +1,56 @@
-import type { LessonPack } from './types'
+import {
+  guessArticle,
+  type LessonPack,
+  type SentenceDef,
+  type WordDef,
+  type WordPos,
+} from './types'
 
-function w(
+function word(
   id: string,
   english: string,
   chinese: string,
-  article: 'a' | 'an' = 'a',
-): LessonPack['words'][number] {
+  opts: {
+    article?: 'a' | 'an'
+    pos?: WordPos
+    image?: string
+  } = {},
+): WordDef {
+  const pos = opts.pos ?? 'noun'
   return {
     id,
     english,
     chinese,
-    article,
-    image: `cards/${id}.png`,
+    pos,
+    article: opts.article ?? guessArticle(english),
+    image: opts.image ?? (pos === 'noun' ? `cards/${id}.png` : ''),
   }
 }
 
-/** Demo content only — replaceable by any peilian-pack/v1 document. */
+function sentence(id: string, english: string, chinese = ''): SentenceDef {
+  return { id, english, chinese }
+}
+
+/** One sample class — replaceable by any peilian-pack/v1 document. */
 export const BUILTIN_PACKS: LessonPack[] = [
   {
-    id: 'food',
-    titleZh: '食物饮品',
-    titleEn: 'Food & Drink',
-    blurb: '示例词包 · 可换成你家教材',
+    id: 'sample-class',
+    titleZh: '示例·一节外教课',
+    titleEn: 'Sample class',
+    blurb: '家长旁听记下的词和句子 · 一课一份',
     source: 'builtin',
     words: [
-      w('apple', 'apple', '苹果', 'an'),
-      w('banana', 'banana', '香蕉'),
-      w('cake', 'cake', '蛋糕'),
-      w('egg', 'egg', '鸡蛋', 'an'),
-      w('milk', 'milk', '牛奶'),
-      w('juice', 'juice', '果汁'),
-      w('bread', 'bread', '面包'),
-      w('cheese', 'cheese', '奶酪'),
+      word('apple', 'apple', '苹果', { article: 'an' }),
+      word('water', 'water', '水'),
+      word('run', 'run', '跑', { pos: 'verb' }),
+      word('happy', 'happy', '开心的', { pos: 'adjective' }),
     ],
-  },
-  {
-    id: 'animals',
-    titleZh: '动物',
-    titleEn: 'Animals',
-    blurb: '示例词包 · 可换成你家教材',
-    source: 'builtin',
-    words: [
-      w('cat', 'cat', '猫'),
-      w('dog', 'dog', '狗'),
-      w('bird', 'bird', '鸟'),
-      w('fish', 'fish', '鱼'),
-      w('bear', 'bear', '熊'),
-      w('horse', 'horse', '马'),
-      w('pig', 'pig', '猪'),
-      w('chicken', 'chicken', '鸡'),
-    ],
-  },
-  {
-    id: 'things',
-    titleZh: '日常事物',
-    titleEn: 'Things Around Us',
-    blurb: '示例词包 · 可换成你家教材',
-    source: 'builtin',
-    words: [
-      w('ball', 'ball', '球'),
-      w('book', 'book', '书'),
-      w('bag', 'bag', '包'),
-      w('bus', 'bus', '公交车'),
-      w('bicycle', 'bicycle', '自行车'),
-      w('car', 'car', '小汽车'),
-      w('house', 'house', '房子'),
-      w('tree', 'tree', '树'),
+    sentences: [
+      sentence('hello-how-are-you', 'Hello, how are you?', '你好吗？'),
+      sentence('i-like-apples', 'I like apples.', '我喜欢苹果。'),
+      sentence('can-i-have-water', 'Can I have some water, please?'),
+      sentence('he-is-running', 'He is running.', '他在跑。'),
+      sentence('i-am-happy', 'I am happy today.', '我今天很开心。'),
     ],
   },
 ]

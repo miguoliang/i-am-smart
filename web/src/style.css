@@ -301,23 +301,30 @@ button:disabled {
 }
 
 .phase-rail {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  display: flex;
+  gap: 6px;
 }
 
 .phase-item {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  padding: 8px 6px;
+  padding: 8px 4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid var(--line);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 650;
+}
+
+.phase-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phase-dot {
@@ -390,6 +397,90 @@ button:disabled {
   width: 78%;
   height: 78%;
   object-fit: contain;
+}
+
+.picture-frame.is-word-card {
+  background: linear-gradient(180deg, #eef7f4 0%, #ffffff 100%);
+}
+
+.picture-frame.is-sentence-card {
+  aspect-ratio: 16 / 10;
+  max-height: min(34vh, 280px);
+  width: min(100%, 420px);
+}
+
+.sentence-card-en {
+  font-family: var(--font-en);
+  font-size: clamp(1.15rem, 4.6vw, 1.7rem);
+  font-weight: 700;
+  color: var(--teal-deep);
+  line-height: 1.3;
+  text-align: center;
+}
+
+.sentence-card-en.is-hidden,
+.word-card-en.is-hidden {
+  letter-spacing: 0.28em;
+  color: var(--muted);
+}
+
+.lex-en-sentence {
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.field-area {
+  min-height: 72px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.word-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.word-card-pos {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  background: rgba(31, 122, 108, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.word-card-en {
+  font-family: var(--font-en);
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-weight: 700;
+  color: var(--teal-deep);
+  line-height: 1.15;
+}
+
+.word-card-zh {
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.pack-thumb-word {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-en);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--teal-deep);
+  overflow: hidden;
+  padding: 2px;
+  line-height: 1.1;
+  text-align: center;
 }
 
 .lex {
@@ -643,6 +734,7 @@ button:disabled {
 
 .pack-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding-left: 4px;
 }
@@ -715,6 +807,44 @@ select.field {
   border-bottom: 1px solid var(--line);
 }
 
+.draft-row.is-editing {
+  background: rgba(31, 122, 108, 0.08);
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.draft-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.draft-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.img-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 639px) {
+  .draft-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .draft-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 .draft-row:last-child {
   border-bottom: none;
 }
@@ -754,6 +884,57 @@ select.field {
   color: var(--teal-deep);
   font-weight: 650;
   background: rgba(31, 122, 108, 0.04);
+}
+
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.mode-card.is-primary {
+  border-color: rgba(31, 122, 108, 0.35);
+  background: rgba(31, 122, 108, 0.08);
+}
+
+.mode-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.mode-blurb {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.mode-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mode-chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--teal-deep);
 }
 
 .cloud-bar {
