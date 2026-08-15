@@ -12,48 +12,49 @@ V1 面向家长陪练：
 2. **看图说话** — 固定问题库（问句不变，只换图和词）  
 3. **口头巩固** — 遮词提问 → 揭晓 → 套句型  
 
-内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；可选 **Supabase 云端同步**（IndexedDB 本地缓存 + 云端备份）。格式见 `web/public/content/README.md`。
-
-### Supabase（可选，跨设备同步词包）
-
-环境变量见 `web/.env.example`。本地复制为 `web/.env.local` 后重启 `npm run dev`。
-
-```bash
-# 建表 + 开匿名登录（需要 SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF）
-node scripts/apply-supabase-schema.mjs
-```
-
-家长点「连接并同步云端」会匿名登录，把自定义词包存到 `lesson_packs`，图片存到 `pack-images`。内置词包仍在仓库里，不上云。
-
-GitHub Pages 构建需要仓库 Secrets：`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`（只用 anon/publishable，不要放 service_role）。
+内容侧支持：**导入 JSON 词包**、**本机新建词包**、导出 / 删除；**Supabase** 同时托管网页并同步自定义词包。格式见 `web/public/content/README.md`。
 
 ## 本地运行
 
 ```bash
 cd web
+cp .env.example .env.local   # 填入 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
 npm install
 npm run dev
 ```
 
-浏览器打开带 `/i-am-smart/` 路径的本地地址（见 Vite 终端输出）。
+浏览器打开 Vite 给出的本地地址（默认 `/`）。
 
-## 构建与部署
+## 托管到 Supabase
+
+网页由 Edge Function `app` 输出 HTML，JS/CSS/闪卡图放在 Storage 桶 `site`。词包同步用表 `lesson_packs` 和桶 `pack-images`。
 
 ```bash
-cd web
-npm run build
+# 建表 + 开匿名登录
+node scripts/apply-supabase-schema.mjs
+
+# 构建并发布（需要上面四个环境变量）
+node scripts/deploy-supabase-web.mjs
 ```
 
-产物在 `web/dist/`。推到 `main`（或手动 Run workflow）后由 `.github/workflows/deploy-web.yml` 部署。
+发布地址：`https://<project-ref>.supabase.co/functions/v1/app`
+
+GitHub Actions（`.github/workflows/deploy-supabase.yml`）在推到 `main` 时做同样的发布。仓库 Secrets 需要：
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`（anon/publishable，不要放 service_role）
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_PROJECT_REF`
 
 ## 项目结构
 
 ```
-web/
-  src/content/   # 词包类型、校验、内置示例、本机存储
-  src/data/      # 框架层：看图说话问题库
-  src/practice/  # TTS / viewport
-  public/content # 词包格式说明与示例 JSON
-data/            # CEFR 词库 JSON（素材层）
-printables/      # KET 闪卡贴纸素材
+web/            # 陪练本（Vite）
+  src/content/  # 词包类型、校验、内置示例、本机 + 云端存储
+  src/data/     # 框架层：看图说话问题库
+  src/practice/
+  public/cards  # 内置词包配图
+supabase/       # 迁移 + Edge Function
+data/           # CEFR 词库 JSON（素材层，不进网页运行时）
+printables/     # KET 闪卡贴纸素材
 ```

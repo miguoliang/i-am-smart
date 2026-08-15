@@ -3,7 +3,9 @@
 
 ## Test plan
 - [ ] `cd web && npm run build`
-- [ ] Smoke the parent coach flow: pick a pack → vocab → picture talk → review
+- [ ] `node scripts/deploy-supabase-web.mjs` (or wait for Deploy to Supabase workflow)
+- [ ] Open `https://<project-ref>.supabase.co/functions/v1/app`：选词包 → 词汇 → 看图说话 → 巩固
+- [ ] 「连接并同步云端」后自定义词包可上传
 
 ## Notes (optional)
 -
