@@ -25,11 +25,10 @@ import {
   type LessonPack,
   type WordDef,
 } from './content/types'
-import { bindViewport, registerServiceWorker } from './practice/chrome'
+import { bindViewport } from './practice/chrome'
 import { speakEnglish, unlockAudio } from './practice/tts'
 
 bindViewport()
-registerServiceWorker()
 
 function requireApp(): HTMLDivElement {
   const node = document.querySelector<HTMLDivElement>('#app')
