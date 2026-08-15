@@ -1,1801 +1,495 @@
 import './style.css'
-import { FOOD_WORDS, assetUrl, preloadWordImages, wordById } from './data/words'
-import { Match3Engine } from './game/engine'
+import { questionsForTalk, type QuestionTemplate } from './data/questions'
 import {
-  bindNativeChrome,
-  haptic,
-  registerServiceWorker,
-  unlockAudio,
-} from './game/feel'
-import {
-  getNextStep,
-  loadProgress,
-  markLevelCleared,
-  saveProgress,
-  type PlaySetup,
-  type ProgressState,
-  unlockWord,
-} from './game/progress'
-import {
-  loadThemeId,
-  saveThemeId,
-  THEMES,
-  themeById,
-  type ThemeId,
-} from './game/themes'
-import { speakEnglish } from './game/tts'
-import type {
-  CellPos,
-  ClearPlan,
-  GameSnapshot,
-  MatchGroup,
-  SettleResult,
-  Tile,
-  TileSpecial,
-} from './game/types'
+  assetUrl,
+  PACKS,
+  packById,
+  preloadPackImages,
+  type LessonPack,
+  type WordDef,
+} from './data/words'
+import { bindViewport, registerServiceWorker } from './practice/chrome'
+import { speakEnglish, unlockAudio } from './practice/tts'
 
-bindNativeChrome()
+bindViewport()
 registerServiceWorker()
 
-const app = document.querySelector<HTMLDivElement>('#app')
-if (!app) throw new Error('#app missing')
-
-const ALL_WORD_IDS = FOOD_WORDS.map((w) => w.id)
-
-let progress: ProgressState = loadProgress()
-let currentSetup: PlaySetup | null = null
-
-const engine = new Match3Engine({
-  wordIds: ALL_WORD_IDS,
-  cols: 6,
-  rows: 8,
-  moves: 28,
-  maxGoals: 3,
-  goalPerWord: 3,
-  textWordIds: [],
-  wordTileChance: 0,
-  goalFocusIds: ALL_WORD_IDS,
-})
-
-let busy = false
-let toastTimer = 0
-let hintTimer = 0
-let comboTimer = 0
-/** Board px step cached while busy so motion never reflows mid-animation. */
-let cachedStep = 0
-let layoutPending = false
-
-const HINT_IDLE_MS = 4200
-
-const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
-
-function setBusy(next: boolean): void {
-  busy = next
-  boardEl.classList.toggle('is-resolving', next)
-  if (!next && layoutPending) {
-    layoutPending = false
-    layoutBoard()
-  }
-}
-
-type DragState = {
-  pointerId: number
-  from: CellPos
-  startX: number
-  startY: number
-}
-
-let drag: DragState | null = null
-
-app.innerHTML = `
-  <div class="theme-backdrop" id="theme-backdrop" aria-hidden="true"></div>
-  <div class="theme-motif" id="theme-motif" aria-hidden="true"></div>
-  <div class="shell">
-    <div class="playfield">
-      <header class="hud">
-        <button class="settings-btn" type="button" id="settings-btn" aria-label="设置" aria-haspopup="dialog" aria-expanded="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.2 7.2 0 0 0-1.63-.94L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5l-.36 2.54c-.59.22-1.14.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.6 8.16a.5.5 0 0 0 .12.64L4.75 10.4c-.04.31-.07.63-.07.94s.03.63.07.94L2.72 13.86a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.7.22l2.39-.96c.49.4 1.04.72 1.63.94l.36 2.54a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5l.36-2.54c.59-.22 1.14-.53 1.63-.94l2.39.96c.27.12.56.02.7-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
-            />
-          </svg>
-        </button>
-        <div class="hud-main">
-          <div class="hud-level" id="level-chip">第 1 关</div>
-          <section class="goals-bar" aria-label="收集目标">
-            <div class="goal-grid" id="goals"></div>
-          </section>
-        </div>
-        <div class="hud-stat" aria-label="剩余步数" id="moves-badge">
-          <span class="hud-value" id="moves">28</span>
-          <span class="hud-label">步</span>
-        </div>
-      </header>
-
-      <div class="board-stage">
-        <div class="board-wrap">
-          <div class="board" id="board" aria-label="三消棋盘"></div>
-          <div class="burst-layer" id="bursts" aria-hidden="true"></div>
-          <div class="combo" id="combo" aria-live="polite" hidden></div>
-          <div class="toast" id="toast" aria-live="polite">
-            <span class="toast-en" id="toast-en"></span>
-            <span class="toast-zh" id="toast-zh"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="overlay" id="overlay">
-      <div class="end-sky" aria-hidden="true"></div>
-      <div class="end-rays" aria-hidden="true"></div>
-      <div class="end-fx" id="end-fx" aria-hidden="true"></div>
-      <div class="end-content">
-        <span class="end-badge" id="end-badge"></span>
-        <h2 class="end-title" id="overlay-title"></h2>
-        <p class="end-meta" id="end-meta"></p>
-        <div class="end-goals" id="end-goals"></div>
-        <div class="end-review" id="end-review" hidden>
-          <p class="end-review-kicker">点一下，听发音</p>
-          <div class="end-review-grid" id="end-review-grid"></div>
-        </div>
-        <button class="btn end-btn" type="button" id="overlay-btn">下一关</button>
-      </div>
-    </div>
-    <div class="learn" id="learn">
-      <div class="learn-pick" id="learn-pick">
-        <p class="learn-kicker">选一张图</p>
-        <h2 class="learn-pick-title">学习它的英文</h2>
-        <div class="learn-pick-grid" id="learn-pick-grid"></div>
-      </div>
-      <div class="learn-card" id="learn-card" hidden>
-        <p class="learn-kicker">新单词</p>
-        <img class="learn-img" id="learn-img" alt="" />
-        <h2 class="learn-en" id="learn-en"></h2>
-        <p class="learn-zh" id="learn-zh"></p>
-        <button class="btn learn-speak" type="button" id="learn-speak">听发音</button>
-        <button class="btn end-btn" type="button" id="learn-go">学会了，继续</button>
-      </div>
-    </div>
-    <div class="quiz" id="quiz" hidden>
-      <div class="quiz-card">
-        <p class="quiz-kicker">加步挑战</p>
-        <img class="quiz-img" id="quiz-img" alt="" />
-        <p class="quiz-prompt">这是哪个英文词？</p>
-        <div class="quiz-options" id="quiz-options"></div>
-      </div>
-    </div>
-    <div class="settings" id="settings" hidden>
-      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-        <p class="settings-kicker">暂停</p>
-        <h2 class="settings-title" id="settings-title">设置</h2>
-        <p class="settings-section">场景</p>
-        <div class="settings-themes" id="settings-themes"></div>
-        <button class="btn end-btn settings-close" type="button" id="settings-close">继续游戏</button>
-      </div>
-    </div>
-  </div>
-`
-
-const boardEl = app.querySelector<HTMLDivElement>('#board')!
-const boardWrapEl = app.querySelector<HTMLDivElement>('.board-wrap')!
-const boardStageEl = app.querySelector<HTMLDivElement>('.board-stage')!
-const playfieldEl = app.querySelector<HTMLDivElement>('.playfield')!
-const goalsEl = app.querySelector<HTMLDivElement>('#goals')!
-const movesEl = app.querySelector<HTMLSpanElement>('#moves')!
-const levelChipEl = app.querySelector<HTMLDivElement>('#level-chip')!
-const toastEl = app.querySelector<HTMLDivElement>('#toast')!
-const toastEn = app.querySelector<HTMLSpanElement>('#toast-en')!
-const toastZh = app.querySelector<HTMLSpanElement>('#toast-zh')!
-const comboEl = app.querySelector<HTMLDivElement>('#combo')!
-const overlayEl = app.querySelector<HTMLDivElement>('#overlay')!
-const overlayTitle = app.querySelector<HTMLHeadingElement>('#overlay-title')!
-const overlayBtn = app.querySelector<HTMLButtonElement>('#overlay-btn')!
-const endBadgeEl = app.querySelector<HTMLSpanElement>('#end-badge')!
-const endMetaEl = app.querySelector<HTMLParagraphElement>('#end-meta')!
-const endGoalsEl = app.querySelector<HTMLDivElement>('#end-goals')!
-const endReviewEl = app.querySelector<HTMLDivElement>('#end-review')!
-const endReviewGrid = app.querySelector<HTMLDivElement>('#end-review-grid')!
-const endFxEl = app.querySelector<HTMLDivElement>('#end-fx')!
-const burstsEl = app.querySelector<HTMLDivElement>('#bursts')!
-const learnEl = app.querySelector<HTMLDivElement>('#learn')!
-const learnPickEl = app.querySelector<HTMLDivElement>('#learn-pick')!
-const learnPickGrid = app.querySelector<HTMLDivElement>('#learn-pick-grid')!
-const learnCardEl = app.querySelector<HTMLDivElement>('#learn-card')!
-const learnImg = app.querySelector<HTMLImageElement>('#learn-img')!
-const learnEn = app.querySelector<HTMLHeadingElement>('#learn-en')!
-const learnZh = app.querySelector<HTMLParagraphElement>('#learn-zh')!
-const learnSpeakBtn = app.querySelector<HTMLButtonElement>('#learn-speak')!
-const learnGoBtn = app.querySelector<HTMLButtonElement>('#learn-go')!
-const quizEl = app.querySelector<HTMLDivElement>('#quiz')!
-const quizImg = app.querySelector<HTMLImageElement>('#quiz-img')!
-const quizOptions = app.querySelector<HTMLDivElement>('#quiz-options')!
-const settingsEl = app.querySelector<HTMLDivElement>('#settings')!
-const settingsBtn = app.querySelector<HTMLButtonElement>('#settings-btn')!
-const settingsCloseBtn = app.querySelector<HTMLButtonElement>('#settings-close')!
-const settingsThemesEl = app.querySelector<HTMLDivElement>('#settings-themes')!
-const themeBackdropEl = app.querySelector<HTMLDivElement>('#theme-backdrop')!
-const themeMotifEl = app.querySelector<HTMLDivElement>('#theme-motif')!
-
-const MOTIF_BY_THEME: Partial<Record<ThemeId, string>> = {
-  campus: 'themes/motif-campus.svg',
-  pastoral: 'themes/motif-pastoral.svg',
-  girly: 'themes/motif-girly.svg',
-}
-
-function applyTheme(id: ThemeId): void {
-  const theme = themeById(id)
-  document.body.dataset.theme = theme.id
-  document.body.classList.toggle('has-theme-art', Boolean(theme.backdrop))
-
-  if (theme.backdrop) {
-    themeBackdropEl.style.backgroundImage = `url("${assetUrl(theme.backdrop)}")`
-  } else {
-    themeBackdropEl.style.backgroundImage = ''
-  }
-
-  const motif = MOTIF_BY_THEME[theme.id]
-  if (motif) {
-    themeMotifEl.style.backgroundImage = `url("${assetUrl(motif)}")`
-    themeMotifEl.hidden = false
-  } else {
-    themeMotifEl.style.backgroundImage = ''
-    themeMotifEl.hidden = true
-  }
-
-  settingsThemesEl.querySelectorAll<HTMLButtonElement>('.settings-theme').forEach((btn) => {
-    const active = btn.dataset.theme === theme.id
-    btn.classList.toggle('is-active', active)
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false')
-  })
-}
-
-function otherOverlayOpen(): boolean {
-  return (
-    overlayEl.classList.contains('show') ||
-    learnEl.classList.contains('show') ||
-    !quizEl.hidden
-  )
-}
-
-function closeSettings(): void {
-  settingsEl.hidden = true
-  settingsEl.classList.remove('show')
-  settingsBtn.setAttribute('aria-expanded', 'false')
-}
-
-function openSettings(): void {
-  if (otherOverlayOpen()) return
-  settingsEl.hidden = false
-  settingsEl.classList.add('show')
-  settingsBtn.setAttribute('aria-expanded', 'true')
-  haptic(10)
-}
-
-function initSettings(): void {
-  settingsThemesEl.innerHTML = THEMES.map((theme) => {
-    const art = theme.backdrop
-      ? `style="background-image: url('${assetUrl(theme.backdrop)}')"`
-      : 'data-classic="true"'
-    return `
-      <button
-        type="button"
-        class="settings-theme${theme.backdrop ? '' : ' is-classic'}"
-        data-theme="${theme.id}"
-        aria-pressed="false"
-      >
-        <span class="settings-theme-art" ${art}></span>
-        <span class="settings-theme-copy">
-          <span class="settings-theme-name">${theme.label}</span>
-          <span class="settings-theme-hint">${theme.hint}</span>
-        </span>
-      </button>
-    `
-  }).join('')
-
-  settingsThemesEl.addEventListener('click', (event) => {
-    const btn = (event.target as HTMLElement | null)?.closest?.('.settings-theme') as
-      | HTMLButtonElement
-      | null
-    if (!btn?.dataset.theme) return
-    const next = themeById(btn.dataset.theme).id
-    saveThemeId(next)
-    haptic(10)
-    applyTheme(next)
-  })
-
-  settingsBtn.addEventListener('click', () => {
-    if (settingsEl.classList.contains('show')) closeSettings()
-    else openSettings()
-  })
-  settingsCloseBtn.addEventListener('click', closeSettings)
-  settingsEl.addEventListener('click', (event) => {
-    if (event.target === settingsEl) closeSettings()
-  })
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && settingsEl.classList.contains('show')) {
-      closeSettings()
-    }
-  })
-
-  applyTheme(loadThemeId())
-}
-
-initSettings()
-
-let pendingLearnWordId: string | null = null
-let overlayMode: 'win' | 'lose' | 'complete' | null = null
-/** wordId → clear count this level (for post-win review). */
-const levelClearCounts = new Map<string, number>()
-let reviewSpeakTimer = 0
-/** At most one vocab quiz bonus per level. */
-let quizUsedThisLevel = false
-let comboMoveGranted = false
-
-boardEl.style.gridTemplateColumns = `repeat(${engine.cols}, minmax(0, 1fr))`
-boardEl.style.gridTemplateRows = `repeat(${engine.rows}, minmax(0, 1fr))`
-
-/**
- * Fit the board into `.board-stage` while keeping cols×rows aspect.
- * Re-run via ResizeObserver — iOS visualViewport / font / chrome changes
- * used to leave a one-shot layout stuck until refresh.
- * Never resize during resolve animations (that is a common source of frame skips).
- */
-function layoutBoard(): void {
-  if (busy) {
-    layoutPending = true
-    return
-  }
-
-  const stageW = boardStageEl.clientWidth
-  const stageH = boardStageEl.clientHeight
-  if (stageW < 40 || stageH < 40) return
-
-  let width = stageW
-  let height = Math.floor((width * engine.rows) / engine.cols)
-  if (height > stageH) {
-    height = stageH
-    width = Math.floor((height * engine.cols) / engine.rows)
-  }
-
-  const nextW = `${width}px`
-  const nextH = `${height}px`
-  if (boardWrapEl.style.width !== nextW) boardWrapEl.style.width = nextW
-  if (boardWrapEl.style.height !== nextH) boardWrapEl.style.height = nextH
-
-  // Refresh motion step only when the board is idle.
-  cachedStep = stepSize()
-}
-
-function bindBoardLayout(): void {
-  const ro = new ResizeObserver(() => layoutBoard())
-  ro.observe(boardStageEl)
-  ro.observe(playfieldEl)
-  window.addEventListener('orientationchange', () => {
-    window.setTimeout(() => layoutBoard(), 80)
-    requestAnimationFrame(() => layoutBoard())
-  })
-  window.addEventListener('resize', layoutBoard)
-  void document.fonts?.ready?.then(() => layoutBoard())
-  layoutBoard()
-  // Catch late iOS viewport settling after first paint.
-  requestAnimationFrame(() => {
-    layoutBoard()
-    requestAnimationFrame(layoutBoard)
-  })
-}
-
-function boardMetrics(): { size: number; gap: number; pad: number } {
-  const styles = getComputedStyle(boardEl)
-  const gap = parseFloat(styles.gap) || 5
-  const pad = parseFloat(styles.paddingLeft) || 0
-  const inner = boardEl.clientWidth - pad * 2
-  const size = (inner - gap * (engine.cols - 1)) / engine.cols
-  return { size, gap, pad }
-}
-
-function stepSize(): number {
-  const { size, gap } = boardMetrics()
-  return size + gap
-}
-
-function tileEl(row: number, col: number): HTMLElement | null {
-  return boardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`)
-}
-
-function pulseStat(el: HTMLElement): void {
-  el.classList.remove('pulse')
-  void el.offsetWidth
-  el.classList.add('pulse')
-}
-
-function flashToast(en: string, zh: string, speak = false): void {
-  toastEn.textContent = en
-  toastZh.textContent = zh
-  toastEl.classList.remove('show')
-  requestAnimationFrame(() => {
-    toastEl.classList.remove('show')
-    requestAnimationFrame(() => toastEl.classList.add('show'))
-  })
-  if (speak) window.setTimeout(() => speakEnglish(en), 0)
-  window.clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1200)
-}
-
-function showToast(wordId: string): void {
-  const word = wordById(wordId)
-  if (!word) return
-  flashToast(word.english, word.chinese, true)
-}
-
-function comboHaptic(combo: number): void {
-  if (combo <= 1) haptic([8, 30, 12])
-  else if (combo === 2) haptic([10, 22, 10, 22, 14])
-  else if (combo === 3) haptic([12, 18, 12, 18, 12, 18, 16])
-  else haptic([14, 16, 14, 16, 14, 16, 14, 20])
-}
-
-/** Visual pop for cascade waves (x2+). First clear stays quiet. */
-function showCombo(combo: number): void {
-  if (combo < 2) return
-  const label = combo >= 5 ? `连击 x${combo}!` : `连击 x${combo}`
-  comboEl.hidden = false
-  comboEl.textContent = label
-  comboEl.classList.remove('pop')
-  void comboEl.offsetWidth
-  comboEl.classList.add('pop')
-  window.clearTimeout(comboTimer)
-  comboTimer = window.setTimeout(() => {
-    comboEl.classList.remove('pop')
-    comboEl.hidden = true
-  }, 900)
-}
-
-function clearHintVisual(): void {
-  boardEl.querySelectorAll('.tile.hint').forEach((node) => {
-    node.classList.remove('hint')
-  })
-}
-
-function clearHint(): void {
-  window.clearTimeout(hintTimer)
-  hintTimer = 0
-  clearHintVisual()
-}
-
-function showHint(): void {
-  if (busy || engine.won || engine.lost || drag) return
-
-  const moves = engine.findHintMoves()
-  if (moves.length === 0) {
-    void ensurePlayable()
-    return
-  }
-
-  clearHintVisual()
-  const pick = moves[Math.floor(Math.random() * moves.length)]!
-  tileEl(pick.a.row, pick.a.col)?.classList.add('hint')
-  tileEl(pick.b.row, pick.b.col)?.classList.add('hint')
-}
-
-function scheduleHint(delay = HINT_IDLE_MS): void {
-  window.clearTimeout(hintTimer)
-  hintTimer = 0
-  clearHintVisual()
-  if (busy || engine.won || engine.lost) return
-  hintTimer = window.setTimeout(() => showHint(), delay)
-}
-
-async function reshuffleBoard(): Promise<void> {
-  clearHint()
-  setBusy(true)
-  flashToast('Shuffle', '重新排列')
-  haptic([12, 40, 12])
-  engine.shuffleBoard()
-  renderBoard({ enter: true })
-  await wait(480)
-  setBusy(false)
-  scheduleHint()
-}
-
-async function ensurePlayable(): Promise<void> {
-  if (engine.won || engine.lost) {
-    clearHint()
-    return
-  }
-  if (engine.hasValidMove()) {
-    scheduleHint()
-    return
-  }
-  await reshuffleBoard()
-}
-
-function spawnBursts(matches: MatchGroup[]): void {
-  const { size, gap, pad } = boardMetrics()
-  // board-wrap padding matches .board-wrap / .burst-layer inset (no layout reads).
-  const wrapPad = 10
-
-  for (const group of matches) {
-    for (const c of group.cells) {
-      const x = wrapPad + pad + c.col * (size + gap) + size / 2
-      const y = wrapPad + pad + c.row * (size + gap) + size / 2
-      const burst = document.createElement('span')
-      burst.className = 'burst'
-      burst.style.left = `${x}px`
-      burst.style.top = `${y}px`
-      burstsEl.appendChild(burst)
-      window.setTimeout(() => burst.remove(), 620)
-    }
-  }
-}
-
-function ensureGoalSlots(count: number): HTMLElement[] {
-  while (goalsEl.children.length < count) {
-    const el = document.createElement('div')
-    el.className = 'goal'
-    const img = document.createElement('img')
-    img.decoding = 'async'
-    img.alt = ''
-    const badge = document.createElement('span')
-    badge.className = 'goal-count'
-    el.append(img, badge)
-    goalsEl.appendChild(el)
-  }
-  while (goalsEl.children.length > count) {
-    goalsEl.lastElementChild?.remove()
-  }
-  return [...goalsEl.children] as HTMLElement[]
-}
-
-function renderGoals(prevDone?: Set<string>): void {
-  const snap = engine.snapshot()
-  const slots = ensureGoalSlots(snap.goals.length)
-
-  snap.goals.forEach((g, i) => {
-    const el = slots[i]!
-    const word = wordById(g.wordId)!
-    const done = g.current >= g.target
-    const left = Math.max(0, g.target - g.current)
-    const justDone = Boolean(done && prevDone && !prevDone.has(g.wordId))
-
-    el.title = word.english
-    el.classList.toggle('done', done)
-
-    if (justDone) {
-      el.classList.remove('pop')
-      requestAnimationFrame(() => {
-        el.classList.remove('pop')
-        requestAnimationFrame(() => el.classList.add('pop'))
-      })
-    } else {
-      el.classList.remove('pop')
-    }
-
-    const img = el.querySelector('img')!
-    const src = assetUrl(word.image)
-    if (img.getAttribute('src') !== src) {
-      img.src = src
-      img.alt = word.english
-    }
-
-    const badge = el.querySelector('.goal-count')!
-    const next = done ? '✓' : String(left)
-    if (badge.textContent !== next) badge.textContent = next
-  })
-}
-
-function updateHud(animate = false): void {
-  const snap = engine.snapshot()
-  const prevMoves = movesEl.textContent
-  movesEl.textContent = String(snap.movesLeft)
-  if (animate && prevMoves !== movesEl.textContent) pulseStat(movesEl)
-}
-
-type RenderOptions = {
-  enter?: boolean
-}
-
-const MOTION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
-/** Ease-in drop, hard stop — no landing bounce/overshoot. */
-const FALL_EASE = 'cubic-bezier(0.55, 0.0, 1, 1)'
-const SWAP_MS = 200
-const CLEAR_MS = 380
-const FALL_MS_BASE = 160
-const FALL_MS_PER_ROW = 72
-const FALL_MS_MAX = 520
-
-function motionStep(): number {
-  return cachedStep > 0 ? cachedStep : stepSize()
-}
-
-function fallDurationMs(rows: number): number {
-  return Math.min(FALL_MS_MAX, FALL_MS_BASE + Math.max(1, rows) * FALL_MS_PER_ROW)
-}
-
-function playMotion(
-  el: HTMLElement,
-  keyframes: Keyframe[],
-  ms: number,
-): Animation {
-  el.classList.add('is-moving')
-  return el.animate(keyframes, {
-    duration: ms,
-    easing: MOTION_EASE,
-    // both: from-state applies immediately — no rest-frame flash before play
-    fill: 'both',
-    composite: 'replace',
-  })
-}
-
-/** One continuous fall segment; duration scales with distance. No bounce. */
-function playFall(
-  el: HTMLElement,
-  fromY: number,
-  fromOpacity: number,
-  rows: number,
-): Animation {
-  el.classList.add('is-moving', 'swapping')
-  return el.animate(
-    [
-      { transform: `translateY(${fromY}px)`, opacity: fromOpacity },
-      { transform: 'translateY(0px)', opacity: 1 },
-    ],
-    {
-      duration: fallDurationMs(rows),
-      easing: FALL_EASE,
-      fill: 'both',
-      composite: 'replace',
-    },
-  )
-}
-
-async function finishMotion(anims: Animation[]): Promise<void> {
-  if (anims.length === 0) return
-  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
-  for (const anim of anims) {
-    const el = anim.effect && 'target' in anim.effect
-      ? (anim.effect as KeyframeEffect).target
-      : null
-    // finish() keeps the end pose; cancel without it can hitch a frame on WebKit.
-    try {
-      if (anim.playState !== 'finished') anim.finish()
-    } catch {
-      // ignore
-    }
-    anim.cancel()
-    if (el instanceof HTMLElement) {
-      el.classList.remove('is-moving', 'swapping')
-      el.style.transform = ''
-      el.style.opacity = ''
-    }
-  }
-}
-
-function ensureBoardSlots(): HTMLButtonElement[] {
-  const n = engine.rows * engine.cols
-  while (boardEl.children.length < n) {
-    const btn = document.createElement('button')
-    btn.type = 'button'
-    btn.className = 'tile empty'
-    btn.disabled = true
-    boardEl.appendChild(btn)
-  }
-  while (boardEl.children.length > n) {
-    boardEl.lastElementChild?.remove()
-  }
-  return [...boardEl.children] as HTMLButtonElement[]
-}
-
-/** Assign tile art; retry once if Safari keeps a failed same-URL load. */
-function setTileImage(img: HTMLImageElement, src: string, alt: string): void {
-  img.alt = alt
-  const current = img.getAttribute('src')
-  const broken = !!current && img.complete && img.naturalWidth === 0
-  if (current === src && !broken) return
-
-  img.onerror = () => {
-    if (img.dataset.failSrc === src) return
-    img.dataset.failSrc = src
-    // Re-setting the same src after error is a no-op in WebKit — clear first.
-    img.removeAttribute('src')
-    requestAnimationFrame(() => {
-      img.src = src
-    })
-  }
-
-  // Always drop the previous bitmap before swapping src — otherwise falls can
-  // animate the old picture and swap to the real one when decode finishes.
-  img.removeAttribute('src')
-  delete img.dataset.failSrc
-  img.src = src
-}
-
-async function decodeTileImages(btns: Iterable<HTMLElement>): Promise<void> {
-  await Promise.all(
-    [...btns].map(async (btn) => {
-      const img = btn.querySelector('img')
-      if (!img?.getAttribute('src')) return
-      if (img.complete && img.naturalWidth > 0) return
-      try {
-        await img.decode()
-      } catch {
-        // ignore decode failures; onerror retry handles broken art
-      }
-    }),
-  )
-}
-
-function specialAttr(special?: TileSpecial): string {
-  return special ?? ''
-}
-
-function syncSpecialBadge(btn: HTMLButtonElement, special?: TileSpecial): void {
-  const want = specialAttr(special)
-  btn.dataset.special = want
-  btn.classList.toggle('has-special', !!special)
-  let badge = btn.querySelector('.tile-special') as HTMLSpanElement | null
-  if (!special) {
-    badge?.remove()
-    return
-  }
-  if (!badge) {
-    badge = document.createElement('span')
-    badge.className = 'tile-special'
-    badge.setAttribute('aria-hidden', 'true')
-    btn.appendChild(badge)
-  }
-  badge.className = `tile-special is-${special}`
-}
-
-function paintTile(btn: HTMLButtonElement, tile: Tile): void {
-  const word = wordById(tile.wordId)
-  const same =
-    btn.dataset.uid === String(tile.uid) &&
-    btn.dataset.kind === tile.kind &&
-    btn.dataset.wordId === tile.wordId
-  const sameSpecial = btn.dataset.special === specialAttr(tile.special)
-
-  if (same && sameSpecial && tile.kind === 'image') {
-    const img = btn.querySelector('img')
-    // Same tile can still be a broken <img> after a flaky first load.
-    if (img && !(img.complete && img.naturalWidth === 0)) return
-  } else if (same && sameSpecial) {
-    return
-  }
-
-  const prevWordId = btn.dataset.wordId
-  btn.dataset.uid = String(tile.uid)
-  btn.dataset.kind = tile.kind
-  btn.dataset.wordId = tile.wordId
-
-  if (tile.kind === 'image' && word) {
-    const src = assetUrl(word.image)
-    let img = btn.querySelector('img')
-    // New word on this slot → new <img>, so we never keep a stale bitmap.
-    if (!img || prevWordId !== tile.wordId) {
-      btn.replaceChildren()
-      img = document.createElement('img')
-      img.draggable = false
-      img.decoding = 'async'
-      btn.appendChild(img)
-    }
-    setTileImage(img, src, word.english)
-  } else if (word) {
-    let label = btn.querySelector('.tile-word-label') as HTMLSpanElement | null
-    if (!label) {
-      btn.replaceChildren()
-      label = document.createElement('span')
-      label.className = 'tile-word-label'
-      btn.appendChild(label)
-    }
-    label.textContent = word.english
-  }
-
-  syncSpecialBadge(btn, tile.special)
-}
-
-function clearTilePaint(btn: HTMLButtonElement): void {
-  delete btn.dataset.uid
-  delete btn.dataset.kind
-  delete btn.dataset.wordId
-  delete btn.dataset.special
-  btn.classList.remove('has-special', 'special-pop')
-  if (btn.childNodes.length) btn.replaceChildren()
-}
-
-/** Cancel WAAPI / decorative motion and restore resting pose. */
-function clearMotion(btn: HTMLElement): void {
-  btn.getAnimations().forEach((anim) => anim.cancel())
-  btn.style.transform = ''
-  btn.style.opacity = ''
-  btn.style.removeProperty('--stagger')
-  btn.classList.remove(
-    'enter',
-    'shake',
-    'swapping',
-    'hint',
-    'is-moving',
-    'special-pop',
-  )
-}
-
-function noteClearedWords(wordIds: string[]): void {
-  for (const wordId of wordIds) {
-    levelClearCounts.set(wordId, (levelClearCounts.get(wordId) ?? 0) + 1)
-  }
-}
-
-function resetLevelClearCounts(): void {
-  levelClearCounts.clear()
-  window.clearTimeout(reviewSpeakTimer)
-  reviewSpeakTimer = 0
-}
-
-/** Prefer cleared goal words, then most-cleared fillers — up to 3 for win review. */
-function pickReviewWords(max = 3): string[] {
-  const goalIds = engine.goals.map((g) => g.wordId)
-  const byCount = [...levelClearCounts.entries()].sort((a, b) => b[1] - a[1])
-  const picked: string[] = []
-
-  for (const id of goalIds) {
-    if (levelClearCounts.has(id) && !picked.includes(id) && picked.length < max) {
-      picked.push(id)
-    }
-  }
-  for (const [id] of byCount) {
-    if (!picked.includes(id) && picked.length < max) picked.push(id)
-  }
-  for (const id of goalIds) {
-    if (!picked.includes(id) && picked.length < max) picked.push(id)
-  }
-  return picked
-}
-
-function hideWinReview(): void {
-  window.clearTimeout(reviewSpeakTimer)
-  reviewSpeakTimer = 0
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-  endReviewEl.hidden = true
-  endReviewGrid.replaceChildren()
-  endGoalsEl.hidden = false
-}
-
-function speakReviewWord(wordId: string, btn?: HTMLElement | null): void {
-  const word = wordById(wordId)
-  if (!word) return
-  endReviewGrid.querySelectorAll('.end-review-item.is-speaking').forEach((el) => {
-    el.classList.remove('is-speaking')
-  })
-  btn?.classList.add('is-speaking')
-  speakEnglish(word.english)
-  window.setTimeout(() => btn?.classList.remove('is-speaking'), 700)
-}
-
-function renderWinReview(): void {
-  const ids = pickReviewWords(3)
-  endGoalsEl.hidden = true
-  endGoalsEl.replaceChildren()
-  endReviewEl.hidden = false
-  endReviewGrid.innerHTML = ids
-    .map((id, i) => {
-      const word = wordById(id)!
-      return `
-        <button
-          class="end-review-item"
-          type="button"
-          data-word-id="${word.id}"
-          style="--i:${i}"
-          aria-label="${word.english}，${word.chinese}"
-        >
-          <img src="${assetUrl(word.image)}" alt="${word.english}" draggable="false" />
-        </button>
-      `
-    })
-    .join('')
-
-  const first = ids[0]
-  if (first) {
-    reviewSpeakTimer = window.setTimeout(() => {
-      const btn = endReviewGrid.querySelector<HTMLElement>(
-        `[data-word-id="${first}"]`,
-      )
-      speakReviewWord(first, btn)
-    }, 480)
-  }
-}
-
-function renderEndGoals(snap: GameSnapshot): void {
-  hideWinReview()
-  endGoalsEl.innerHTML = snap.goals
-    .map((g) => {
-      const word = wordById(g.wordId)!
-      const done = g.current >= g.target
-      const left = Math.max(0, g.target - g.current)
-      return `
-        <div class="end-goal ${done ? 'is-done' : 'is-miss'}" title="${word.english}">
-          <img src="${assetUrl(word.image)}" alt="${word.english}" />
-          <span class="end-goal-mark">${done ? '✓' : left}</span>
-        </div>
-      `
-    })
-    .join('')
-}
-
-const WIN_CONFETTI = ['#ffd36a', '#fff6c8', '#7dcea0', '#ff9f68', '#ffe08a', '#5fb396', '#fffaf0']
-
-function spawnEndFx(kind: 'win' | 'lose'): void {
-  endFxEl.replaceChildren()
-
-  if (kind === 'lose') {
-    for (let i = 0; i < 10; i++) {
-      const spark = document.createElement('span')
-      spark.className = 'end-ember'
-      spark.style.setProperty('--x', `${10 + Math.random() * 80}%`)
-      spark.style.setProperty('--delay', `${Math.random() * 0.6}s`)
-      spark.style.setProperty('--dur', `${1.1 + Math.random() * 0.9}s`)
-      spark.style.setProperty('--drift', `${(Math.random() * 36 - 18).toFixed(1)}px`)
-      endFxEl.appendChild(spark)
-    }
-    return
-  }
-
-  for (let i = 0; i < 42; i++) {
-    const piece = document.createElement('span')
-    const shape = i % 4 === 0 ? 'ribbon' : i % 4 === 1 ? 'star' : 'dot'
-    piece.className = `confetti confetti-${shape}`
-    piece.style.setProperty('--x', `${Math.random() * 100}%`)
-    piece.style.setProperty('--delay', `${Math.random() * 1.35}s`)
-    piece.style.setProperty('--dur', `${2 + Math.random() * 2.2}s`)
-    piece.style.setProperty('--rot', `${Math.floor(Math.random() * 720 - 360)}deg`)
-    piece.style.setProperty('--drift', `${(Math.random() * 120 - 60).toFixed(1)}px`)
-    piece.style.setProperty('--scale', `${(0.65 + Math.random() * 1.1).toFixed(2)}`)
-    piece.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
-    endFxEl.appendChild(piece)
-  }
-
-  for (let i = 0; i < 12; i++) {
-    const burst = document.createElement('span')
-    burst.className = 'end-burst'
-    const angle = (i / 12) * Math.PI * 2
-    burst.style.setProperty('--dx', `${Math.cos(angle) * (90 + Math.random() * 70)}px`)
-    burst.style.setProperty('--dy', `${Math.sin(angle) * (90 + Math.random() * 70)}px`)
-    burst.style.setProperty('--delay', `${0.05 + Math.random() * 0.18}s`)
-    burst.style.setProperty('--c', WIN_CONFETTI[i % WIN_CONFETTI.length]!)
-    endFxEl.appendChild(burst)
-  }
-}
-
-function hideOverlay(): void {
-  overlayEl.classList.remove('show', 'is-win', 'is-lose')
-  endFxEl.replaceChildren()
-  endGoalsEl.replaceChildren()
-  hideWinReview()
-  overlayMode = null
-  hideQuiz()
-}
-
-function hideLearn(): void {
-  learnEl.classList.remove('show')
-  learnPickEl.hidden = false
-  learnCardEl.hidden = true
-  learnPickGrid.replaceChildren()
-  pendingLearnWordId = null
-}
-
-function syncOverlay(snap: GameSnapshot): void {
-  if (snap.won) {
-    // Only fire the win celebration once per clear.
-    if (overlayMode !== 'win') {
-      clearHint()
-      progress = markLevelCleared(progress)
-      overlayMode = 'win'
-      endBadgeEl.textContent = 'CLEAR'
-      overlayTitle.textContent = '过关'
-      endMetaEl.textContent =
-        snap.movesLeft > 0 ? `剩余 ${snap.movesLeft} 步 · 复习一下` : '完美通关 · 复习一下'
-      overlayBtn.textContent = '下一关'
-      renderWinReview()
-      spawnEndFx('win')
-      overlayEl.classList.remove('is-lose')
-      overlayEl.classList.add('show', 'is-win')
-      haptic([10, 40, 18, 40, 24])
-    }
-  } else if (snap.lost) {
-    if (overlayMode !== 'lose') {
-      clearHint()
-      overlayMode = 'lose'
-      endBadgeEl.textContent = 'RETRY'
-      overlayTitle.textContent = '失败'
-      endMetaEl.textContent = '步数用尽'
-      overlayBtn.textContent = '再试一次'
-      renderEndGoals(snap)
-      spawnEndFx('lose')
-      overlayEl.classList.remove('is-win')
-      overlayEl.classList.add('show', 'is-lose')
-      haptic([20, 50, 20])
-    }
-  } else if (overlayMode !== 'complete') {
-    hideOverlay()
-  }
-}
-
-function showComplete(): void {
-  clearHint()
-  hideLearn()
-  hideWinReview()
-  overlayMode = 'complete'
-  endBadgeEl.textContent = 'MASTER'
-  overlayTitle.textContent = '全部学会'
-  endMetaEl.textContent = '食物词都学完啦'
-  overlayBtn.textContent = '从第 1 关再来'
-  endGoalsEl.hidden = false
-  endGoalsEl.innerHTML = progress.unlockedWords
-    .map((id) => {
-      const word = wordById(id)!
-      return `
-        <div class="end-goal is-done" title="${word.english}">
-          <img src="${assetUrl(word.image)}" alt="${word.english}" />
-          <span class="end-goal-mark">✓</span>
-        </div>
-      `
-    })
-    .join('')
-  spawnEndFx('win')
-  overlayEl.classList.remove('is-lose')
-  overlayEl.classList.add('show', 'is-win')
-}
-
-function showLearnCard(wordId: string): void {
-  const word = wordById(wordId)
-  if (!word) return
-  pendingLearnWordId = wordId
-  learnPickEl.hidden = true
-  learnCardEl.hidden = false
-  learnImg.src = assetUrl(word.image)
-  learnImg.alt = word.english
-  learnEn.textContent = word.english
-  learnZh.textContent = word.chinese
-  window.setTimeout(() => speakEnglish(word.english), 200)
-}
-
-function showPick(candidates: string[]): void {
-  hideOverlay()
-  clearHint()
-  setBusy(true)
-  pendingLearnWordId = null
-  learnPickEl.hidden = false
-  learnCardEl.hidden = true
-  learnPickGrid.innerHTML = candidates
-    .map((id) => {
-      const word = wordById(id)!
-      return `
-        <button class="learn-pick-item" type="button" data-word-id="${word.id}" aria-label="${word.chinese}">
-          <img src="${assetUrl(word.image)}" alt="${word.english}" />
-        </button>
-      `
-    })
-    .join('')
-  learnEl.classList.add('show')
-}
-
-function hideQuiz(): void {
-  quizEl.hidden = true
-  quizEl.classList.remove('show')
-  quizOptions.replaceChildren()
-}
-
-function startPlay(setup: PlaySetup): void {
-  hideOverlay()
-  hideLearn()
-  hideQuiz()
-  closeSettings()
-  currentSetup = setup
-  resetLevelClearCounts()
-  quizUsedThisLevel = false
-  comboMoveGranted = false
-  setBusy(false)
-  drag = null
-  boardEl.classList.remove('is-dragging')
-  clearHint()
-
-  // Board tiles are always pictures — long English labels do not fit the cells.
-  // Learned words still steer goals; text shows on learn / toast / review speak.
-  engine.configureRound({
-    wordIds: ALL_WORD_IDS,
-    textWordIds: [],
-    wordTileChance: 0,
-    goalFocusIds: setup.goalFocusIds,
-    moves: 28,
-    maxGoals: setup.imageOnly
-      ? 3
-      : Math.min(3, Math.max(2, setup.textWordIds.length || 2)),
-    goalPerWord: 3,
-  })
-
-  levelChipEl.textContent = setup.label
-  renderBoard({ enter: true })
-  updateHud(true)
-  renderGoals()
-  layoutBoard()
-  scheduleHint(1800)
-}
-
-/** Quick picture → English pick for +2 moves (Duolingo-style bonus). */
-function offerQuizBonus(wordId: string): Promise<boolean> {
-  const word = wordById(wordId)
-  if (!word) return Promise.resolve(false)
-
-  const distractors = ALL_WORD_IDS.filter((id) => id !== wordId)
-  for (let i = distractors.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[distractors[i], distractors[j]] = [distractors[j]!, distractors[i]!]
-  }
-  const options = [wordId, ...distractors.slice(0, 2)]
-  for (let i = options.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[options[i], options[j]] = [options[j]!, options[i]!]
-  }
-
-  quizImg.src = assetUrl(word.image)
-  quizImg.alt = word.chinese
-  quizOptions.replaceChildren()
-  quizEl.hidden = false
-  quizEl.classList.add('show')
-  speakEnglish(word.english)
-
-  return new Promise((resolve) => {
-    let done = false
-    const finish = (ok: boolean) => {
-      if (done) return
-      done = true
-      hideQuiz()
-      resolve(ok)
-    }
-
-    for (const id of options) {
-      const opt = wordById(id)!
-      const btn = document.createElement('button')
-      btn.type = 'button'
-      btn.className = 'quiz-option'
-      btn.textContent = opt.english
-      btn.addEventListener('click', () => {
-        if (done) return
-        if (id === wordId) {
-          btn.classList.add('is-correct')
-          haptic([10, 30, 14])
-          window.setTimeout(() => finish(true), 280)
-        } else {
-          btn.classList.add('is-wrong')
-          haptic([20, 40, 20])
-          window.setTimeout(() => finish(false), 420)
-        }
-      })
-      quizOptions.appendChild(btn)
-    }
-  })
-}
-
-function planClearingIndices(plan: ClearPlan): Set<number> {
-  const clearing = new Set<number>()
-  for (const c of plan.fade) clearing.add(c.row * engine.cols + c.col)
-  return clearing
-}
-
-function paintMorphSpecials(plan: ClearPlan): void {
-  const slots = ensureBoardSlots()
-  for (const m of plan.morph) {
-    const btn = slots[m.row * engine.cols + m.col]
-    if (!btn) continue
-    clearMotion(btn)
-    btn.style.opacity = ''
-    btn.disabled = false
-    btn.classList.remove('empty')
-    paintTile(btn, {
-      uid: m.uid,
-      wordId: m.wordId,
-      kind: m.kind,
-      special: m.special,
-    })
-    btn.classList.toggle('word', m.kind === 'word')
-    btn.classList.toggle('image', m.kind === 'image')
-    btn.classList.remove('special-pop')
-    void btn.offsetWidth
-    btn.classList.add('special-pop')
-  }
-}
-
-function continueCampaign(): void {
-  const step = getNextStep(progress)
-  if (step.kind === 'pick') {
-    showPick(step.candidates)
-    return
-  }
-  if (step.kind === 'complete') {
-    showComplete()
-    return
-  }
-  startPlay(step.setup)
-}
-
-function retryCurrentLevel(): void {
-  if (!currentSetup) {
-    continueCampaign()
-    return
-  }
-  startPlay(currentSetup)
-}
-
-function onOverlayAction(): void {
-  if (overlayMode === 'lose') {
-    retryCurrentLevel()
-    return
-  }
-  if (overlayMode === 'complete') {
-    progress = {
-      clearedLevels: 0,
-      unlockedWords: [],
-    }
-    saveProgress(progress)
-    continueCampaign()
-    return
-  }
-  // win -> next campaign step
-  continueCampaign()
-}
-
-function onLearnConfirm(): void {
-  if (!pendingLearnWordId) return
-  progress = unlockWord(progress, pendingLearnWordId)
-  hideLearn()
-  continueCampaign()
-}
-
-/** Sync DOM slots to engine state. Motion is handled separately via WAAPI. */
-function renderBoard(opts: RenderOptions = {}): void {
-  const snap = engine.snapshot()
-  const slots = ensureBoardSlots()
-
-  for (let row = 0; row < snap.rows; row++) {
-    for (let col = 0; col < snap.cols; col++) {
-      const i = row * snap.cols + col
-      const tile = snap.cells[i]
-      const btn = slots[i]!
-      btn.dataset.row = String(row)
-      btn.dataset.col = String(col)
-      clearMotion(btn)
-
-      if (!tile) {
-        btn.disabled = true
-        btn.classList.remove('word', 'image')
-        btn.classList.add('empty')
-        clearTilePaint(btn)
-        continue
-      }
-
-      btn.disabled = false
-      btn.classList.remove('empty')
-      paintTile(btn, tile)
-      btn.classList.toggle('word', tile.kind === 'word')
-      btn.classList.toggle('image', tile.kind === 'image')
-
-      if (opts.enter) {
-        btn.style.setProperty('--stagger', String((row + col) % 8))
-        btn.classList.add('enter')
-      }
-    }
-  }
-
-  syncOverlay(snap)
-}
-
-/**
- * Paint engine state and start clear in the same turn.
- * Avoids a resting paint frame between swap fill cancel and clear.
- */
-function paintAndClear(clearing: Set<number>): Animation[] {
-  const snap = engine.snapshot()
-  const slots = ensureBoardSlots()
-  const anims: Animation[] = []
-
-  for (let i = 0; i < snap.cells.length; i++) {
-    const tile = snap.cells[i]
-    const btn = slots[i]!
-    btn.dataset.row = String(Math.floor(i / snap.cols))
-    btn.dataset.col = String(i % snap.cols)
-    clearMotion(btn)
-
-    if (!tile) {
-      btn.disabled = true
-      btn.classList.remove('word', 'image')
-      btn.classList.add('empty')
-      clearTilePaint(btn)
-      continue
-    }
-
-    btn.disabled = false
-    btn.classList.remove('empty')
-    paintTile(btn, tile)
-    btn.classList.toggle('word', tile.kind === 'word')
-    btn.classList.toggle('image', tile.kind === 'image')
-
-    if (clearing.has(i)) {
-      btn.style.pointerEvents = 'none'
-      anims.push(
-        playMotion(
-          btn,
-          [
-            { transform: 'scale(1)', opacity: 1 },
-            { transform: 'scale(0.82)', opacity: 0 },
-          ],
-          CLEAR_MS,
-        ),
-      )
-    }
-  }
-
-  return anims
-}
-
-async function animateClear(cells: Iterable<number>): Promise<void> {
-  const slots = ensureBoardSlots()
-  const anims: Animation[] = []
-  for (const i of cells) {
-    const btn = slots[i]
-    if (!btn || btn.classList.contains('empty')) continue
-    const existing = btn.getAnimations().filter((a) => a.playState !== 'finished')
-    if (existing.length > 0) {
-      // Already clearing from paintAndClear — do not cancel/restart.
-      anims.push(...existing)
-      continue
-    }
-    clearMotion(btn)
-    btn.style.pointerEvents = 'none'
-    anims.push(
-      playMotion(
-        btn,
-        [
-          { transform: 'scale(1)', opacity: 1 },
-          { transform: 'scale(0.82)', opacity: 0 },
-        ],
-        CLEAR_MS,
-      ),
-    )
-  }
-  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
-  // Keep cleared tiles hidden until the next paint — cancelling fill would flash them back.
-  for (const i of cells) {
-    const btn = slots[i]
-    if (!btn) continue
-    btn.getAnimations().forEach((anim) => anim.cancel())
-    btn.style.opacity = '0'
-    btn.style.transform = ''
-    btn.style.pointerEvents = ''
-    btn.classList.remove('is-moving', 'swapping')
-  }
-}
-
-/**
- * Paint settled board, then FLIP-fall each surviving tile from its pre-paint slot.
- * Tracking by uid (not slot fall maps) so multi-row drops always move — never
- * just swap art in place when a tile lands in another cell's old slot.
- */
-async function paintAndSettle(settle: SettleResult): Promise<void> {
-  const snap = engine.snapshot()
-  const slots = ensureBoardSlots()
-  const step = motionStep()
-  const cols = snap.cols
-
-  // Capture uid → slot BEFORE painting settled content into fixed grid cells.
-  const prevUidIndex = new Map<string, number>()
-  for (let i = 0; i < slots.length; i++) {
-    const uid = slots[i]?.dataset.uid
-    if (uid) prevUidIndex.set(uid, i)
-  }
-
-  const spawnByIndex = new Map<number, number>()
-  for (const spawn of settle.spawns) {
-    spawnByIndex.set(spawn.row * cols + spawn.col, spawn.dropRows)
-  }
-
-  type Move = {
-    btn: HTMLButtonElement
-    fromY: number
-    fromOpacity: number
-    rows: number
-  }
-  const moves: Move[] = []
-
-  for (let i = 0; i < snap.cells.length; i++) {
-    const tile = snap.cells[i]
-    const btn = slots[i]!
-    const row = Math.floor(i / cols)
-    const col = i % cols
-    btn.dataset.row = String(row)
-    btn.dataset.col = String(col)
-
-    if (!tile) {
-      if (!btn.classList.contains('empty') || btn.dataset.uid) {
-        clearMotion(btn)
-        btn.disabled = true
-        btn.classList.remove('word', 'image')
-        btn.classList.add('empty')
-        clearTilePaint(btn)
-      }
-      continue
-    }
-
-    const prevIndex = prevUidIndex.get(String(tile.uid))
-    if (prevIndex === i) {
-      // Idle tile — leave DOM alone (avoids settle hitch on untouched cells).
-      continue
-    }
-
-    clearMotion(btn)
-    btn.disabled = false
-    btn.classList.remove('empty')
-    paintTile(btn, tile)
-    btn.classList.toggle('word', tile.kind === 'word')
-    btn.classList.toggle('image', tile.kind === 'image')
-
-    if (prevIndex !== undefined) {
-      // Surviving tile: move from the slot it occupied before this paint.
-      const fromRow = Math.floor(prevIndex / cols)
-      const rows = row - fromRow
-      if (rows !== 0) {
-        const fromY = -rows * step
-        btn.style.transform = `translateY(${fromY}px)`
-        moves.push({ btn, fromY, fromOpacity: 1, rows: Math.abs(rows) })
-      }
-    } else {
-      // New uid in this slot — spawn from above (dropRows from engine).
-      const dropRows = Math.max(1, spawnByIndex.get(i) ?? row + 1)
-      const fromY = -dropRows * step
-      btn.style.transform = `translateY(${fromY}px)`
-      btn.style.opacity = '0'
-      moves.push({ btn, fromY, fromOpacity: 0, rows: dropRows })
-    }
-  }
-
-  // Wait for new art to decode so the fall never starts on a stale picture.
-  await decodeTileImages(moves.map((m) => m.btn))
-
-  // Start all falls together in one sync turn (no column delay pop-in).
-  const anims = moves.map(({ btn, fromY, fromOpacity, rows }) => {
-    const anim = playFall(btn, fromY, fromOpacity, rows)
-    btn.style.transform = ''
-    btn.style.opacity = ''
-    return anim
-  })
-
-  await finishMotion(anims)
-}
-
-async function animateSwapReject(a: CellPos, b: CellPos): Promise<void> {
-  const aEl = tileEl(a.row, a.col)
-  const bEl = tileEl(b.row, b.col)
-  if (!aEl || !bEl) return
-
-  // Swap fill is still applied — start bounce-back from that pose (no cancel/snap).
-  const step = motionStep()
-  const dx = (b.col - a.col) * step
-  const dy = (b.row - a.row) * step
-  aEl.classList.add('swapping')
-  bEl.classList.add('swapping')
-
-  await finishMotion([
-    playMotion(
-      aEl,
-      [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }],
-      220,
-    ),
-    playMotion(
-      bEl,
-      [{ transform: `translate(${-dx}px, ${-dy}px)` }, { transform: 'translate(0px, 0px)' }],
-      220,
-    ),
-  ])
-
-  clearMotion(aEl)
-  clearMotion(bEl)
-  aEl.classList.add('shake')
-  bEl.classList.add('shake')
-  await wait(460)
-}
-
-async function resolveWithAnimation(
-  firstMatches: MatchGroup[],
-  opts: { alreadyClearing?: boolean } = {},
-): Promise<void> {
-  let matches = firstMatches
-  const seenToast = new Set<string>()
-  let firstWave = true
-  let combo = 0
-  let quizWordId: string | null = null
-  // One combo-move grant per swipe cascade (not once per level).
-  comboMoveGranted = false
-
-  while (matches.length > 0) {
-    combo += 1
-    const plan = engine.planClear(matches)
-    const clearing = planClearingIndices(plan)
-
-    const prevDone = new Set(
-      engine.goals.filter((g) => g.current >= g.target).map((g) => g.wordId),
-    )
-
-    if (!(firstWave && opts.alreadyClearing)) {
-      void paintAndClear(clearing)
-    }
-    firstWave = false
-
-    comboHaptic(combo)
-    showCombo(combo)
-    spawnBursts(matches)
-    await animateClear(clearing)
-
-    const cleared = engine.applyClear(plan)
-    paintMorphSpecials(plan)
-
-    if (!comboMoveGranted && combo >= 3 && !engine.won && !engine.lost) {
-      comboMoveGranted = true
-      engine.grantMoves(1)
-      flashToast('+1 move', '连击奖励')
-      haptic([10, 24, 10])
-    }
-
-    const settle = engine.settle()
-    const settlePromise = paintAndSettle(settle)
-    updateHud(false)
-    renderGoals(prevDone)
-    // Toasts after settle — speech/DOM work mid-fall causes jank on phones.
-    await settlePromise
-
-    noteClearedWords(cleared)
-    for (const wordId of cleared) {
-      if (!seenToast.has(wordId)) {
-        seenToast.add(wordId)
-        showToast(wordId)
-      }
-    }
-
-    // Offer one picture→English quiz after a goal is completed this wave.
-    if (!quizUsedThisLevel && !quizWordId && progress.unlockedWords.length > 0) {
-      const newlyDone = engine.goals.find(
-        (g) => g.current >= g.target && !prevDone.has(g.wordId),
-      )
-      if (newlyDone) quizWordId = newlyDone.wordId
-    }
-
-    matches = engine.findMatches()
-  }
-
-  if (quizWordId && !quizUsedThisLevel && !engine.goals.every((g) => g.current >= g.target)) {
-    quizUsedThisLevel = true
-    const ok = await offerQuizBonus(quizWordId)
-    if (ok) {
-      engine.grantMoves(2)
-      flashToast('+2 moves', '答对加步')
-      updateHud(true)
-    } else {
-      flashToast('Almost', '再看看图')
-    }
-  }
-
-  engine.checkEnd()
-  renderBoard()
-  updateHud(true)
-  renderGoals()
-}
-
-function neighborToward(from: CellPos, dx: number, dy: number): CellPos | null {
-  // Direction-only: a short swipe is enough; no finger tracking.
-  const threshold = Math.max(18, stepSize() * 0.16)
-  if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return null
-
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    const col = from.col + (dx > 0 ? 1 : -1)
-    if (col < 0 || col >= engine.cols) return null
-    return { row: from.row, col }
-  }
-  const row = from.row + (dy > 0 ? 1 : -1)
-  if (row < 0 || row >= engine.rows) return null
-  return { row, col: from.col }
-}
-
-function endPointerGesture(pointerId: number): void {
-  boardEl.classList.remove('is-dragging')
-  try {
-    boardEl.releasePointerCapture(pointerId)
-  } catch {
-    // already released
-  }
-}
-
-async function animateSwapTo(from: CellPos, to: CellPos): Promise<void> {
-  const aEl = tileEl(from.row, from.col)
-  const bEl = tileEl(to.row, to.col)
-  if (!aEl || !bEl) return
-
-  const step = motionStep()
-  const dx = (to.col - from.col) * step
-  const dy = (to.row - from.row) * step
-  aEl.classList.add('swapping')
-  bEl.classList.add('swapping')
-
-  const anims = [
-    playMotion(
-      aEl,
-      [{ transform: 'translate(0px, 0px)' }, { transform: `translate(${dx}px, ${dy}px)` }],
-      SWAP_MS,
-    ),
-    playMotion(
-      bEl,
-      [{ transform: 'translate(0px, 0px)' }, { transform: `translate(${-dx}px, ${-dy}px)` }],
-      SWAP_MS,
-    ),
-  ]
-  // Keep fill until the next sync paint/reject — cancelling here causes snap-back.
-  await Promise.all(anims.map((a) => a.finished.catch(() => undefined)))
-}
-
-async function trySwipeSwap(from: CellPos, to: CellPos): Promise<void> {
-  setBusy(true)
-  if (cachedStep <= 0) cachedStep = stepSize()
-  clearHint()
-
-  await animateSwapTo(from, to)
-  const result = engine.commitSwap(from, to)
-
-  if (!result.ok) {
-    haptic([10, 40, 10])
-    await animateSwapReject(from, to)
-    renderBoard()
-    updateHud(false)
-    setBusy(false)
-    scheduleHint()
-    return
-  }
-
-  // Expand clearing with special blasts before the first paint frame.
-  const plan = engine.planClear(result.matches)
-  paintAndClear(planClearingIndices(plan))
-  updateHud(true)
-  await resolveWithAnimation(result.matches, { alreadyClearing: true })
-  setBusy(false)
-  await ensurePlayable()
-}
-
-async function commitSwipeIfReady(state: DragState, dx: number, dy: number): Promise<boolean> {
-  const to = neighborToward(state.from, dx, dy)
-  if (!to || !engine.areAdjacent(state.from, to)) return false
-
-  drag = null
-  endPointerGesture(state.pointerId)
-  haptic(10)
-  await trySwipeSwap(state.from, to)
-  return true
-}
-
-function posFromEventTarget(target: EventTarget | null): CellPos | null {
-  const el = (target as HTMLElement | null)?.closest?.('.tile') as HTMLButtonElement | null
-  if (!el || el.classList.contains('empty') || el.disabled) return null
-  const row = Number(el.dataset.row)
-  const col = Number(el.dataset.col)
-  if (!Number.isFinite(row) || !Number.isFinite(col)) return null
-  return { row, col }
+function requireApp(): HTMLDivElement {
+  const node = document.querySelector<HTMLDivElement>('#app')
+  if (!node) throw new Error('#app missing')
+  return node
 }
-
-function onPointerDown(e: PointerEvent): void {
-  if (busy || engine.won || engine.lost || drag) return
-  if (e.button !== 0 && e.pointerType === 'mouse') return
 
-  const from = posFromEventTarget(e.target)
-  if (!from) return
+const app = requireApp()
 
-  clearHint()
-  drag = {
-    pointerId: e.pointerId,
-    from,
-    startX: e.clientX,
-    startY: e.clientY,
-  }
-
-  boardEl.setPointerCapture(e.pointerId)
-  boardEl.classList.add('is-dragging')
-  e.preventDefault()
-}
+type Phase = 'home' | 'vocab' | 'talk' | 'review' | 'done'
 
-function onPointerMove(e: PointerEvent): void {
-  if (!drag || e.pointerId !== drag.pointerId || busy) return
-  const state = drag
-  const dx = e.clientX - state.startX
-  const dy = e.clientY - state.startY
-  void commitSwipeIfReady(state, dx, dy)
-  e.preventDefault()
+interface Session {
+  pack: LessonPack
+  phase: Phase
+  wordIndex: number
+  questionIndex: number
+  revealAnswer: boolean
+  reviewReveal: boolean
 }
 
-async function onPointerUp(e: PointerEvent): Promise<void> {
-  if (!drag || e.pointerId !== drag.pointerId) return
+const talkQuestions = questionsForTalk()
+let session: Session | null = null
 
-  const state = drag
-  const dx = e.clientX - state.startX
-  const dy = e.clientY - state.startY
+const PHASES: { id: Exclude<Phase, 'home' | 'done'>; label: string }[] = [
+  { id: 'vocab', label: '词汇' },
+  { id: 'talk', label: '看图说话' },
+  { id: 'review', label: '巩固' },
+]
 
-  if (await commitSwipeIfReady(state, dx, dy)) return
-
-  drag = null
-  endPointerGesture(state.pointerId)
-  scheduleHint()
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag)
+  if (className) node.className = className
+  if (text !== undefined) node.textContent = text
+  return node
 }
 
-function onPointerCancel(e: PointerEvent): void {
-  if (!drag || e.pointerId !== drag.pointerId) return
-  drag = null
-  endPointerGesture(e.pointerId)
-  scheduleHint()
+function clearApp(): void {
+  app.replaceChildren()
 }
-
-boardEl.addEventListener('pointerdown', onPointerDown)
-boardEl.addEventListener('pointermove', onPointerMove)
-boardEl.addEventListener('pointerup', onPointerUp)
-boardEl.addEventListener('pointercancel', onPointerCancel)
-
-overlayBtn.addEventListener('click', onOverlayAction)
-endReviewGrid.addEventListener('click', (event) => {
-  const btn = (event.target as HTMLElement | null)?.closest?.(
-    '.end-review-item',
-  ) as HTMLButtonElement | null
-  const wordId = btn?.dataset.wordId
-  if (!wordId) return
-  haptic(8)
-  speakReviewWord(wordId, btn)
-})
-learnGoBtn.addEventListener('click', onLearnConfirm)
-learnSpeakBtn.addEventListener('click', () => {
-  if (pendingLearnWordId) {
-    const word = wordById(pendingLearnWordId)
-    if (word) speakEnglish(word.english)
-  }
-})
-learnPickGrid.addEventListener('click', (event) => {
-  const btn = (event.target as HTMLElement | null)?.closest?.(
-    '.learn-pick-item',
-  ) as HTMLButtonElement | null
-  const wordId = btn?.dataset.wordId
-  if (!wordId) return
-  haptic(10)
-  showLearnCard(wordId)
-})
-
-// Long-press moves badge to retry the current level.
-const movesBadgeEl = app.querySelector('#moves-badge')
-let restartTimer = 0
-movesBadgeEl?.addEventListener('pointerdown', () => {
-  restartTimer = window.setTimeout(() => {
-    haptic(16)
-    retryCurrentLevel()
-  }, 650)
-})
-movesBadgeEl?.addEventListener('pointerup', () => window.clearTimeout(restartTimer))
-movesBadgeEl?.addEventListener('pointerleave', () => window.clearTimeout(restartTimer))
-movesBadgeEl?.addEventListener('pointercancel', () => window.clearTimeout(restartTimer))
-bindBoardLayout()
 
-let audioReady = false
-const armAudio = () => {
-  if (audioReady) return
-  audioReady = true
+function startPack(packId: string): void {
+  const pack = packById(packId)
+  if (!pack) return
   unlockAudio()
+  void preloadPackImages(pack)
+  session = {
+    pack,
+    phase: 'vocab',
+    wordIndex: 0,
+    questionIndex: 0,
+    revealAnswer: false,
+    reviewReveal: false,
+  }
+  render()
 }
-window.addEventListener('pointerdown', armAudio, { once: true })
 
-const boot = document.querySelector('#boot')
-void preloadWordImages().finally(() => {
-  continueCampaign()
-  layoutBoard()
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      boot?.classList.add('hide')
-      layoutBoard()
-    })
+function goHome(): void {
+  session = null
+  render()
+}
+
+function currentWord(): WordDef | null {
+  if (!session) return null
+  return session.pack.words[session.wordIndex] ?? null
+}
+
+function currentQuestion(): QuestionTemplate | null {
+  return talkQuestions[session?.questionIndex ?? -1] ?? null
+}
+
+function nextVocab(): void {
+  if (!session) return
+  if (session.wordIndex >= session.pack.words.length - 1) {
+    session.phase = 'talk'
+    session.wordIndex = 0
+    session.questionIndex = 0
+    session.revealAnswer = false
+  } else {
+    session.wordIndex += 1
+  }
+  render()
+}
+
+function prevVocab(): void {
+  if (!session || session.wordIndex <= 0) return
+  session.wordIndex -= 1
+  render()
+}
+
+function nextTalk(): void {
+  if (!session) return
+  session.revealAnswer = false
+  if (session.questionIndex < talkQuestions.length - 1) {
+    session.questionIndex += 1
+  } else if (session.wordIndex < session.pack.words.length - 1) {
+    session.wordIndex += 1
+    session.questionIndex = 0
+  } else {
+    session.phase = 'review'
+    session.wordIndex = 0
+    session.reviewReveal = false
+  }
+  render()
+}
+
+function prevTalk(): void {
+  if (!session) return
+  session.revealAnswer = false
+  if (session.questionIndex > 0) {
+    session.questionIndex -= 1
+  } else if (session.wordIndex > 0) {
+    session.wordIndex -= 1
+    session.questionIndex = talkQuestions.length - 1
+  }
+  render()
+}
+
+function nextReview(): void {
+  if (!session) return
+  if (!session.reviewReveal) {
+    session.reviewReveal = true
+    render()
+    return
+  }
+  if (session.wordIndex >= session.pack.words.length - 1) {
+    session.phase = 'done'
+  } else {
+    session.wordIndex += 1
+    session.reviewReveal = false
+  }
+  render()
+}
+
+function renderPhaseRail(active: Phase): HTMLElement {
+  const rail = el('nav', 'phase-rail')
+  rail.setAttribute('aria-label', '练习阶段')
+  for (const phase of PHASES) {
+    const item = el('div', 'phase-item')
+    if (phase.id === active) item.classList.add('is-active')
+    if (
+      (active === 'talk' && phase.id === 'vocab') ||
+      (active === 'review' && (phase.id === 'vocab' || phase.id === 'talk')) ||
+      active === 'done'
+    ) {
+      item.classList.add('is-done')
+    }
+    item.append(el('span', 'phase-dot'), el('span', 'phase-label', phase.label))
+    rail.append(item)
+  }
+  return rail
+}
+
+function renderShell(opts: {
+  phase: Phase
+  title: string
+  subtitle?: string
+  body: HTMLElement
+  footer?: HTMLElement
+}): void {
+  clearApp()
+  const shell = el('div', 'shell')
+
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '返回')
+  back.type = 'button'
+  back.addEventListener('click', () => {
+    if (opts.phase === 'home') return
+    if (confirm('结束本次陪练，回到首页？')) goHome()
   })
-})
+  const brand = el('div', 'brand-mark', '陪练本')
+  top.append(back, brand)
+  shell.append(top)
+
+  if (opts.phase !== 'home' && opts.phase !== 'done') {
+    shell.append(renderPhaseRail(opts.phase))
+  }
+
+  const main = el('main', 'main')
+  const heading = el('div', 'heading')
+  heading.append(el('h1', 'title', opts.title))
+  if (opts.subtitle) heading.append(el('p', 'subtitle', opts.subtitle))
+  main.append(heading, opts.body)
+  shell.append(main)
+
+  if (opts.footer) shell.append(opts.footer)
+  app.append(shell)
+}
+
+function renderHome(): void {
+  clearApp()
+  const shell = el('div', 'shell home-shell')
+
+  const hero = el('section', 'hero')
+  hero.append(
+    el('p', 'hero-brand', '陪练本'),
+    el('h1', 'hero-title', '课后看图陪练'),
+    el('p', 'hero-lead', '词汇热身 → 固定问句看图说话 → 口头巩固。家长照着问即可。'),
+  )
+  shell.append(hero)
+
+  const list = el('section', 'pack-list')
+  list.append(el('h2', 'section-label', '选今天的词包'))
+
+  for (const pack of PACKS) {
+    const card = el('button', 'pack-card')
+    card.type = 'button'
+    const thumbs = el('div', 'pack-thumbs')
+    for (const word of pack.words.slice(0, 4)) {
+      const img = el('img', 'pack-thumb')
+      img.src = assetUrl(word.image)
+      img.alt = word.english
+      img.loading = 'lazy'
+      thumbs.append(img)
+    }
+    const meta = el('div', 'pack-meta')
+    meta.append(
+      el('div', 'pack-title', pack.titleZh),
+      el('div', 'pack-en', pack.titleEn),
+      el('div', 'pack-blurb', `${pack.words.length} 词 · ${pack.blurb}`),
+    )
+    card.append(thumbs, meta)
+    card.addEventListener('click', () => startPack(pack.id))
+    list.append(card)
+  }
+
+  const note = el(
+    'p',
+    'home-note',
+    '问题库固定不变，只换图和词——和外教课同一套骨架，专门留给课后巩固。',
+  )
+  shell.append(list, note)
+  app.append(shell)
+}
+
+function renderPicture(word: WordDef): HTMLElement {
+  const frame = el('div', 'picture-frame')
+  const img = el('img', 'picture')
+  img.src = assetUrl(word.image)
+  img.alt = word.english
+  frame.append(img)
+  return frame
+}
+
+function renderVocab(): void {
+  if (!session) return
+  const word = currentWord()
+  if (!word) return
+  const total = session.pack.words.length
+  const body = el('div', 'stage')
+  body.append(renderPicture(word))
+
+  const lex = el('div', 'lex')
+  const enRow = el('div', 'lex-en-row')
+  const en = el('button', 'lex-en', word.english)
+  en.type = 'button'
+  en.title = '朗读英文'
+  en.addEventListener('click', () => speakEnglish(word.english))
+  enRow.append(en, el('span', 'lex-speaker', '🔊'))
+  enRow.addEventListener('click', () => speakEnglish(word.english))
+  lex.append(enRow, el('div', 'lex-zh', word.chinese))
+  body.append(lex)
+
+  const cue = el(
+    'p',
+    'parent-cue',
+    '家长：指着图，让孩子先听再跟读英文；可以说中文意思帮助理解。',
+  )
+  body.append(cue)
+
+  const footer = el('footer', 'footer')
+  const prev = el('button', 'btn-secondary', '上一个')
+  prev.type = 'button'
+  prev.disabled = session.wordIndex === 0
+  prev.addEventListener('click', prevVocab)
+  const next = el(
+    'button',
+    'btn-primary',
+    session.wordIndex >= total - 1 ? '进入看图说话' : '下一个词',
+  )
+  next.type = 'button'
+  next.addEventListener('click', nextVocab)
+  footer.append(prev, next)
+
+  renderShell({
+    phase: 'vocab',
+    title: '词汇热身',
+    subtitle: `${session.pack.titleZh} · ${session.wordIndex + 1}/${total}`,
+    body,
+    footer,
+  })
+}
+
+function renderTalk(): void {
+  if (!session) return
+  const word = currentWord()
+  const question = currentQuestion()
+  if (!word || !question) return
+
+  const body = el('div', 'stage')
+  body.append(renderPicture(word))
+
+  const chip = el('div', 'q-chip', question.labelZh)
+  body.append(chip)
+
+  const script = el('div', 'script')
+  script.append(el('p', 'script-cue', question.parentCueZh))
+
+  const askBtn = el('button', 'ask-line', question.askEn(word))
+  askBtn.type = 'button'
+  askBtn.title = '朗读问句'
+  askBtn.addEventListener('click', () => speakEnglish(question.askEn(word)))
+  script.append(askBtn)
+
+  if (question.tipZh) {
+    script.append(el('p', 'script-tip', question.tipZh))
+  }
+
+  const reveal = el(
+    'button',
+    'btn-reveal',
+    session.revealAnswer ? '收起参考回答' : '显示参考回答',
+  )
+  reveal.type = 'button'
+  reveal.addEventListener('click', () => {
+    if (!session) return
+    session.revealAnswer = !session.revealAnswer
+    render()
+  })
+  script.append(reveal)
+
+  if (session.revealAnswer) {
+    const ans = el('div', 'answer-box')
+    ans.append(el('div', 'answer-label', '孩子可以说'))
+    for (const line of question.expectEn(word)) {
+      const row = el('button', 'answer-line', line)
+      row.type = 'button'
+      row.addEventListener('click', () => speakEnglish(line))
+      ans.append(row)
+    }
+    script.append(ans)
+  }
+
+  body.append(script)
+
+  const footer = el('footer', 'footer')
+  const prev = el('button', 'btn-secondary', '上一题')
+  prev.type = 'button'
+  prev.disabled = session.wordIndex === 0 && session.questionIndex === 0
+  prev.addEventListener('click', prevTalk)
+
+  const qProgress = `${session.wordIndex * talkQuestions.length + session.questionIndex + 1}/${session.pack.words.length * talkQuestions.length}`
+  const next = el('button', 'btn-primary', '下一题')
+  next.type = 'button'
+  next.dataset.progress = qProgress
+  next.addEventListener('click', nextTalk)
+  footer.append(prev, next)
+
+  renderShell({
+    phase: 'talk',
+    title: '看图说话',
+    subtitle: `${word.chinese} · 问题 ${session.questionIndex + 1}/${talkQuestions.length}`,
+    body,
+    footer,
+  })
+}
+
+function renderReview(): void {
+  if (!session) return
+  const word = currentWord()
+  if (!word) return
+
+  const body = el('div', 'stage')
+  body.append(renderPicture(word))
+
+  const prompt = el(
+    'p',
+    'parent-cue',
+    session.reviewReveal
+      ? '对照发音，再让孩子用完整句说一遍：This is … / I like …'
+      : '遮住英文：问孩子 “What is this?”，等他说完再点下方按钮。',
+  )
+  body.append(prompt)
+
+  if (session.reviewReveal) {
+    const lex = el('div', 'lex')
+    const en = el('button', 'lex-en', word.english)
+    en.type = 'button'
+    en.addEventListener('click', () => speakEnglish(word.english))
+    lex.append(en, el('div', 'lex-zh', word.chinese))
+    body.append(lex)
+
+    const frames = el('div', 'frame-list')
+    for (const line of [
+      `This is ${word.article} ${word.english}.`,
+      `I like ${word.english}.`,
+    ]) {
+      const b = el('button', 'frame-line', line)
+      b.type = 'button'
+      b.addEventListener('click', () => speakEnglish(line))
+      frames.append(b)
+    }
+    body.append(frames)
+  }
+
+  const footer = el('footer', 'footer')
+  const next = el(
+    'button',
+    'btn-primary',
+    session.reviewReveal
+      ? session.wordIndex >= session.pack.words.length - 1
+        ? '完成陪练'
+        : '下一个词'
+      : '揭晓英文',
+  )
+  next.type = 'button'
+  next.addEventListener('click', nextReview)
+  footer.append(next)
+
+  renderShell({
+    phase: 'review',
+    title: '口头巩固',
+    subtitle: `${session.pack.titleZh} · ${session.wordIndex + 1}/${session.pack.words.length}`,
+    body,
+    footer,
+  })
+}
+
+function renderDone(): void {
+  if (!session) return
+  clearApp()
+  const shell = el('div', 'shell done-shell')
+  shell.append(
+    el('p', 'hero-brand', '陪练本'),
+    el('h1', 'hero-title', '本轮完成'),
+    el(
+      'p',
+      'hero-lead',
+      `已练完「${session.pack.titleZh}」：词汇热身、看图说话固定问句、口头巩固。明天可换词包，问题骨架不变。`,
+    ),
+  )
+  const actions = el('div', 'done-actions')
+  const again = el('button', 'btn-primary', '再用本包练一次')
+  again.type = 'button'
+  again.addEventListener('click', () => startPack(session!.pack.id))
+  const home = el('button', 'btn-secondary', '回首页选词包')
+  home.type = 'button'
+  home.addEventListener('click', goHome)
+  actions.append(again, home)
+  shell.append(actions)
+  app.append(shell)
+}
+
+function render(): void {
+  if (!session) {
+    renderHome()
+    return
+  }
+  switch (session.phase) {
+    case 'vocab':
+      renderVocab()
+      break
+    case 'talk':
+      renderTalk()
+      break
+    case 'review':
+      renderReview()
+      break
+    case 'done':
+      renderDone()
+      break
+    default:
+      renderHome()
+  }
+}
+
+render()

@@ -3,7 +3,7 @@
 
 ## Test plan
 - [ ] `cd web && npm run build`
-- [ ] Smoke-play the match-3 level in the browser when gameplay changes
+- [ ] Smoke the parent coach flow: pick a pack → vocab → picture talk → review
 
 ## Notes (optional)
 -

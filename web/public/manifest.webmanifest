@@ -1,13 +1,13 @@
 {
-  "name": "词图三消",
-  "short_name": "词图三消",
-  "description": "图片和英文单词可以互消的学习向三消小游戏",
+  "name": "陪练本",
+  "short_name": "陪练本",
+  "description": "家长课后英语巩固：词汇热身、看图说话、口头巩固",
   "start_url": "/i-am-smart/",
   "scope": "/i-am-smart/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#2f7a66",
-  "theme_color": "#2f7a66",
+  "background_color": "#f3f7f9",
+  "theme_color": "#1f7a6c",
   "lang": "zh-CN",
   "icons": [
     {
