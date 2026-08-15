@@ -54,14 +54,15 @@ import {
 } from './content/types'
 import {
   buildReviewItems,
-  distinctPosCount,
+  defaultReviewCount,
   firstPhaseForMode,
   mergePacks,
   modeLabelZh,
   phaseAfterForMode,
   phasesForMode,
-  posCounts,
+  reviewCountChoices,
   slicePack,
+  sliceReviewPack,
   type PracticeMode,
   type ReviewItem,
 } from './content/practice'
@@ -111,7 +112,7 @@ function requireApp(): HTMLDivElement {
 
 const app = requireApp()
 
-type Screen = 'home' | 'create' | 'capture' | 'start' | 'session' | 'schedule'
+type Screen = 'home' | 'create' | 'capture' | 'start' | 'session' | 'schedule' | 'drill'
 type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
 type Phase = PracticePhase | 'done'
 
@@ -119,7 +120,7 @@ interface Session {
   pack: LessonPack
   mode: PracticeMode
   posFilter?: WordPos
-  /** Original class id; empty when mixing several classes from home. */
+  /** Original class id; empty when consolidating all learned classes. */
   originPackId: string
   phase: Phase
   wordIndex: number
@@ -129,6 +130,15 @@ interface Session {
   reviewItems: ReviewItem[]
   revealAnswer: boolean
   reviewReveal: boolean
+  drillPackId?: string
+  drillWordCount?: number
+  drillSentenceCount?: number
+}
+
+interface DrillDraft {
+  packId: string
+  wordCount: number
+  sentenceCount: number
 }
 
 let screen: Screen = 'home'
@@ -147,6 +157,7 @@ let capturePos: WordPos = 'noun'
 let captureFocus = true
 let captureBusy = false
 let captureAnswer = ''
+let drillDraft: DrillDraft = { packId: '', wordCount: 0, sentenceCount: 0 }
 
 function reviewQueue(): ReviewItem[] {
   return session?.reviewItems ?? []
@@ -212,7 +223,11 @@ async function connectCloud(): Promise<void> {
 function beginPractice(
   source: LessonPack,
   mode: PracticeMode,
-  opts: { pos?: WordPos; originPackId?: string } = {},
+  opts: {
+    pos?: WordPos
+    originPackId?: string
+    drill?: DrillDraft
+  } = {},
 ): void {
   const working = slicePack(source, { mode, pos: opts.pos })
   if (!packHasContent(working)) return
@@ -232,10 +247,70 @@ function beginPractice(
     reviewItems: buildReviewItems(working, { shuffle: mixed }),
     revealAnswer: false,
     reviewReveal: false,
+    drillPackId: opts.drill?.packId,
+    drillWordCount: opts.drill?.wordCount,
+    drillSentenceCount: opts.drill?.sentenceCount,
   }
   startPack = null
   screen = 'session'
   render()
+}
+
+function recordedClasses(): LessonPack[] {
+  return packsForHomeMixed()
+}
+
+function drillSource(packId: string): LessonPack | null {
+  const packs = recordedClasses()
+  if (!packs.length) return null
+  if (!packId) {
+    return mergePacks(packs, {
+      titleZh: '已学全部',
+      titleEn: 'All learned',
+    })
+  }
+  return packs.find((pack) => pack.id === packId) ?? null
+}
+
+function openDrill(opts: { packId?: string } = {}): void {
+  const packs = recordedClasses()
+  if (!packs.length) return
+  const packId =
+    opts.packId && packs.some((pack) => pack.id === opts.packId) ? opts.packId : ''
+  const source = drillSource(packId)
+  if (!source) return
+  drillDraft = {
+    packId,
+    wordCount: defaultReviewCount(source.words.length),
+    sentenceCount: defaultReviewCount(source.sentences.length),
+  }
+  screen = 'drill'
+  render()
+}
+
+function setDrillPack(packId: string): void {
+  const source = drillSource(packId)
+  if (!source) return
+  drillDraft = {
+    packId,
+    wordCount: defaultReviewCount(source.words.length),
+    sentenceCount: defaultReviewCount(source.sentences.length),
+  }
+  render()
+}
+
+function startDrill(): void {
+  const source = drillSource(drillDraft.packId)
+  if (!source) return
+  const working = sliceReviewPack(source, {
+    wordCount: drillDraft.wordCount,
+    sentenceCount: drillDraft.sentenceCount,
+  })
+  if (!packHasContent(working)) return
+  beginPractice(working, 'mixed', {
+    originPackId: drillDraft.packId,
+    drill: { ...drillDraft },
+  })
 }
 
 function openStart(pack: LessonPack): void {
@@ -244,23 +319,22 @@ function openStart(pack: LessonPack): void {
   render()
 }
 
-function startHomeMixed(): void {
-  const packs = packsForHomeMixed()
-  if (!packs.length) return
-  const merged = mergePacks(packs, {
-    titleZh: '综合巩固',
-    titleEn: 'Mixed review',
-  })
-  beginPractice(merged, 'mixed', { originPackId: '' })
-}
-
 function replaySession(): void {
   if (!session) return
+  if (session.mode === 'mixed' && session.drillWordCount !== undefined) {
+    drillDraft = {
+      packId: session.drillPackId ?? '',
+      wordCount: session.drillWordCount,
+      sentenceCount: session.drillSentenceCount ?? 0,
+    }
+    startDrill()
+    return
+  }
   const mode = session.mode
   const pos = session.posFilter
   const originId = session.originPackId
   if (!originId) {
-    startHomeMixed()
+    openDrill()
     return
   }
   void getPackById(originId).then((pack) => {
@@ -825,15 +899,15 @@ function renderHome(): void {
 
   const mixedPacks = packsForHomeMixed()
   if (mixedPacks.length) {
-    const mixedBtn = el('button', 'btn-ghost-block', '综合巩固')
+    const mixedBtn = el('button', 'btn-ghost-block', '巩固')
     mixedBtn.type = 'button'
-    mixedBtn.addEventListener('click', startHomeMixed)
+    mixedBtn.addEventListener('click', () => openDrill())
     const mixedHint = el(
       'p',
       'home-note',
       mixedPacks.some((p) => p.source === 'custom')
-        ? '把记下的几节课混在一起抽问。点某一节课，也可以分科只练词汇或只练问答。'
-        : '先用示例课综合抽问。记下自己的课后，会改成混练你的课。',
+        ? '用记下的课来巩固。可选一节课或已学全部，并设定这次练多少词汇、多少问答。'
+        : '先用示例课巩固。记下自己的课后，会改成练你的课。',
     )
     shell.append(mixedBtn, mixedHint)
   }
@@ -1214,12 +1288,127 @@ function renderModeButton(
 function renderChip(
   label: string,
   onClick: () => void,
+  opts: { on?: boolean } = {},
 ): HTMLButtonElement {
-  const chip = el('button', 'mode-chip') as HTMLButtonElement
+  const chip = el(
+    'button',
+    opts.on ? 'mode-chip is-on' : 'mode-chip',
+  ) as HTMLButtonElement
   chip.type = 'button'
   chip.textContent = label
   chip.addEventListener('click', onClick)
   return chip
+}
+
+function renderCountRow(
+  title: string,
+  available: number,
+  current: number,
+  onChange: (count: number) => void,
+): HTMLElement {
+  const box = el('div', 'add-word-box')
+  box.append(el('h2', 'section-label', `${title} · 共 ${available}`))
+  if (!available) {
+    box.append(el('p', 'draft-empty', '记下的课里还没有这项。'))
+    return box
+  }
+  const row = el('div', 'mode-chips')
+  row.append(
+    renderChip('不练', () => onChange(0), { on: current === 0 }),
+  )
+  for (const count of reviewCountChoices(available)) {
+    const label = count === available ? `全部 · ${count}` : `${count}`
+    row.append(
+      renderChip(label, () => onChange(count), { on: current === count }),
+    )
+  }
+  box.append(row)
+  return box
+}
+
+function renderDrill(): void {
+  const source = drillSource(drillDraft.packId)
+  const packs = recordedClasses()
+  if (!source || !packs.length) {
+    goHome()
+    return
+  }
+  const wordN = Math.min(drillDraft.wordCount, source.words.length)
+  const senN = Math.min(drillDraft.sentenceCount, source.sentences.length)
+  const canStart = wordN + senN > 0
+  clearApp()
+  const shell = el('div', 'shell')
+  const top = el('header', 'topbar')
+  const back = el('button', 'btn-ghost', '返回')
+  back.type = 'button'
+  back.addEventListener('click', goHome)
+  top.append(back, el('div', 'brand-mark', '巩固'))
+  shell.append(top)
+
+  const main = el('main', 'main create-main')
+  main.append(
+    el('h1', 'title', '巩固记下的课'),
+    el(
+      'p',
+      'subtitle',
+      '内容来自课程记录。选一节课或已学全部，再定这次练多少。',
+    ),
+  )
+
+  const form = el('div', 'create-form')
+  const scopeBox = el('div', 'add-word-box')
+  scopeBox.append(el('h2', 'section-label', '巩固哪部分'))
+  const scopeRow = el('div', 'mode-chips')
+  scopeRow.append(
+    renderChip('已学全部', () => setDrillPack(''), {
+      on: drillDraft.packId === '',
+    }),
+  )
+  for (const pack of packs) {
+    scopeRow.append(
+      renderChip(pack.titleZh, () => setDrillPack(pack.id), {
+        on: drillDraft.packId === pack.id,
+      }),
+    )
+  }
+  scopeBox.append(scopeRow)
+  if (!drillDraft.packId) {
+    scopeBox.append(
+      el('p', 'draft-empty', `${packs.length} 节课 · ${packCountLabel(source)}`),
+    )
+  }
+  form.append(scopeBox)
+
+  form.append(
+    renderCountRow('词汇', source.words.length, drillDraft.wordCount, (count) => {
+      drillDraft.wordCount = count
+      render()
+    }),
+    renderCountRow(
+      '问答',
+      source.sentences.length,
+      drillDraft.sentenceCount,
+      (count) => {
+        drillDraft.sentenceCount = count
+        render()
+      },
+    ),
+  )
+
+  const save = el(
+    'button',
+    'btn-primary',
+    canStart
+      ? `开始巩固 · ${wordN} 词 + ${senN} 问`
+      : '请至少选一些词汇或问答',
+  )
+  save.type = 'button'
+  save.disabled = !canStart
+  save.addEventListener('click', startDrill)
+  form.append(save)
+  main.append(form)
+  shell.append(main)
+  app.append(shell)
 }
 
 function renderStart(): void {
@@ -1244,7 +1433,7 @@ function renderStart(): void {
       'p',
       'subtitle',
       packHasContent(pack)
-        ? `${packCountLabel(pack)} · 分科专项练，也可以词汇和问答混着抽问。`
+        ? `${packCountLabel(pack)} · 可以巩固这一节，也可以先完整过一遍。`
         : '这节课还是空的。上课听到什么，点下面记进去。',
     ),
   )
@@ -1267,50 +1456,12 @@ function renderStart(): void {
     app.append(shell)
     return
   }
-  list.append(el('h2', 'section-label', '分科巩固'))
-
-  if (pack.words.length) {
-    const wordCard = el('div', 'mode-card')
-    wordCard.append(
-      el('div', 'mode-title', `词汇 · ${pack.words.length} 词`),
-      el('p', 'mode-blurb', '热身、开口、再巩固这一科。'),
-    )
-    const chips = el('div', 'mode-chips')
-    chips.append(
-      renderChip('全部词汇', () => beginPractice(pack, 'words')),
-    )
-    if (distinctPosCount(pack) >= 2) {
-      const counts = posCounts(pack)
-      for (const pos of WORD_POS) {
-        const n = counts[pos]
-        if (!n) continue
-        chips.append(
-          renderChip(`${POS_LABEL_ZH[pos]} · ${n}`, () =>
-            beginPractice(pack, 'words', { pos }),
-          ),
-        )
-      }
-    }
-    wordCard.append(chips)
-    list.append(wordCard)
-  }
-
-  if (pack.sentences.length) {
-    list.append(
-      renderModeButton(
-        `问答 · ${pack.sentences.length} 问`,
-        '跟读这节课记下的问答，有答句就先问再揭晓。',
-        () => beginPractice(pack, 'sentences'),
-      ),
-    )
-  }
-
-  list.append(el('h2', 'section-label', '综合巩固'))
+  list.append(el('h2', 'section-label', '巩固'))
   list.append(
     renderModeButton(
-      '词汇和问答混着抽问',
-      '遮住英文，打乱顺序，看孩子还记不记得。',
-      () => beginPractice(pack, 'mixed'),
+      '用这节课记下的内容抽问',
+      '可选词汇和问答的数量。遮住英文，看还记不记得。',
+      () => openDrill({ packId: pack.id }),
       { primary: true },
     ),
   )
@@ -2166,7 +2317,7 @@ function renderReview(): void {
 
   renderShell({
     phase: 'review',
-    title: session.mode === 'mixed' ? '综合巩固' : '口头巩固',
+    title: session.mode === 'mixed' ? '巩固' : '口头巩固',
     subtitle: `${session.pack.titleZh} · ${session.reviewIndex + 1}/${total}`,
     body,
     footer,
@@ -2337,6 +2488,10 @@ function render(): void {
   }
   if (screen === 'schedule') {
     renderSchedule()
+    return
+  }
+  if (screen === 'drill') {
+    renderDrill()
     return
   }
   if (screen === 'start') {
