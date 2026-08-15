@@ -2,18 +2,29 @@
 
 export const PACK_SCHEMA = 'peilian-pack/v1' as const
 
+export const WORD_POS = ['noun', 'verb', 'adjective'] as const
+export type WordPos = (typeof WORD_POS)[number]
+
+export const POS_LABEL_ZH: Record<WordPos, string> = {
+  noun: '名词',
+  verb: '动词',
+  adjective: '形容词',
+}
+
 export interface WordDef {
   id: string
   english: string
   chinese: string
+  pos: WordPos
   /**
-   * Image reference:
+   * Optional image reference:
    * - bundled path: `cards/apple.png`
    * - remote URL: `https://…`
    * - embedded: `data:image/…;base64,…`
+   * Empty for verbs/adjectives (or any word) practiced as a text card.
    */
   image: string
-  /** Indefinite article for sentence frames */
+  /** Indefinite article for noun sentence frames */
   article: 'a' | 'an'
 }
 
@@ -42,9 +53,20 @@ export interface ContentPackFile {
     id?: string
     english: string
     chinese: string
+    pos?: WordPos
     article?: 'a' | 'an'
     image?: string
   }>
+}
+
+export function parsePos(value: unknown): WordPos {
+  return value === 'verb' || value === 'adjective' || value === 'noun'
+    ? value
+    : 'noun'
+}
+
+export function hasImage(word: { image?: string }): boolean {
+  return Boolean(word.image?.trim())
 }
 
 export function withArticle(word: WordDef): string {
@@ -63,4 +85,40 @@ export function slugId(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
   return base || `word-${Date.now().toString(36)}`
+}
+
+/** Fill pos/image defaults so older saved packs still run. */
+export function hydrateWord(raw: {
+  id?: string
+  english: string
+  chinese: string
+  pos?: unknown
+  article?: string
+  image?: string
+}): WordDef {
+  return {
+    id: raw.id?.trim() || slugId(raw.english),
+    english: raw.english,
+    chinese: raw.chinese,
+    pos: parsePos(raw.pos),
+    article: raw.article === 'an' || raw.article === 'a' ? raw.article : guessArticle(raw.english),
+    image: raw.image?.trim() || '',
+  }
+}
+
+export function hydratePack(pack: LessonPack): LessonPack {
+  return { ...pack, words: pack.words.map(hydrateWord) }
+}
+
+/** KET-level present participle for action frames (He is running). */
+export function presentParticiple(verb: string): string {
+  const v = verb.trim().toLowerCase()
+  if (!v) return v
+  if (v.endsWith('ie')) return `${v.slice(0, -2)}ying`
+  if (v.endsWith('ee') || v.endsWith('ye')) return `${v}ing`
+  if (v.endsWith('e')) return `${v.slice(0, -1)}ing`
+  if (v.length <= 4 && /[^aeiou][aeiou][bdfglmnprst]$/.test(v)) {
+    return `${v}${v.slice(-1)}ing`
+  }
+  return `${v}ing`
 }

@@ -1,6 +1,11 @@
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase'
 import { toContentPackFile } from './schema'
-import type { ContentPackFile, LessonPack, WordDef } from './types'
+import {
+  parsePos,
+  type ContentPackFile,
+  type LessonPack,
+  type WordDef,
+} from './types'
 
 export interface CloudPackRow {
   id: string
@@ -47,7 +52,7 @@ async function uploadWordImage(
 ): Promise<string> {
   const sb = getSupabase()
   if (!sb) throw new Error('Supabase 未配置')
-  if (!word.image.startsWith('data:')) return word.image
+  if (!word.image || !word.image.startsWith('data:')) return word.image
 
   const blob = dataUrlToBlob(word.image)
   const ext = blob.type.includes('png') ? 'png' : 'jpg'
@@ -84,6 +89,7 @@ function rowToPack(row: CloudPackRow): LessonPack {
       id: w.id || `w-${i}`,
       english: w.english,
       chinese: w.chinese,
+      pos: parsePos(w.pos),
       article: w.article === 'an' ? 'an' : 'a',
       image: w.image || '',
     })),

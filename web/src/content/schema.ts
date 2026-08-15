@@ -1,6 +1,7 @@
 import {
   PACK_SCHEMA,
   guessArticle,
+  parsePos,
   slugId,
   type ContentPackFile,
   type LessonPack,
@@ -29,7 +30,7 @@ function requireString(obj: Record<string, unknown>, key: string): string {
   return v.trim()
 }
 
-function normalizeWord(raw: unknown, index: number): WordDef {
+function normalizeWord(raw: unknown): WordDef {
   const obj = asRecord(raw)
   const english = requireString(obj, 'english')
   const chinese = requireString(obj, 'chinese')
@@ -37,6 +38,7 @@ function normalizeWord(raw: unknown, index: number): WordDef {
     typeof obj.id === 'string' && obj.id.trim()
       ? obj.id.trim()
       : slugId(english)
+  const pos = parsePos(obj.pos)
   const article =
     obj.article === 'a' || obj.article === 'an'
       ? obj.article
@@ -45,10 +47,7 @@ function normalizeWord(raw: unknown, index: number): WordDef {
     typeof obj.image === 'string' && obj.image.trim()
       ? obj.image.trim()
       : ''
-  if (!image) {
-    throw new PackParseError(`第 ${index + 1} 个词「${english}」缺少 image`)
-  }
-  return { id, english, chinese, article, image }
+  return { id, english, chinese, pos, article, image }
 }
 
 /** Parse and normalize a peilian-pack/v1 JSON document. */
@@ -76,7 +75,7 @@ export function parseContentPack(raw: unknown): LessonPack {
   if (obj.words.length > 40) {
     throw new PackParseError('单个词包最多 40 个词')
   }
-  const words = obj.words.map((w, i) => normalizeWord(w, i))
+  const words = obj.words.map((w) => normalizeWord(w))
   const ids = new Set(words.map((w) => w.id))
   if (ids.size !== words.length) {
     throw new PackParseError('词条 id 不能重复')
@@ -105,8 +104,9 @@ export function toContentPackFile(pack: LessonPack): ContentPackFile {
       id: w.id,
       english: w.english,
       chinese: w.chinese,
+      pos: w.pos,
       article: w.article,
-      image: w.image,
+      ...(w.image ? { image: w.image } : {}),
     })),
   }
 }

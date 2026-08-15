@@ -1,17 +1,28 @@
-import type { LessonPack } from './types'
+import {
+  guessArticle,
+  type LessonPack,
+  type WordDef,
+  type WordPos,
+} from './types'
 
-function w(
+function word(
   id: string,
   english: string,
   chinese: string,
-  article: 'a' | 'an' = 'a',
-): LessonPack['words'][number] {
+  opts: {
+    article?: 'a' | 'an'
+    pos?: WordPos
+    image?: string
+  } = {},
+): WordDef {
+  const pos = opts.pos ?? 'noun'
   return {
     id,
     english,
     chinese,
-    article,
-    image: `cards/${id}.png`,
+    pos,
+    article: opts.article ?? guessArticle(english),
+    image: opts.image ?? (pos === 'noun' ? `cards/${id}.png` : ''),
   }
 }
 
@@ -24,14 +35,14 @@ export const BUILTIN_PACKS: LessonPack[] = [
     blurb: '示例词包 · 可换成你家教材',
     source: 'builtin',
     words: [
-      w('apple', 'apple', '苹果', 'an'),
-      w('banana', 'banana', '香蕉'),
-      w('cake', 'cake', '蛋糕'),
-      w('egg', 'egg', '鸡蛋', 'an'),
-      w('milk', 'milk', '牛奶'),
-      w('juice', 'juice', '果汁'),
-      w('bread', 'bread', '面包'),
-      w('cheese', 'cheese', '奶酪'),
+      word('apple', 'apple', '苹果', { article: 'an' }),
+      word('banana', 'banana', '香蕉'),
+      word('cake', 'cake', '蛋糕'),
+      word('egg', 'egg', '鸡蛋', { article: 'an' }),
+      word('milk', 'milk', '牛奶'),
+      word('juice', 'juice', '果汁'),
+      word('bread', 'bread', '面包'),
+      word('cheese', 'cheese', '奶酪'),
     ],
   },
   {
@@ -41,14 +52,14 @@ export const BUILTIN_PACKS: LessonPack[] = [
     blurb: '示例词包 · 可换成你家教材',
     source: 'builtin',
     words: [
-      w('cat', 'cat', '猫'),
-      w('dog', 'dog', '狗'),
-      w('bird', 'bird', '鸟'),
-      w('fish', 'fish', '鱼'),
-      w('bear', 'bear', '熊'),
-      w('horse', 'horse', '马'),
-      w('pig', 'pig', '猪'),
-      w('chicken', 'chicken', '鸡'),
+      word('cat', 'cat', '猫'),
+      word('dog', 'dog', '狗'),
+      word('bird', 'bird', '鸟'),
+      word('fish', 'fish', '鱼'),
+      word('bear', 'bear', '熊'),
+      word('horse', 'horse', '马'),
+      word('pig', 'pig', '猪'),
+      word('chicken', 'chicken', '鸡'),
     ],
   },
   {
@@ -58,14 +69,48 @@ export const BUILTIN_PACKS: LessonPack[] = [
     blurb: '示例词包 · 可换成你家教材',
     source: 'builtin',
     words: [
-      w('ball', 'ball', '球'),
-      w('book', 'book', '书'),
-      w('bag', 'bag', '包'),
-      w('bus', 'bus', '公交车'),
-      w('bicycle', 'bicycle', '自行车'),
-      w('car', 'car', '小汽车'),
-      w('house', 'house', '房子'),
-      w('tree', 'tree', '树'),
+      word('ball', 'ball', '球'),
+      word('book', 'book', '书'),
+      word('bag', 'bag', '包'),
+      word('bus', 'bus', '公交车'),
+      word('bicycle', 'bicycle', '自行车'),
+      word('car', 'car', '小汽车'),
+      word('house', 'house', '房子'),
+      word('tree', 'tree', '树'),
+    ],
+  },
+  {
+    id: 'actions',
+    titleZh: '动作动词',
+    titleEn: 'Actions',
+    blurb: '无配图示例 · 文字卡 + 动作句型',
+    source: 'builtin',
+    words: [
+      word('run', 'run', '跑', { pos: 'verb' }),
+      word('jump', 'jump', '跳', { pos: 'verb' }),
+      word('eat', 'eat', '吃', { pos: 'verb' }),
+      word('drink', 'drink', '喝', { pos: 'verb' }),
+      word('sleep', 'sleep', '睡觉', { pos: 'verb' }),
+      word('swim', 'swim', '游泳', { pos: 'verb' }),
+      word('read', 'read', '读', { pos: 'verb' }),
+      word('write', 'write', '写', { pos: 'verb' }),
+    ],
+  },
+  {
+    id: 'describe',
+    titleZh: '描述形容词',
+    titleEn: 'Describe',
+    blurb: '无配图示例 · 文字卡 + It is / I am',
+    source: 'builtin',
+    words: [
+      word('hot', 'hot', '热的', { pos: 'adjective' }),
+      word('cold', 'cold', '冷的', { pos: 'adjective' }),
+      word('big', 'big', '大的', { pos: 'adjective' }),
+      word('small', 'small', '小的', { pos: 'adjective' }),
+      word('happy', 'happy', '快乐的', { pos: 'adjective' }),
+      word('sad', 'sad', '伤心的', { pos: 'adjective' }),
+      word('hungry', 'hungry', '饿的', { pos: 'adjective' }),
+      word('tired', 'tired', '累的', { pos: 'adjective' }),
     ],
   },
 ]

@@ -1,7 +1,7 @@
 import { BUILTIN_PACKS } from './builtin'
 import { deleteCloudPack, listCloudPacks, upsertCloudPack } from './cloud'
 import { isSupabaseConfigured } from '../lib/supabase'
-import type { LessonPack } from './types'
+import { hydratePack, type LessonPack } from './types'
 
 const DB_NAME = 'peilian-content'
 const DB_VERSION = 1
@@ -43,10 +43,12 @@ export async function listCustomPacks(): Promise<LessonPack[]> {
     const tx = db.transaction(STORE, 'readonly')
     const req = tx.objectStore(STORE).getAll()
     req.onsuccess = () => {
-      const packs = (req.result as LessonPack[]).map((p) => ({
-        ...p,
-        source: 'custom' as const,
-      }))
+      const packs = (req.result as LessonPack[]).map((p) =>
+        hydratePack({
+          ...p,
+          source: 'custom',
+        }),
+      )
       packs.sort((a, b) => a.titleZh.localeCompare(b.titleZh, 'zh'))
       resolve(packs)
     }
@@ -96,7 +98,7 @@ export async function getCustomPack(id: string): Promise<LessonPack | undefined>
     const req = tx.objectStore(STORE).get(id)
     req.onsuccess = () => {
       const pack = req.result as LessonPack | undefined
-      resolve(pack ? { ...pack, source: 'custom' } : undefined)
+      resolve(pack ? hydratePack({ ...pack, source: 'custom' }) : undefined)
     }
     req.onerror = () => reject(req.error ?? new Error('get failed'))
   })

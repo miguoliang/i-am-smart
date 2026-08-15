@@ -24,11 +24,16 @@ export function preloadPackImages(pack: LessonPack): Promise<void> {
     pack.words.map(
       (word) =>
         new Promise<void>((resolve) => {
+          const src = wordImageSrc(word)
+          if (!src) {
+            resolve()
+            return
+          }
           const img = new Image()
           img.decoding = 'async'
           img.onload = () => resolve()
           img.onerror = () => resolve()
-          img.src = wordImageSrc(word)
+          img.src = src
         }),
     ),
   ).then(() => undefined)

@@ -1,5 +1,14 @@
 import './style.css'
-import { questionsForTalk, type QuestionTemplate } from './data/questions'
+import {
+  cueText,
+  questionsForWord,
+  reviewCueHidden,
+  reviewCueRevealed,
+  reviewFrames,
+  tipText,
+  vocabCue,
+  type QuestionTemplate,
+} from './data/questions'
 import { preloadPackImages, wordImageSrc, fileToDataUrl } from './content/images'
 import {
   PackParseError,
@@ -20,10 +29,14 @@ import {
 } from './content/cloud'
 import { isSupabaseConfigured } from './lib/supabase'
 import {
+  POS_LABEL_ZH,
+  WORD_POS,
   guessArticle,
+  hasImage,
   slugId,
   type LessonPack,
   type WordDef,
+  type WordPos,
 } from './content/types'
 import { bindViewport } from './practice/chrome'
 import { speakEnglish, unlockAudio } from './practice/tts'
@@ -53,11 +66,11 @@ interface Session {
 interface DraftWord {
   english: string
   chinese: string
+  pos: WordPos
   article: 'a' | 'an'
   imageDataUrl: string
 }
 
-const talkQuestions = questionsForTalk()
 let screen: Screen = 'home'
 let session: Session | null = null
 let packCache: LessonPack[] = []
@@ -75,7 +88,7 @@ let draft: {
 
 const PHASES: { id: Exclude<Phase, 'done'>; label: string }[] = [
   { id: 'vocab', label: '词汇' },
-  { id: 'talk', label: '看图说话' },
+  { id: 'talk', label: '开口' },
   { id: 'review', label: '巩固' },
 ]
 
@@ -172,8 +185,13 @@ function currentWord(): WordDef | null {
   return session.pack.words[session.wordIndex] ?? null
 }
 
+function talkQueue(word: WordDef | null): QuestionTemplate[] {
+  return word ? questionsForWord(word) : []
+}
+
 function currentQuestion(): QuestionTemplate | null {
-  return talkQuestions[session?.questionIndex ?? -1] ?? null
+  const word = currentWord()
+  return talkQueue(word)[session?.questionIndex ?? -1] ?? null
 }
 
 function nextVocab(): void {
@@ -197,8 +215,10 @@ function prevVocab(): void {
 
 function nextTalk(): void {
   if (!session) return
+  const word = currentWord()
+  const qs = talkQueue(word)
   session.revealAnswer = false
-  if (session.questionIndex < talkQuestions.length - 1) {
+  if (session.questionIndex < qs.length - 1) {
     session.questionIndex += 1
   } else if (session.wordIndex < session.pack.words.length - 1) {
     session.wordIndex += 1
@@ -218,7 +238,8 @@ function prevTalk(): void {
     session.questionIndex -= 1
   } else if (session.wordIndex > 0) {
     session.wordIndex -= 1
-    session.questionIndex = talkQuestions.length - 1
+    const prev = session.pack.words[session.wordIndex]
+    session.questionIndex = Math.max(0, talkQueue(prev).length - 1)
   }
   render()
 }
@@ -329,11 +350,7 @@ function renderPackCard(pack: LessonPack): HTMLElement {
   card.type = 'button'
   const thumbs = el('div', 'pack-thumbs')
   for (const word of pack.words.slice(0, 4)) {
-    const img = el('img', 'pack-thumb')
-    img.src = wordImageSrc(word)
-    img.alt = word.english
-    img.loading = 'lazy'
-    thumbs.append(img)
+    thumbs.append(renderThumb(word, 'pack-thumb'))
   }
   const meta = el('div', 'pack-meta')
   const badge =
@@ -412,11 +429,11 @@ function renderHome(): void {
   const hero = el('section', 'hero')
   hero.append(
     el('p', 'hero-brand', '陪练本'),
-    el('h1', 'hero-title', '课后看图陪练'),
+    el('h1', 'hero-title', '课后开口陪练'),
     el(
       'p',
       'hero-lead',
-      '框架固定：词汇 → 看图说话 → 巩固。内容可换：导入你家机构 / 老师的词包。',
+      '框架固定：词汇 → 开口练习 → 巩固。名词可配图；动词、形容词没有图也能练。',
     ),
   )
   shell.append(hero)
@@ -505,7 +522,7 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '问题库属于框架，不随教材变化；换机构只换词包 JSON，陪练步骤不用改。',
+      '问题库按词性套句：名词看图，动词问动作，形容词问描述；换教材只换词包。',
     ),
   )
   app.append(shell)
@@ -524,7 +541,11 @@ function renderCreate(): void {
   const main = el('main', 'main create-main')
   main.append(
     el('h1', 'title', '录入本课内容'),
-    el('p', 'subtitle', '只填词和图；看图说话问句由框架自动套用。'),
+    el(
+      'p',
+      'subtitle',
+      '填英文和中文；选词性。名词建议配图，动词和形容词可以不配图。',
+    ),
   )
 
   const form = el('div', 'create-form')
@@ -559,13 +580,13 @@ function renderCreate(): void {
   wordList.append(el('h2', 'section-label', `词条（${draft.words.length}）`))
   draft.words.forEach((w, index) => {
     const row = el('div', 'draft-row')
-    const thumb = el('img', 'draft-thumb')
-    thumb.src = w.imageDataUrl
-    thumb.alt = w.english
     const info = el('div', 'draft-info')
+    const posLabel = POS_LABEL_ZH[w.pos]
+    const extra =
+      w.pos === 'noun' ? `${posLabel} · ${w.article}` : `${posLabel} · 可不配图`
     info.append(
       el('div', 'draft-en', w.english),
-      el('div', 'draft-zh', `${w.chinese} · ${w.article}`),
+      el('div', 'draft-zh', `${w.chinese} · ${extra}`),
     )
     const remove = el('button', 'btn-tiny btn-tiny-danger', '移除')
     remove.type = 'button'
@@ -573,7 +594,7 @@ function renderCreate(): void {
       draft.words.splice(index, 1)
       render()
     })
-    row.append(thumb, info, remove)
+    row.append(renderDraftThumb(w), info, remove)
     wordList.append(row)
   })
   form.append(wordList)
@@ -586,18 +607,29 @@ function renderCreate(): void {
   const zhIn = el('input', 'field') as HTMLInputElement
   zhIn.type = 'text'
   zhIn.placeholder = '中文'
+  const posIn = el('select', 'field') as HTMLSelectElement
+  for (const pos of WORD_POS) {
+    const opt = el('option', undefined, POS_LABEL_ZH[pos]) as HTMLOptionElement
+    opt.value = pos
+    posIn.append(opt)
+  }
   const artIn = el('select', 'field') as HTMLSelectElement
   for (const a of ['a', 'an'] as const) {
-    const opt = el('option', undefined, a) as HTMLOptionElement
+    const opt = el('option', undefined, `冠词 ${a}`) as HTMLOptionElement
     opt.value = a
     artIn.append(opt)
   }
   enIn.addEventListener('input', () => {
     artIn.value = guessArticle(enIn.value)
   })
+  const syncArticleVisibility = () => {
+    artIn.hidden = posIn.value !== 'noun'
+  }
+  posIn.addEventListener('change', syncArticleVisibility)
+  syncArticleVisibility()
 
   let pendingImage = ''
-  const imgPreview = el('div', 'img-preview', '尚未选图')
+  const imgPreview = el('div', 'img-preview', '图片可选：动词、形容词常常不配图')
   const imgInput = el('input', 'sr-only') as HTMLInputElement
   imgInput.type = 'file'
   imgInput.accept = 'image/*'
@@ -619,7 +651,7 @@ function renderCreate(): void {
         render()
       })
   })
-  const pickImg = el('button', 'btn-secondary', '上传图片')
+  const pickImg = el('button', 'btn-secondary', '上传图片（可选）')
   pickImg.type = 'button'
   pickImg.addEventListener('click', () => imgInput.click())
 
@@ -628,13 +660,11 @@ function renderCreate(): void {
   addWord.addEventListener('click', () => {
     const english = enIn.value.trim()
     const chinese = zhIn.value.trim()
+    const pos = WORD_POS.includes(posIn.value as WordPos)
+      ? (posIn.value as WordPos)
+      : 'noun'
     if (!english || !chinese) {
       draft.error = '请填写英文和中文'
-      render()
-      return
-    }
-    if (!pendingImage) {
-      draft.error = '请上传该词的图片'
       render()
       return
     }
@@ -646,6 +676,7 @@ function renderCreate(): void {
     draft.words.push({
       english,
       chinese,
+      pos,
       article: artIn.value === 'an' ? 'an' : 'a',
       imageDataUrl: pendingImage,
     })
@@ -653,7 +684,16 @@ function renderCreate(): void {
     render()
   })
 
-  addBox.append(enIn, zhIn, artIn, pickImg, imgInput, imgPreview, addWord)
+  addBox.append(
+    enIn,
+    zhIn,
+    posIn,
+    artIn,
+    pickImg,
+    imgInput,
+    imgPreview,
+    addWord,
+  )
   form.append(addBox)
 
   if (draft.error) form.append(el('p', 'form-error', draft.error))
@@ -684,6 +724,7 @@ function renderCreate(): void {
           id: slugId(w.english),
           english: w.english,
           chinese: w.chinese,
+          pos: w.pos,
           article: w.article,
           image: w.imageDataUrl,
         })),
@@ -719,12 +760,52 @@ function renderCreate(): void {
   app.append(shell)
 }
 
-function renderPicture(word: WordDef): HTMLElement {
+function renderThumb(word: WordDef, className: string): HTMLElement {
+  if (hasImage(word)) {
+    const img = el('img', className)
+    img.src = wordImageSrc(word)
+    img.alt = word.english
+    img.loading = 'lazy'
+    return img
+  }
+  const tile = el('div', `${className} pack-thumb-word`)
+  tile.textContent = word.english.slice(0, 4)
+  tile.title = word.english
+  return tile
+}
+
+function renderDraftThumb(word: DraftWord): HTMLElement {
+  if (word.imageDataUrl) {
+    const img = el('img', 'draft-thumb')
+    img.src = word.imageDataUrl
+    img.alt = word.english
+    return img
+  }
+  const tile = el('div', 'draft-thumb pack-thumb-word')
+  tile.textContent = word.english.slice(0, 4) || POS_LABEL_ZH[word.pos][0]
+  return tile
+}
+
+function renderPrompt(word: WordDef): HTMLElement {
   const frame = el('div', 'picture-frame')
-  const img = el('img', 'picture')
-  img.src = wordImageSrc(word)
-  img.alt = word.english
-  frame.append(img)
+  if (hasImage(word)) {
+    const img = el('img', 'picture')
+    img.src = wordImageSrc(word)
+    img.alt = word.english
+    frame.append(img)
+    return frame
+  }
+  frame.classList.add('is-word-card')
+  const card = el('button', 'word-card')
+  card.type = 'button'
+  card.title = '朗读英文'
+  card.append(
+    el('span', 'word-card-pos', POS_LABEL_ZH[word.pos]),
+    el('span', 'word-card-en', word.english),
+    el('span', 'word-card-zh', word.chinese),
+  )
+  card.addEventListener('click', () => speakEnglish(word.english))
+  frame.append(card)
   return frame
 }
 
@@ -734,7 +815,7 @@ function renderVocab(): void {
   if (!word) return
   const total = session.pack.words.length
   const body = el('div', 'stage')
-  body.append(renderPicture(word))
+  body.append(renderPrompt(word))
 
   const lex = el('div', 'lex')
   const enRow = el('div', 'lex-en-row')
@@ -750,7 +831,7 @@ function renderVocab(): void {
     el(
       'p',
       'parent-cue',
-      '家长：指着图，让孩子先听再跟读英文；可以说中文意思帮助理解。',
+      vocabCue(word),
     ),
   )
 
@@ -762,7 +843,7 @@ function renderVocab(): void {
   const next = el(
     'button',
     'btn-primary',
-    session.wordIndex >= total - 1 ? '进入看图说话' : '下一个词',
+    session.wordIndex >= total - 1 ? '进入开口练习' : '下一个词',
   )
   next.type = 'button'
   next.addEventListener('click', nextVocab)
@@ -784,17 +865,18 @@ function renderTalk(): void {
   if (!word || !question) return
 
   const body = el('div', 'stage')
-  body.append(renderPicture(word))
+  body.append(renderPrompt(word))
   body.append(el('div', 'q-chip', question.labelZh))
 
   const script = el('div', 'script')
-  script.append(el('p', 'script-cue', question.parentCueZh))
+  script.append(el('p', 'script-cue', cueText(question, word)))
   const askBtn = el('button', 'ask-line', question.askEn(word))
   askBtn.type = 'button'
   askBtn.title = '朗读问句'
   askBtn.addEventListener('click', () => speakEnglish(question.askEn(word)))
   script.append(askBtn)
-  if (question.tipZh) script.append(el('p', 'script-tip', question.tipZh))
+  const tip = tipText(question, word)
+  if (tip) script.append(el('p', 'script-tip', tip))
 
   const reveal = el(
     'button',
@@ -834,8 +916,8 @@ function renderTalk(): void {
 
   renderShell({
     phase: 'talk',
-    title: '看图说话',
-    subtitle: `${word.chinese} · 问题 ${session.questionIndex + 1}/${talkQuestions.length}`,
+    title: '开口练习',
+    subtitle: `${POS_LABEL_ZH[word.pos]} · ${word.chinese} · 问题 ${session.questionIndex + 1}/${talkQueue(word).length}`,
     body,
     footer,
   })
@@ -847,14 +929,12 @@ function renderReview(): void {
   if (!word) return
 
   const body = el('div', 'stage')
-  body.append(renderPicture(word))
+  body.append(renderPrompt(word))
   body.append(
     el(
       'p',
       'parent-cue',
-      session.reviewReveal
-        ? '对照发音，再让孩子用完整句说一遍：This is … / I like …'
-        : '遮住英文：问孩子 “What is this?”，等他说完再点下方按钮。',
+      session.reviewReveal ? reviewCueRevealed(word) : reviewCueHidden(word),
     ),
   )
 
@@ -866,10 +946,7 @@ function renderReview(): void {
     lex.append(en, el('div', 'lex-zh', word.chinese))
     body.append(lex)
     const frames = el('div', 'frame-list')
-    for (const line of [
-      `This is ${word.article} ${word.english}.`,
-      `I like ${word.english}.`,
-    ]) {
+    for (const line of reviewFrames(word)) {
       const b = el('button', 'frame-line', line)
       b.type = 'button'
       b.addEventListener('click', () => speakEnglish(line))

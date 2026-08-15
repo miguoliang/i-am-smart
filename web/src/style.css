@@ -392,6 +392,57 @@ button:disabled {
   object-fit: contain;
 }
 
+.picture-frame.is-word-card {
+  background: linear-gradient(180deg, #eef7f4 0%, #ffffff 100%);
+}
+
+.word-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.word-card-pos {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  background: rgba(31, 122, 108, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.word-card-en {
+  font-family: var(--font-en);
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-weight: 700;
+  color: var(--teal-deep);
+  line-height: 1.15;
+}
+
+.word-card-zh {
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.pack-thumb-word {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-en);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--teal-deep);
+  overflow: hidden;
+  padding: 2px;
+  line-height: 1.1;
+  text-align: center;
+}
+
 .lex {
   text-align: center;
   display: flex;
