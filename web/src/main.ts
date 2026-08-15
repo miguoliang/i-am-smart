@@ -91,6 +91,8 @@ import {
   newCourseId,
   SCHEDULE_WEEK_CHOICES,
   scheduledYmdsForCourse,
+  scheduleNote,
+  lessonBlurbForSchedule,
   WEEKDAY_ORDER,
   weekdayLabel,
   weekdaysLabel,
@@ -197,7 +199,7 @@ async function connectCloud(): Promise<void> {
     const session = await ensureCloudSession()
     cloudUserId = session?.userId ?? null
     packCache = await syncFromCloud()
-    homeStatus = '已同步云端课包'
+    homeStatus = '已同步云端的课'
   } catch (err) {
     homeError = err instanceof Error ? err.message : '云端连接失败'
     homeStatus = ''
@@ -359,7 +361,7 @@ async function extendCourse(course: Course, weeks = 4): Promise<void> {
         courseId: course.id,
         scheduledOn: ymd,
         titleZh: lessonTitleForYmd(ymd),
-        blurb: course.titleZh,
+        blurb: lessonBlurbForSchedule(course),
       }),
     )
     await saveCustomPacks(lessons, { syncCloud: false })
@@ -374,24 +376,20 @@ async function extendCourse(course: Course, weeks = 4): Promise<void> {
 }
 
 async function submitSchedule(): Promise<void> {
-  const titleZh = courseDraft.titleZh.trim()
   const weekdays = courseDraft.weekdays
-  if (!titleZh) {
-    courseDraft.error = '请填写课包名称'
-    render()
-    return
-  }
   if (!weekdays.length) {
     courseDraft.error = '请选择每周几上课'
     render()
     return
   }
+  const titleZh = weekdaysLabel(weekdays)
+  const blurb = courseDraft.blurb.trim()
   courseDraft.error = ''
   try {
     const saved = await saveCourse({
       id: courseDraft.courseId || newCourseId(titleZh),
       titleZh,
-      blurb: courseDraft.blurb.trim(),
+      blurb,
       weekdays,
       createdAt: courseCache.find((c) => c.id === courseDraft.courseId)?.createdAt,
     })
@@ -405,7 +403,7 @@ async function submitSchedule(): Promise<void> {
         courseId: saved.id,
         scheduledOn: ymd,
         titleZh: lessonTitleForYmd(ymd),
-        blurb: saved.titleZh,
+        blurb: lessonBlurbForSchedule(saved),
       }),
     )
     if (lessons.length) {
@@ -415,8 +413,8 @@ async function submitSchedule(): Promise<void> {
     screen = 'home'
     homeError = ''
     homeStatus = lessons.length
-      ? `课包「${saved.titleZh}」已排出 ${lessons.length} 节课`
-      : `课包「${saved.titleZh}」已保存`
+      ? `已按${titleZh}排出 ${lessons.length} 节课`
+      : `${titleZh}的排课已保存`
     render()
   } catch {
     courseDraft.error = '保存失败（本机存储可能已满）'
@@ -611,7 +609,7 @@ async function importSamplePack(): Promise<void> {
   try {
     const url = `${import.meta.env.BASE_URL}content/sample-class.peilian.json`
     const res = await fetch(url)
-    if (!res.ok) throw new Error('示例课包下载失败')
+    if (!res.ok) throw new Error('示例课下载失败')
     await importPackText(await res.text())
   } catch (err) {
     homeError = err instanceof Error ? err.message : '示例导入失败'
@@ -762,12 +760,12 @@ function renderHome(): void {
     el(
       'h1',
       'hero-title',
-      '先课包，再排期',
+      '按每周几排课',
     ),
     el(
       'p',
       'hero-lead',
-      '选每周几上课，排出空课。上课点进去记词汇和问答。',
+      '例如每周二、周四，先排出几周空课。上课点进去记词汇和问答。',
     ),
   )
   shell.append(hero)
@@ -778,7 +776,7 @@ function renderHome(): void {
       el(
         'p',
         'cloud-note',
-        '本机课包可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
+        '本机的课可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
       ),
     )
   } else {
@@ -787,7 +785,7 @@ function renderHome(): void {
       'cloud-note',
       cloudUserId
         ? `云端已连接 · ${cloudUserId.slice(0, 8)}…`
-        : '云端已配置，可匿名登录并同步课包',
+        : '云端已配置，可匿名登录并同步这些课',
     )
     const syncBtn = el(
       'button',
@@ -814,7 +812,7 @@ function renderHome(): void {
   })
   importBtn.addEventListener('click', () => fileInput.click())
 
-  const createCourseBtn = el('button', 'btn-primary', '建课包')
+  const createCourseBtn = el('button', 'btn-primary', '排课')
   createCourseBtn.type = 'button'
   createCourseBtn.addEventListener('click', () => openSchedule())
 
@@ -844,7 +842,7 @@ function renderHome(): void {
   sampleBtn.type = 'button'
   sampleBtn.addEventListener('click', () => void importSamplePack())
 
-  const sampleLink = el('a', 'sample-link', '查看课包格式说明')
+  const sampleLink = el('a', 'sample-link', '查看备份格式说明')
   sampleLink.href = `${import.meta.env.BASE_URL}content/README.md`
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
@@ -867,26 +865,26 @@ function renderHome(): void {
       const mine = el('section', 'pack-list course-block')
       const head = el('div', 'course-head')
       const titles = el('div', 'course-head-text')
-      titles.append(
-        el('h2', 'section-label', course.titleZh),
-        el('p', 'course-rule', weekdaysLabel(course.weekdays)),
-      )
+      titles.append(el('h2', 'section-label', weekdaysLabel(course.weekdays)))
+      const note = scheduleNote(course)
+      if (note) titles.append(el('p', 'course-rule', note))
       const tools = el('div', 'course-tools')
       const extend = el('button', 'btn-tiny', '再排4周')
       extend.type = 'button'
       extend.addEventListener('click', () => void extendCourse(course, 4))
-      const edit = el('button', 'btn-tiny', '改课包')
+      const edit = el('button', 'btn-tiny', '改上课日')
       edit.type = 'button'
       edit.addEventListener('click', () => openSchedule(course))
-      const del = el('button', 'btn-tiny btn-tiny-danger', '删除课包')
+      const del = el('button', 'btn-tiny btn-tiny-danger', '删除这些课')
       del.type = 'button'
       del.addEventListener('click', () => {
         const n = packs.length
+        const rule = weekdaysLabel(course.weekdays)
         if (
           !confirm(
             n
-              ? `删除课包「${course.titleZh}」以及下面 ${n} 节排期？`
-              : `删除课包「${course.titleZh}」？`,
+              ? `删除${rule}下面的 ${n} 节课？`
+              : `删除${rule}的排课？`,
           )
         ) {
           return
@@ -923,7 +921,7 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '先建课包排出空课，上课再点「上课记」。知识就记词汇和问答。',
+      '先按每周几排出空课，上课再点「上课记」。知识就记词汇和问答。',
     ),
   )
   app.append(shell)
@@ -2222,35 +2220,28 @@ function renderSchedule(): void {
   const back = el('button', 'btn-ghost', '取消')
   back.type = 'button'
   back.addEventListener('click', goHome)
-  top.append(back, el('div', 'brand-mark', editing ? '改课包' : '建课包'))
+  top.append(back, el('div', 'brand-mark', editing ? '改排课' : '排课'))
   shell.append(top)
 
   const main = el('main', 'main create-main')
   main.append(
-    el('h1', 'title', editing ? '改课包和再排期' : '先建课包，再排期'),
+    el('h1', 'title', editing ? '改上课日，再排出还没有的课' : '按每周几排出空课'),
     el(
       'p',
       'subtitle',
-      '选每周几上课，按规则排出空课。上课再点进去记词汇和问答。',
+      '例如每周二、周四，先排四周。上课再点进去记词汇和问答。',
     ),
   )
 
   const form = el('div', 'create-form')
-  const title = el('input', 'field') as HTMLInputElement
-  title.type = 'text'
-  title.placeholder = '课包名称，例如：外教口语'
-  title.value = courseDraft.titleZh
-  title.addEventListener('input', () => {
-    courseDraft.titleZh = title.value
-  })
   const blurb = el('input', 'field') as HTMLInputElement
   blurb.type = 'text'
-  blurb.placeholder = '备注（可选）例如：XX 机构'
+  blurb.placeholder = '备注（可选）例如：外教口语'
   blurb.value = courseDraft.blurb
   blurb.addEventListener('input', () => {
     courseDraft.blurb = blurb.value
   })
-  form.append(title, blurb)
+  form.append(blurb)
 
   const dayBox = el('div', 'add-word-box')
   dayBox.append(el('h2', 'section-label', '每周几上课'))
@@ -2325,7 +2316,7 @@ function renderSchedule(): void {
   const save = el(
     'button',
     'btn-primary',
-    preview.length ? `保存并排出 ${preview.length} 节课` : '保存课包',
+    preview.length ? `排出 ${preview.length} 节课` : '保存排课',
   )
   save.type = 'button'
   save.addEventListener('click', () => void submitSchedule())

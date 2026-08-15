@@ -244,7 +244,7 @@ export async function getPackById(id: string): Promise<LessonPack | undefined> {
 
 export async function pushLocalPackToCloud(id: string): Promise<LessonPack> {
   const pack = await getCustomPack(id)
-  if (!pack) throw new Error('课包不存在')
+  if (!pack) throw new Error('这节课不存在')
   const saved = await upsertCloudPack(pack)
   const db = await openDb()
   const tx = db.transaction(STORE, 'readwrite')

@@ -22,7 +22,7 @@ export class PackParseError extends Error {
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new PackParseError('课包必须是 JSON 对象')
+    throw new PackParseError('文件必须是 JSON 对象')
   }
   return value as Record<string, unknown>
 }

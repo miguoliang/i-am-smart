@@ -30,7 +30,7 @@ export function emptyCourseDraft(): CourseDraft {
     titleZh: '',
     blurb: '',
     weekdays: [2, 4],
-    weeks: 8,
+    weeks: 4,
     error: '',
   }
 }
@@ -38,8 +38,8 @@ export function emptyCourseDraft(): CourseDraft {
 export function courseToDraft(course: Course): CourseDraft {
   return {
     courseId: course.id,
-    titleZh: course.titleZh,
-    blurb: course.blurb,
+    titleZh: weekdaysLabel(course.weekdays),
+    blurb: scheduleNote(course),
     weekdays: normalizeWeekdays(course.weekdays),
     weeks: 4,
     error: '',
@@ -72,6 +72,22 @@ export function weekdayLabel(day: number): string {
 
 export function weekdaysLabel(days: number[]): string {
   return normalizeWeekdays(days).map(weekdayLabel).join('、') || '未选上课日'
+}
+
+/** Optional note on a weekday schedule (not a product-facing course name). */
+export function scheduleNote(course: Pick<Course, 'titleZh' | 'blurb' | 'weekdays'>): string {
+  const rule = weekdaysLabel(course.weekdays)
+  const blurb = course.blurb?.trim() || ''
+  if (blurb) return blurb
+  const title = course.titleZh.trim()
+  if (title && title !== rule) return title
+  return ''
+}
+
+export function lessonBlurbForSchedule(
+  course: Pick<Course, 'titleZh' | 'blurb' | 'weekdays'>,
+): string {
+  return scheduleNote(course) || weekdaysLabel(course.weekdays)
 }
 
 export function normalizeWeekdays(days: number[]): number[] {

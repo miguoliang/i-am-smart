@@ -45,7 +45,7 @@ export interface SentenceDef {
 }
 
 /**
- * A planned course (课包): weekday rule first, then dated empty classes (排期).
+ * A weekday schedule: pick days such as Tue/Thu, then generate dated empty classes.
  */
 export interface Course {
   id: string
