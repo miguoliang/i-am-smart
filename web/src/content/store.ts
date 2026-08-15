@@ -5,23 +5,44 @@ import { hydrateCourse } from './schedule'
 import { hydratePack, type Course, type LessonPack } from './types'
 
 const DB_NAME = 'peilian-content'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const STORE = 'packs'
 const COURSE_STORE = 'courses'
+
+function ensureStores(db: IDBDatabase): void {
+  if (!db.objectStoreNames.contains(STORE)) {
+    db.createObjectStore(STORE, { keyPath: 'id' })
+  }
+  if (!db.objectStoreNames.contains(COURSE_STORE)) {
+    db.createObjectStore(COURSE_STORE, { keyPath: 'id' })
+  }
+}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = () => ensureStores(req.result)
+    req.onsuccess = () => {
       const db = req.result
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: 'id' })
+      if (
+        db.objectStoreNames.contains(STORE) &&
+        db.objectStoreNames.contains(COURSE_STORE)
+      ) {
+        db.onversionchange = () => db.close()
+        resolve(db)
+        return
       }
-      if (!db.objectStoreNames.contains(COURSE_STORE)) {
-        db.createObjectStore(COURSE_STORE, { keyPath: 'id' })
+      const nextVersion = Math.max(db.version + 1, DB_VERSION)
+      db.close()
+      const retry = indexedDB.open(DB_NAME, nextVersion)
+      retry.onupgradeneeded = () => ensureStores(retry.result)
+      retry.onsuccess = () => {
+        retry.result.onversionchange = () => retry.result.close()
+        resolve(retry.result)
       }
+      retry.onerror = () =>
+        reject(retry.error ?? new Error('IndexedDB open failed'))
     }
-    req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'))
   })
 }
