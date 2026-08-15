@@ -5,18 +5,23 @@ export function assetUrl(path: string): string {
   return `${base}${path.replace(/^\//, '')}`
 }
 
+/** Resolve a stored image path / URL / data URL for <img src>. */
+export function resolveImageSrc(src: string): string {
+  const trimmed = src.trim()
+  if (!trimmed) return ''
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    /^https?:\/\//i.test(trimmed)
+  ) {
+    return trimmed
+  }
+  return assetUrl(trimmed)
+}
+
 /** Resolve a word image for <img src>. */
 export function wordImageSrc(word: WordDef): string {
-  const src = word.image.trim()
-  if (!src) return ''
-  if (
-    src.startsWith('data:') ||
-    src.startsWith('blob:') ||
-    /^https?:\/\//i.test(src)
-  ) {
-    return src
-  }
-  return assetUrl(src)
+  return resolveImageSrc(word.image)
 }
 
 export function preloadPackImages(pack: LessonPack): Promise<void> {

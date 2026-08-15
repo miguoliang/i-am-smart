@@ -33,7 +33,7 @@ function stamp(pack: LessonPack): LessonPack {
   return {
     ...pack,
     source: 'custom',
-    updatedAt: pack.updatedAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 }
 

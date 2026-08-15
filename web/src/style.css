@@ -694,6 +694,7 @@ button:disabled {
 
 .pack-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding-left: 4px;
 }
@@ -764,6 +765,44 @@ select.field {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.draft-row.is-editing {
+  background: rgba(31, 122, 108, 0.08);
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.draft-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.draft-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.img-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 639px) {
+  .draft-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .draft-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
 }
 
 .draft-row:last-child {

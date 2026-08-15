@@ -9,7 +9,7 @@ import {
   vocabCue,
   type QuestionTemplate,
 } from './data/questions'
-import { preloadPackImages, wordImageSrc, fileToDataUrl } from './content/images'
+import { preloadPackImages, resolveImageSrc, wordImageSrc, fileToDataUrl } from './content/images'
 import {
   PackParseError,
   downloadPackJson,
@@ -33,11 +33,21 @@ import {
   WORD_POS,
   guessArticle,
   hasImage,
-  slugId,
   type LessonPack,
   type WordDef,
   type WordPos,
 } from './content/types'
+import {
+  draftToPack,
+  emptyDraft,
+  emptyWordForm,
+  moveDraftWord,
+  packToDraft,
+  posExtra,
+  wordFromForm,
+  type DraftWord,
+  type PackDraft,
+} from './content/editor'
 import { bindViewport } from './practice/chrome'
 import { speakEnglish, unlockAudio } from './practice/tts'
 
@@ -63,14 +73,6 @@ interface Session {
   reviewReveal: boolean
 }
 
-interface DraftWord {
-  english: string
-  chinese: string
-  pos: WordPos
-  article: 'a' | 'an'
-  imageDataUrl: string
-}
-
 let screen: Screen = 'home'
 let session: Session | null = null
 let packCache: LessonPack[] = []
@@ -78,29 +80,13 @@ let homeError = ''
 let homeStatus = ''
 let cloudBusy = false
 let cloudUserId: string | null = null
-let draft: {
-  titleZh: string
-  titleEn: string
-  blurb: string
-  words: DraftWord[]
-  error: string
-} = emptyDraft()
+let draft: PackDraft = emptyDraft()
 
 const PHASES: { id: Exclude<Phase, 'done'>; label: string }[] = [
   { id: 'vocab', label: '词汇' },
   { id: 'talk', label: '开口' },
   { id: 'review', label: '巩固' },
 ]
-
-function emptyDraft() {
-  return {
-    titleZh: '',
-    titleEn: '',
-    blurb: '',
-    words: [] as DraftWord[],
-    error: '',
-  }
-}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -176,6 +162,18 @@ function goHome(): void {
 
 function openCreate(): void {
   draft = emptyDraft()
+  screen = 'create'
+  render()
+}
+
+function openEdit(pack: LessonPack): void {
+  draft = packToDraft(pack)
+  screen = 'create'
+  render()
+}
+
+function openCopy(pack: LessonPack): void {
+  draft = packToDraft(pack, { asCopy: true })
   screen = 'create'
   render()
 }
@@ -368,9 +366,15 @@ function renderPackCard(pack: LessonPack): HTMLElement {
   card.addEventListener('click', () => void startPack(pack.id))
   wrap.append(card)
 
+  const tools = el('div', 'pack-tools')
   if (pack.source === 'custom') {
-    const tools = el('div', 'pack-tools')
-    const exp = el('button', 'btn-tiny', '导出')
+    const edit = el('button', 'btn-tiny', '编辑')
+    edit.type = 'button'
+    edit.addEventListener('click', (e) => {
+      e.stopPropagation()
+      openEdit(pack)
+    })
+    const exp = el('button', 'btn-tiny', '导出备份')
     exp.type = 'button'
     exp.addEventListener('click', (e) => {
       e.stopPropagation()
@@ -416,7 +420,16 @@ function renderPackCard(pack: LessonPack): HTMLElement {
         render()
       })
     })
-    tools.append(exp, del)
+    tools.append(edit, exp, del)
+    wrap.append(tools)
+  } else {
+    const copy = el('button', 'btn-tiny', '复制并编辑')
+    copy.type = 'button'
+    copy.addEventListener('click', (e) => {
+      e.stopPropagation()
+      openCopy(pack)
+    })
+    tools.append(copy)
     wrap.append(tools)
   }
   return wrap
@@ -433,7 +446,7 @@ function renderHome(): void {
     el(
       'p',
       'hero-lead',
-      '框架固定：词汇 → 开口练习 → 巩固。名词可配图；动词、形容词没有图也能练。',
+      '不用改 JSON。网页里新建或编辑词包；名词可配图，动词和形容词没有图也能练。',
     ),
   )
   shell.append(hero)
@@ -468,7 +481,7 @@ function renderHome(): void {
   shell.append(cloudBar)
 
   const actions = el('div', 'home-actions')
-  const importBtn = el('button', 'btn-secondary', '导入词包')
+  const importBtn = el('button', 'btn-secondary', '导入备份')
   importBtn.type = 'button'
   const fileInput = el('input', 'sr-only')
   fileInput.type = 'file'
@@ -522,29 +535,31 @@ function renderHome(): void {
     el(
       'p',
       'home-note',
-      '问题库按词性套句：名词看图，动词问动作，形容词问描述；换教材只换词包。',
+      '示例词包可「复制并编辑」。导入 / 导出只是备份，日常改词用编辑页。',
     ),
   )
   app.append(shell)
 }
 
 function renderCreate(): void {
+  const editing = Boolean(draft.packId)
+  const editingWord = draft.wordForm.editIndex !== null
   clearApp()
   const shell = el('div', 'shell')
   const top = el('header', 'topbar')
   const back = el('button', 'btn-ghost', '取消')
   back.type = 'button'
   back.addEventListener('click', goHome)
-  top.append(back, el('div', 'brand-mark', '新建词包'))
+  top.append(back, el('div', 'brand-mark', editing ? '编辑词包' : '新建词包'))
   shell.append(top)
 
   const main = el('main', 'main create-main')
   main.append(
-    el('h1', 'title', '录入本课内容'),
+    el('h1', 'title', editing ? '改本课内容' : '录入本课内容'),
     el(
       'p',
       'subtitle',
-      '填英文和中文；选词性。名词建议配图，动词和形容词可以不配图。',
+      '在网页里改词、词性和图片，不用打开 JSON。名词建议配图，动词和形容词可以不配图。',
     ),
   )
 
@@ -578,58 +593,131 @@ function renderCreate(): void {
 
   const wordList = el('div', 'draft-words')
   wordList.append(el('h2', 'section-label', `词条（${draft.words.length}）`))
+  if (draft.words.length === 0) {
+    wordList.append(el('p', 'draft-empty', '还没有词。在下方填写后点「加入词包」。'))
+  }
   draft.words.forEach((w, index) => {
     const row = el('div', 'draft-row')
+    if (draft.wordForm.editIndex === index) row.classList.add('is-editing')
     const info = el('div', 'draft-info')
-    const posLabel = POS_LABEL_ZH[w.pos]
-    const extra =
-      w.pos === 'noun' ? `${posLabel} · ${w.article}` : `${posLabel} · 可不配图`
     info.append(
       el('div', 'draft-en', w.english),
-      el('div', 'draft-zh', `${w.chinese} · ${extra}`),
+      el('div', 'draft-zh', `${w.chinese} · ${posExtra(w)}`),
     )
+    const actions = el('div', 'draft-row-actions')
+    const up = el('button', 'btn-tiny', '上移')
+    up.type = 'button'
+    up.disabled = index === 0
+    up.addEventListener('click', () => {
+      const nextIndex = index - 1
+      draft.words = moveDraftWord(draft.words, index, -1)
+      if (draft.wordForm.editIndex === index) draft.wordForm.editIndex = nextIndex
+      else if (draft.wordForm.editIndex === nextIndex) draft.wordForm.editIndex = index
+      render()
+    })
+    const down = el('button', 'btn-tiny', '下移')
+    down.type = 'button'
+    down.disabled = index === draft.words.length - 1
+    down.addEventListener('click', () => {
+      const nextIndex = index + 1
+      draft.words = moveDraftWord(draft.words, index, 1)
+      if (draft.wordForm.editIndex === index) draft.wordForm.editIndex = nextIndex
+      else if (draft.wordForm.editIndex === nextIndex) draft.wordForm.editIndex = index
+      render()
+    })
+    const editWord = el('button', 'btn-tiny', '改')
+    editWord.type = 'button'
+    editWord.addEventListener('click', () => {
+      draft.wordForm = {
+        editIndex: index,
+        english: w.english,
+        chinese: w.chinese,
+        pos: w.pos,
+        article: w.article,
+        imageDataUrl: w.imageDataUrl,
+      }
+      draft.error = ''
+      render()
+    })
     const remove = el('button', 'btn-tiny btn-tiny-danger', '移除')
     remove.type = 'button'
     remove.addEventListener('click', () => {
       draft.words.splice(index, 1)
+      if (draft.wordForm.editIndex === index) draft.wordForm = emptyWordForm()
+      else if (
+        draft.wordForm.editIndex !== null &&
+        draft.wordForm.editIndex > index
+      ) {
+        draft.wordForm.editIndex -= 1
+      }
       render()
     })
-    row.append(renderDraftThumb(w), info, remove)
+    actions.append(up, down, editWord, remove)
+    row.append(renderDraftThumb(w), info, actions)
     wordList.append(row)
   })
   form.append(wordList)
 
   const addBox = el('div', 'add-word-box')
-  addBox.append(el('h2', 'section-label', '添加一个词'))
+  addBox.append(
+    el('h2', 'section-label', editingWord ? '修改这个词' : '添加一个词'),
+  )
+  const formState = draft.wordForm
   const enIn = el('input', 'field') as HTMLInputElement
   enIn.type = 'text'
   enIn.placeholder = 'English'
+  enIn.value = formState.english
   const zhIn = el('input', 'field') as HTMLInputElement
   zhIn.type = 'text'
   zhIn.placeholder = '中文'
+  zhIn.value = formState.chinese
   const posIn = el('select', 'field') as HTMLSelectElement
   for (const pos of WORD_POS) {
     const opt = el('option', undefined, POS_LABEL_ZH[pos]) as HTMLOptionElement
     opt.value = pos
+    if (pos === formState.pos) opt.selected = true
     posIn.append(opt)
   }
   const artIn = el('select', 'field') as HTMLSelectElement
   for (const a of ['a', 'an'] as const) {
     const opt = el('option', undefined, `冠词 ${a}`) as HTMLOptionElement
     opt.value = a
+    if (a === formState.article) opt.selected = true
     artIn.append(opt)
   }
-  enIn.addEventListener('input', () => {
-    artIn.value = guessArticle(enIn.value)
-  })
   const syncArticleVisibility = () => {
     artIn.hidden = posIn.value !== 'noun'
   }
-  posIn.addEventListener('change', syncArticleVisibility)
+  enIn.addEventListener('input', () => {
+    formState.english = enIn.value
+    if (formState.pos === 'noun') {
+      formState.article = guessArticle(enIn.value)
+      artIn.value = formState.article
+    }
+  })
+  zhIn.addEventListener('input', () => {
+    formState.chinese = zhIn.value
+  })
+  posIn.addEventListener('change', () => {
+    formState.pos = WORD_POS.includes(posIn.value as WordPos)
+      ? (posIn.value as WordPos)
+      : 'noun'
+    syncArticleVisibility()
+  })
+  artIn.addEventListener('change', () => {
+    formState.article = artIn.value === 'an' ? 'an' : 'a'
+  })
   syncArticleVisibility()
 
-  let pendingImage = ''
-  const imgPreview = el('div', 'img-preview', '图片可选：动词、形容词常常不配图')
+  const imgPreview = el('div', 'img-preview')
+  if (formState.imageDataUrl) {
+    const img = el('img', 'img-preview-pic')
+    img.src = resolveImageSrc(formState.imageDataUrl)
+    img.alt = 'preview'
+    imgPreview.append(img)
+  } else {
+    imgPreview.textContent = '图片可选：动词、形容词常常不配图'
+  }
   const imgInput = el('input', 'sr-only') as HTMLInputElement
   imgInput.type = 'file'
   imgInput.accept = 'image/*'
@@ -639,12 +727,8 @@ function renderCreate(): void {
     if (!file) return
     void fileToDataUrl(file)
       .then((dataUrl) => {
-        pendingImage = dataUrl
-        imgPreview.replaceChildren()
-        const img = el('img', 'img-preview-pic')
-        img.src = dataUrl
-        img.alt = 'preview'
-        imgPreview.append(img)
+        formState.imageDataUrl = dataUrl
+        render()
       })
       .catch(() => {
         draft.error = '图片处理失败'
@@ -654,32 +738,58 @@ function renderCreate(): void {
   const pickImg = el('button', 'btn-secondary', '上传图片（可选）')
   pickImg.type = 'button'
   pickImg.addEventListener('click', () => imgInput.click())
+  const clearImg = el('button', 'btn-tiny', '去掉图片')
+  clearImg.type = 'button'
+  clearImg.disabled = !formState.imageDataUrl
+  clearImg.addEventListener('click', () => {
+    formState.imageDataUrl = ''
+    render()
+  })
+  const imgRow = el('div', 'img-actions')
+  imgRow.append(pickImg, clearImg, imgInput)
 
-  const addWord = el('button', 'btn-secondary', '加入词包')
+  const addWord = el(
+    'button',
+    'btn-secondary',
+    editingWord ? '保存这个词' : '加入词包',
+  )
   addWord.type = 'button'
   addWord.addEventListener('click', () => {
-    const english = enIn.value.trim()
-    const chinese = zhIn.value.trim()
-    const pos = WORD_POS.includes(posIn.value as WordPos)
+    formState.english = enIn.value
+    formState.chinese = zhIn.value
+    formState.pos = WORD_POS.includes(posIn.value as WordPos)
       ? (posIn.value as WordPos)
       : 'noun'
+    formState.article = artIn.value === 'an' ? 'an' : 'a'
+    const english = formState.english.trim()
+    const chinese = formState.chinese.trim()
     if (!english || !chinese) {
       draft.error = '请填写英文和中文'
       render()
       return
     }
-    if (draft.words.length >= 40) {
+    if (formState.editIndex === null && draft.words.length >= 40) {
       draft.error = '单个词包最多 40 个词'
       render()
       return
     }
-    draft.words.push({
-      english,
-      chinese,
-      pos,
-      article: artIn.value === 'an' ? 'an' : 'a',
-      imageDataUrl: pendingImage,
-    })
+    const existing =
+      formState.editIndex !== null ? draft.words[formState.editIndex] : undefined
+    const nextWord = wordFromForm(formState, existing)
+    if (formState.editIndex === null) {
+      draft.words.push(nextWord)
+    } else {
+      draft.words[formState.editIndex] = nextWord
+    }
+    draft.wordForm = emptyWordForm()
+    draft.error = ''
+    render()
+  })
+  const cancelEdit = el('button', 'btn-tiny', '取消修改')
+  cancelEdit.type = 'button'
+  cancelEdit.hidden = !editingWord
+  cancelEdit.addEventListener('click', () => {
+    draft.wordForm = emptyWordForm()
     draft.error = ''
     render()
   })
@@ -689,21 +799,20 @@ function renderCreate(): void {
     zhIn,
     posIn,
     artIn,
-    pickImg,
-    imgInput,
+    imgRow,
     imgPreview,
     addWord,
+    cancelEdit,
   )
   form.append(addBox)
 
   if (draft.error) form.append(el('p', 'form-error', draft.error))
 
-  const save = el('button', 'btn-primary', '保存到本机')
+  const save = el('button', 'btn-primary', editing ? '保存修改' : '保存到本机')
   save.type = 'button'
   save.addEventListener('click', () => {
     void (async () => {
-      const titleZh = draft.titleZh.trim()
-      if (!titleZh) {
+      if (!draft.titleZh.trim()) {
         draft.error = '请填写中文标题'
         render()
         return
@@ -713,39 +822,12 @@ function renderCreate(): void {
         render()
         return
       }
-      const id = `custom-${slugId(titleZh)}-${Date.now().toString(36)}`
-      const pack: LessonPack = {
-        id,
-        titleZh,
-        titleEn: draft.titleEn.trim() || titleZh,
-        blurb: draft.blurb.trim() || '自定义课程内容',
-        source: 'custom',
-        words: draft.words.map((w) => ({
-          id: slugId(w.english),
-          english: w.english,
-          chinese: w.chinese,
-          pos: w.pos,
-          article: w.article,
-          image: w.imageDataUrl,
-        })),
-      }
-      // ensure unique word ids within pack
-      const seen = new Set<string>()
-      for (const word of pack.words) {
-        let next = word.id
-        let n = 2
-        while (seen.has(next)) {
-          next = `${word.id}-${n}`
-          n += 1
-        }
-        word.id = next
-        seen.add(next)
-      }
       try {
-        await saveCustomPack(pack)
+        await saveCustomPack(draftToPack(draft))
         await refreshPacks()
         screen = 'home'
         homeError = ''
+        homeStatus = editing ? '词包已保存' : '已新建词包'
         render()
       } catch {
         draft.error = '保存失败（本机存储可能已满）'
@@ -777,7 +859,7 @@ function renderThumb(word: WordDef, className: string): HTMLElement {
 function renderDraftThumb(word: DraftWord): HTMLElement {
   if (word.imageDataUrl) {
     const img = el('img', 'draft-thumb')
-    img.src = word.imageDataUrl
+    img.src = resolveImageSrc(word.imageDataUrl)
     img.alt = word.english
     return img
   }
