@@ -1,5 +1,5 @@
-import type { WordDef } from './words'
-import { withArticle } from './words'
+import type { WordDef } from '../content/types'
+import { withArticle } from '../content/types'
 
 /** Fixed picture-talk slots — questions stay; only the word/image changes. */
 export type QuestionKind = 'name' | 'describe' | 'prefer' | 'frame'
