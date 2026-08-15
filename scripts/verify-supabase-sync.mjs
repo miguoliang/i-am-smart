@@ -105,6 +105,35 @@ try {
   assert((others ?? []).length === 0, 'RLS leaked other owners')
   console.log('rls: cannot see other owners ok')
 
+  const logs = await sb.from('operator_logs').select('id').limit(5)
+  assert((logs.data ?? []).length === 0, 'operator_logs leaked to anonymous')
+  console.log('rls: operator_logs hidden ok')
+
+  const other = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data: signB, error: signBErr } = await other.auth.signInAnonymously()
+  if (signBErr) throw signBErr
+  const userB = signB.user?.id ?? ''
+  assert(userB && userB !== userId, 'second anonymous user missing')
+  const { error: collideErr } = await other.from('lesson_packs').upsert(
+    {
+      owner_id: userB,
+      id: packId,
+      title_zh: '另一家长',
+      title_en: 'other',
+      blurb: 'other',
+      document: { ...document, titleZh: '另一家长' },
+    },
+    { onConflict: 'owner_id,id' },
+  )
+  if (collideErr) throw collideErr
+  const { data: onlyMine } = await sb.from('lesson_packs').select('title_zh').eq('id', packId)
+  assert(onlyMine?.length === 1 && onlyMine[0].title_zh === '校验词包', 'same pack id collided')
+  await other.from('lesson_packs').delete().eq('id', packId).eq('owner_id', userB)
+  await other.auth.signOut()
+  console.log('rls: same pack id per owner ok')
+
   const { error: delErr } = await sb
     .from('lesson_packs')
     .delete()
