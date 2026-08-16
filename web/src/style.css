@@ -145,6 +145,18 @@ button:disabled {
   padding-top: calc(28px + var(--safe-top));
 }
 
+.home-masthead,
+.home-panel,
+.home-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-secondary {
+  gap: 10px;
+}
+
 .hero {
   padding: 8px 4px 4px;
 }
@@ -669,6 +681,92 @@ button:disabled {
 
   .picture-frame {
     max-height: 380px;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-shell {
+    max-width: 880px;
+    width: 100%;
+    padding-left: calc(28px + var(--safe-left));
+    padding-right: calc(28px + var(--safe-right));
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-shell {
+    max-width: 1120px;
+    gap: 28px;
+    padding-top: calc(40px + var(--safe-top));
+    padding-left: calc(40px + var(--safe-left));
+    padding-right: calc(40px + var(--safe-right));
+    padding-bottom: calc(40px + var(--safe-bottom));
+  }
+
+  .home-masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+    gap: 36px;
+    align-items: start;
+  }
+
+  .home-panel {
+    gap: 16px;
+    padding: 20px;
+    border-radius: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+
+  .home-panel .cloud-bar {
+    padding: 0 0 12px;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .home-shell .hero {
+    padding: 12px 4px 0;
+  }
+
+  .home-shell .hero-brand {
+    font-size: 3.2rem;
+  }
+
+  .home-shell .hero-title {
+    font-size: 1.9rem;
+  }
+
+  .home-shell .hero-lead {
+    max-width: none;
+    font-size: 1.08rem;
+  }
+
+  .home-shell .pack-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .home-shell .pack-list > .section-label,
+  .home-shell .pack-list > .course-head,
+  .home-shell .pack-list > .draft-empty {
+    grid-column: 1 / -1;
+  }
+
+  .home-shell .pack-card {
+    padding: 16px;
+  }
+
+  .home-shell .pack-thumbs {
+    width: 88px;
+  }
+
+  .home-shell .pack-thumb {
+    width: 42px;
+    height: 42px;
   }
 }
 
