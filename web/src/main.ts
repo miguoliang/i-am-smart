@@ -827,6 +827,8 @@ function renderPackCard(pack: LessonPack): HTMLElement {
 function renderHome(): void {
   clearApp()
   const shell = el('div', 'shell home-shell')
+  const masthead = el('div', 'home-masthead')
+  const panel = el('div', 'home-panel')
 
   const hero = el('section', 'hero')
   hero.append(
@@ -842,7 +844,7 @@ function renderHome(): void {
       '例如每周二、周四，先排出几周空课。上课点进去记词汇和问答。',
     ),
   )
-  shell.append(hero)
+  masthead.append(hero)
 
   const cloudBar = el('div', 'cloud-bar')
   if (!isSupabaseConfigured()) {
@@ -871,7 +873,7 @@ function renderHome(): void {
     syncBtn.addEventListener('click', () => void connectCloud())
     cloudBar.append(label, syncBtn)
   }
-  shell.append(cloudBar)
+  panel.append(cloudBar)
 
   const actions = el('div', 'home-actions')
   const importBtn = el('button', 'btn-secondary', '导入备份')
@@ -895,8 +897,9 @@ function renderHome(): void {
   createBtn.addEventListener('click', openCreate)
 
   actions.append(createCourseBtn, importBtn, createBtn, fileInput)
-  shell.append(actions)
+  panel.append(actions)
 
+  const secondary = el('div', 'home-secondary')
   const mixedPacks = packsForHomeMixed()
   if (mixedPacks.length) {
     const mixedBtn = el('button', 'btn-ghost-block', '巩固')
@@ -909,7 +912,7 @@ function renderHome(): void {
         ? '用记下的课来巩固。可选一节课或已学全部，并设定这次练多少词汇、多少问答。'
         : '先用示例课巩固。记下自己的课后，会改成练你的课。',
     )
-    shell.append(mixedBtn, mixedHint)
+    secondary.append(mixedBtn, mixedHint)
   }
 
   const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例课')
@@ -921,7 +924,10 @@ function renderHome(): void {
   sampleLink.target = '_blank'
   sampleLink.rel = 'noopener'
 
-  shell.append(sampleBtn, sampleLink)
+  secondary.append(sampleBtn, sampleLink)
+  panel.append(secondary)
+  masthead.append(panel)
+  shell.append(masthead)
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))
