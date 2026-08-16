@@ -82,19 +82,25 @@ import {
   type PackDraft,
 } from './content/editor'
 import {
+  courseForWeekday,
   courseToDraft,
   emptyCourseDraft,
   groupPacksByCourse,
   isYmdPast,
   isYmdToday,
+  lessonBlurbForSchedule,
   lessonTitleForYmd,
+  monthCells,
+  monthTitle,
   nextMissingYmds,
   newCourseId,
+  packForYmd,
+  parseYmd,
   SCHEDULE_WEEK_CHOICES,
   scheduledYmdsForCourse,
-  scheduleNote,
-  lessonBlurbForSchedule,
+  shiftYearMonth,
   WEEKDAY_ORDER,
+  WEEKDAY_SHORT_ZH,
   weekdayLabel,
   weekdaysLabel,
   type CourseDraft,
@@ -165,6 +171,9 @@ let captureFocus = true
 let captureBusy = false
 let captureAnswer = ''
 let drillDraft: DrillDraft = { packId: '', wordCount: 0, sentenceCount: 0 }
+const now = new Date()
+let homeMonth = { year: now.getFullYear(), month: now.getMonth() }
+let dayBusy = false
 
 function reviewQueue(): ReviewItem[] {
   return session?.reviewItems ?? []
@@ -369,15 +378,32 @@ function openCapture(pack: LessonPack): void {
   render()
 }
 
-async function createClassNow(): Promise<void> {
+async function openDay(ymd: string): Promise<void> {
+  if (dayBusy) return
+  const existing = packForYmd(packCache, ymd)
+  if (existing) {
+    openCapture(existing)
+    return
+  }
+  dayBusy = true
   homeError = ''
-  homeStatus = '正在建课…'
+  homeStatus = '正在打开…'
   render()
   try {
-    const saved = await saveCustomPack(newEmptyClass())
+    const weekday = parseYmd(ymd).getDay()
+    const course = courseForWeekday(courseCache, weekday)
+    const saved = await saveCustomPack(
+      newEmptyClass({
+        scheduledOn: ymd,
+        courseId: course?.id,
+        blurb: course ? lessonBlurbForSchedule(course) : undefined,
+      }),
+    )
     homeStatus = ''
+    dayBusy = false
     openCapture(saved)
   } catch {
+    dayBusy = false
     homeStatus = ''
     homeError = '建课失败（本机存储可能已满）'
     render()
@@ -398,10 +424,6 @@ async function persistCapture(): Promise<boolean> {
     draft.error = '保存失败（本机存储可能已满）'
     return false
   }
-}
-
-function openCreate(): void {
-  void createClassNow()
 }
 
 function openEdit(pack: LessonPack): void {
@@ -864,42 +886,75 @@ function renderPackCard(pack: LessonPack): HTMLElement {
   return wrap
 }
 
+function renderCalendar(custom: LessonPack[]): HTMLElement {
+  const cal = el('section', 'cal')
+  cal.setAttribute('aria-label', '上课日历')
+
+  const head = el('div', 'cal-head')
+  const prev = el('button', 'cal-nav', '上月')
+  prev.type = 'button'
+  prev.addEventListener('click', () => {
+    homeMonth = shiftYearMonth(homeMonth.year, homeMonth.month, -1)
+    render()
+  })
+  const next = el('button', 'cal-nav', '下月')
+  next.type = 'button'
+  next.addEventListener('click', () => {
+    homeMonth = shiftYearMonth(homeMonth.year, homeMonth.month, 1)
+    render()
+  })
+  head.append(
+    prev,
+    el('h2', 'cal-title', monthTitle(homeMonth.year, homeMonth.month)),
+    next,
+  )
+  cal.append(head)
+
+  const grid = el('div', 'cal-grid')
+  for (const day of WEEKDAY_ORDER) {
+    grid.append(el('div', 'cal-dow', WEEKDAY_SHORT_ZH[day] ?? ''))
+  }
+  for (const cell of monthCells(homeMonth.year, homeMonth.month)) {
+    const pack = packForYmd(custom, cell.ymd)
+    const filled = Boolean(pack && packHasContent(pack))
+    const booked = Boolean(pack)
+    const btn = el('button', 'cal-day')
+    btn.type = 'button'
+    btn.disabled = dayBusy
+    if (!cell.inMonth) btn.classList.add('is-outside')
+    if (isYmdToday(cell.ymd)) {
+      btn.classList.add('is-today')
+      btn.setAttribute('aria-current', 'date')
+    }
+    if (filled) btn.classList.add('is-filled')
+    else if (booked) btn.classList.add('is-booked')
+    const date = parseYmd(cell.ymd)
+    btn.append(el('span', 'cal-num', String(date.getDate())))
+    if (booked) btn.append(el('span', 'cal-dot'))
+    const mark = filled ? '已记' : booked ? '已排，点进去记' : '点进去记'
+    btn.setAttribute('aria-label', `${lessonTitleForYmd(cell.ymd)}，${mark}`)
+    btn.addEventListener('click', () => void openDay(cell.ymd))
+    grid.append(btn)
+  }
+  cal.append(grid)
+  cal.append(el('p', 'cal-hint', '点日期就记。实心是已记，空心是已排。'))
+  return cal
+}
+
 function renderHome(): void {
   clearApp()
   const shell = el('div', 'shell home-shell')
-  const masthead = el('div', 'home-masthead')
-  const panel = el('div', 'home-panel')
+  const bar = el('header', 'home-bar')
+  bar.append(el('p', 'hero-brand', '陪练本'))
 
-  const hero = el('section', 'hero')
-  hero.append(
-    el('p', 'hero-brand', '陪练本'),
-    el('h1', 'hero-title', '上课记，回家练'),
-    el(
-      'p',
-      'hero-lead',
-      '先排出空课。上课点进去记词汇和问答。',
-    ),
-  )
-  masthead.append(hero)
-
-  const actions = el('div', 'home-actions')
-  const createCourseBtn = el('button', 'btn-primary', '排课')
-  createCourseBtn.type = 'button'
-  createCourseBtn.addEventListener('click', () => openSchedule())
-
-  const createBtn = el('button', 'btn-secondary', '记一节课')
-  createBtn.type = 'button'
-  createBtn.addEventListener('click', openCreate)
-  actions.append(createCourseBtn, createBtn)
-
+  const tools = el('div', 'home-bar-tools')
   const mixedPacks = packsForHomeMixed()
   if (mixedPacks.length) {
     const mixedBtn = el('button', 'btn-secondary', '巩固')
     mixedBtn.type = 'button'
     mixedBtn.addEventListener('click', () => openDrill())
-    actions.append(mixedBtn)
+    tools.append(mixedBtn)
   }
-  panel.append(actions)
 
   const fileInput = el('input', 'sr-only')
   fileInput.type = 'file'
@@ -911,9 +966,36 @@ function renderHome(): void {
   })
 
   const moreItems: HTMLElement[] = [
+    menuAction(courseCache.length ? '再排一组课' : '排课', () => openSchedule()),
     menuAction('导入备份', () => fileInput.click()),
     menuAction('导入示例课', () => void importSamplePack()),
   ]
+  for (const course of courseCache) {
+    const rule = weekdaysLabel(course.weekdays)
+    moreItems.push(
+      menuAction(`再排4周 · ${rule}`, () => void extendCourse(course, 4)),
+      menuAction(`改${rule}`, () => openSchedule(course)),
+      menuAction(
+        `删除${rule}`,
+        () => {
+          const n = packCache.filter((pack) => pack.courseId === course.id)
+            .length
+          if (
+            !confirm(
+              n ? `删除${rule}下面的 ${n} 节课？` : `删除${rule}的排课？`,
+            )
+          ) {
+            return
+          }
+          void deleteCourseAndLessons(course.id).then(async () => {
+            await refreshPacks()
+            render()
+          })
+        },
+        { danger: true },
+      ),
+    )
+  }
   if (isSupabaseConfigured()) {
     moreItems.push(
       menuAction(
@@ -930,13 +1012,18 @@ function renderHome(): void {
   moreItems.push(formatLink)
 
   const more = renderMoreMenu('更多', moreItems, {
-    ariaLabel: '导入、同步等更多操作',
+    ariaLabel: '排课、导入、同步等更多操作',
     className: 'home-more',
   })
   more.append(fileInput)
-  panel.append(more)
-  masthead.append(panel)
-  shell.append(masthead)
+  tools.append(more)
+  bar.append(tools)
+  shell.append(bar)
+
+  shell.append(
+    el('p', 'hero-lead', '点哪一天，就记哪一天。'),
+    renderCalendar(packCache),
+  )
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))
@@ -948,59 +1035,16 @@ function renderHome(): void {
   const custom = packCache.filter((p) => p.source === 'custom')
   const builtin = packCache.filter((p) => p.source !== 'custom')
   const grouped = groupPacksByCourse(custom, courseCache)
+  const recorded = [
+    ...grouped.courses.flatMap(({ packs }) => packs),
+    ...grouped.oneOffs,
+  ].filter((pack) => packHasContent(pack) || !pack.scheduledOn)
 
-  if (grouped.courses.length || grouped.oneOffs.length) {
-    for (const { course, packs } of grouped.courses) {
-      const mine = el('section', 'pack-list course-block')
-      const head = el('div', 'course-head')
-      const titles = el('div', 'course-head-text')
-      titles.append(el('h2', 'section-label', weekdaysLabel(course.weekdays)))
-      const note = scheduleNote(course)
-      if (note) titles.append(el('p', 'course-rule', note))
-      const tools = renderMoreMenu(
-        '⋯',
-        [
-          menuAction('再排4周', () => void extendCourse(course, 4)),
-          menuAction('改上课日', () => openSchedule(course)),
-          menuAction(
-            '删除这些课',
-            () => {
-              const n = packs.length
-              const rule = weekdaysLabel(course.weekdays)
-              if (
-                !confirm(
-                  n
-                    ? `删除${rule}下面的 ${n} 节课？`
-                    : `删除${rule}的排课？`,
-                )
-              ) {
-                return
-              }
-              void deleteCourseAndLessons(course.id).then(async () => {
-                await refreshPacks()
-                render()
-              })
-            },
-            { danger: true },
-          ),
-        ],
-        { ariaLabel: `${weekdaysLabel(course.weekdays)}的更多操作` },
-      )
-      head.append(titles, tools)
-      mine.append(head)
-      if (!packs.length) {
-        mine.append(el('p', 'draft-empty', '还没有排期。点「再排4周」生成空课。'))
-      }
-      for (const pack of packs) mine.append(renderPackCard(pack))
-      shell.append(mine)
-    }
-
-    if (grouped.oneOffs.length) {
-      const mine = el('section', 'pack-list')
-      mine.append(el('h2', 'section-label', '单独记的课'))
-      for (const pack of grouped.oneOffs) mine.append(renderPackCard(pack))
-      shell.append(mine)
-    }
+  if (recorded.length) {
+    const mine = el('section', 'pack-list')
+    mine.append(el('h2', 'section-label', '已记的课'))
+    for (const pack of recorded) mine.append(renderPackCard(pack))
+    shell.append(mine)
   }
 
   if (!custom.length) {
