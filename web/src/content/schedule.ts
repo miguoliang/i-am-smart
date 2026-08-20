@@ -1,4 +1,4 @@
-import { slugId, type Course, type LessonPack } from './types.ts'
+import { packHasContent, slugId, type Course, type LessonPack } from './types.ts'
 
 /** Display order Monday → Sunday. Values match `Date#getDay()`. */
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const
@@ -11,6 +11,16 @@ export const WEEKDAY_LABEL_ZH: Record<number, string> = {
   4: '周四',
   5: '周五',
   6: '周六',
+}
+
+export const WEEKDAY_SHORT_ZH: Record<number, string> = {
+  0: '日',
+  1: '一',
+  2: '二',
+  3: '三',
+  4: '四',
+  5: '五',
+  6: '六',
 }
 
 export const SCHEDULE_WEEK_CHOICES = [4, 8, 12] as const
@@ -225,4 +235,60 @@ export function groupPacksByCourse(
     })),
     oneOffs,
   }
+}
+
+export interface MonthCell {
+  ymd: string
+  inMonth: boolean
+}
+
+export function monthTitle(year: number, month: number): string {
+  return `${year}年${month + 1}月`
+}
+
+export function shiftYearMonth(
+  year: number,
+  month: number,
+  delta: number,
+): { year: number; month: number } {
+  const next = new Date(year, month + delta, 1)
+  return { year: next.getFullYear(), month: next.getMonth() }
+}
+
+/** Monday-first 6-week grid for a calendar month (month is 0-based). */
+export function monthCells(year: number, month: number): MonthCell[] {
+  const first = new Date(year, month, 1)
+  const mondayOffset = (first.getDay() + 6) % 7
+  const start = new Date(year, month, 1 - mondayOffset)
+  const cells: MonthCell[] = []
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    cells.push({
+      ymd: formatYmd(date),
+      inMonth: date.getMonth() === month,
+    })
+  }
+  return cells
+}
+
+export function customPacksOnYmd(packs: LessonPack[], ymd: string): LessonPack[] {
+  return packs.filter(
+    (pack) => pack.source === 'custom' && pack.scheduledOn === ymd,
+  )
+}
+
+export function packForYmd(packs: LessonPack[], ymd: string): LessonPack | null {
+  const onDay = customPacksOnYmd(packs, ymd)
+  if (!onDay.length) return null
+  return onDay.find((pack) => packHasContent(pack)) ?? onDay[0] ?? null
+}
+
+export function courseForWeekday(
+  courses: Course[],
+  weekday: number,
+): Course | undefined {
+  return courses.find((course) =>
+    normalizeWeekdays(course.weekdays).includes(weekday),
+  )
 }

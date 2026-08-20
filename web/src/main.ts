@@ -82,19 +82,25 @@ import {
   type PackDraft,
 } from './content/editor'
 import {
+  courseForWeekday,
   courseToDraft,
   emptyCourseDraft,
   groupPacksByCourse,
   isYmdPast,
   isYmdToday,
+  lessonBlurbForSchedule,
   lessonTitleForYmd,
+  monthCells,
+  monthTitle,
   nextMissingYmds,
   newCourseId,
+  packForYmd,
+  parseYmd,
   SCHEDULE_WEEK_CHOICES,
   scheduledYmdsForCourse,
-  scheduleNote,
-  lessonBlurbForSchedule,
+  shiftYearMonth,
   WEEKDAY_ORDER,
+  WEEKDAY_SHORT_ZH,
   weekdayLabel,
   weekdaysLabel,
   type CourseDraft,
@@ -111,6 +117,13 @@ function requireApp(): HTMLDivElement {
 }
 
 const app = requireApp()
+
+document.addEventListener('click', (event) => {
+  if (!(event.target instanceof Node)) return
+  for (const node of app.querySelectorAll('details.more-menu[open]')) {
+    if (!node.contains(event.target)) (node as HTMLDetailsElement).open = false
+  }
+})
 
 type Screen = 'home' | 'create' | 'capture' | 'start' | 'session' | 'schedule' | 'drill'
 type PracticePhase = 'vocab' | 'talk' | 'sentences' | 'review'
@@ -158,6 +171,9 @@ let captureFocus = true
 let captureBusy = false
 let captureAnswer = ''
 let drillDraft: DrillDraft = { packId: '', wordCount: 0, sentenceCount: 0 }
+const now = new Date()
+let homeMonth = { year: now.getFullYear(), month: now.getMonth() }
+let dayBusy = false
 
 function reviewQueue(): ReviewItem[] {
   return session?.reviewItems ?? []
@@ -362,15 +378,32 @@ function openCapture(pack: LessonPack): void {
   render()
 }
 
-async function createClassNow(): Promise<void> {
+async function openDay(ymd: string): Promise<void> {
+  if (dayBusy) return
+  const existing = packForYmd(packCache, ymd)
+  if (existing) {
+    openCapture(existing)
+    return
+  }
+  dayBusy = true
   homeError = ''
-  homeStatus = '正在建课…'
+  homeStatus = '正在打开…'
   render()
   try {
-    const saved = await saveCustomPack(newEmptyClass())
+    const weekday = parseYmd(ymd).getDay()
+    const course = courseForWeekday(courseCache, weekday)
+    const saved = await saveCustomPack(
+      newEmptyClass({
+        scheduledOn: ymd,
+        courseId: course?.id,
+        blurb: course ? lessonBlurbForSchedule(course) : undefined,
+      }),
+    )
     homeStatus = ''
+    dayBusy = false
     openCapture(saved)
   } catch {
+    dayBusy = false
     homeStatus = ''
     homeError = '建课失败（本机存储可能已满）'
     render()
@@ -391,10 +424,6 @@ async function persistCapture(): Promise<boolean> {
     draft.error = '保存失败（本机存储可能已满）'
     return false
   }
-}
-
-function openCreate(): void {
-  void createClassNow()
 }
 
 function openEdit(pack: LessonPack): void {
@@ -713,6 +742,54 @@ function renderPackThumbs(pack: LessonPack): HTMLElement {
   return thumbs
 }
 
+function closeOtherMenus(current: HTMLDetailsElement): void {
+  for (const node of app.querySelectorAll('details.more-menu[open]')) {
+    if (node !== current) (node as HTMLDetailsElement).open = false
+  }
+}
+
+function menuAction(
+  label: string,
+  onClick: () => void,
+  opts: { danger?: boolean; disabled?: boolean } = {},
+): HTMLButtonElement {
+  const btn = el(
+    'button',
+    opts.danger ? 'more-menu-item is-danger' : 'more-menu-item',
+    label,
+  ) as HTMLButtonElement
+  btn.type = 'button'
+  btn.disabled = Boolean(opts.disabled)
+  btn.addEventListener('click', (event) => {
+    event.stopPropagation()
+    const menu = btn.closest('details')
+    if (menu instanceof HTMLDetailsElement) menu.open = false
+    onClick()
+  })
+  return btn
+}
+
+function renderMoreMenu(
+  label: string,
+  items: HTMLElement[],
+  opts: { ariaLabel?: string; className?: string } = {},
+): HTMLDetailsElement {
+  const menu = el(
+    'details',
+    opts.className ? `more-menu ${opts.className}` : 'more-menu',
+  ) as HTMLDetailsElement
+  const summary = el('summary', 'more-menu-summary', label)
+  summary.setAttribute('aria-label', opts.ariaLabel ?? label)
+  summary.addEventListener('click', (event) => event.stopPropagation())
+  const list = el('div', 'more-menu-list')
+  for (const item of items) list.append(item)
+  menu.append(summary, list)
+  menu.addEventListener('toggle', () => {
+    if (menu.open) closeOtherMenus(menu)
+  })
+  return menu
+}
+
 function renderPackCard(pack: LessonPack): HTMLElement {
   const wrap = el('div', 'pack-card-wrap')
   const card = el('button', 'pack-card')
@@ -749,135 +826,136 @@ function renderPackCard(pack: LessonPack): HTMLElement {
   })
   wrap.append(card)
 
-  const tools = el('div', 'pack-tools')
+  const items: HTMLElement[] = []
   if (pack.source === 'custom') {
-    const edit = el('button', 'btn-tiny', '编辑')
-    edit.type = 'button'
-    edit.addEventListener('click', (e) => {
-      e.stopPropagation()
-      openEdit(pack)
-    })
-    const exp = el('button', 'btn-tiny', '导出备份')
-    exp.type = 'button'
-    exp.addEventListener('click', (e) => {
-      e.stopPropagation()
-      downloadPackJson(pack)
-    })
+    items.push(
+      menuAction('上课记', () => openCapture(pack)),
+      menuAction('编辑', () => openEdit(pack)),
+      menuAction('导出备份', () => downloadPackJson(pack)),
+    )
     if (isSupabaseConfigured()) {
-      const sync = el(
-        'button',
-        'btn-tiny',
-        pack.cloudSynced ? '已上云' : '上传云端',
+      items.push(
+        menuAction(
+          pack.cloudSynced ? '已上云' : '上传云端',
+          () => {
+            if (pack.cloudSynced || cloudBusy) return
+            cloudBusy = true
+            homeStatus = '正在上传…'
+            render()
+            void pushLocalPackToCloud(pack.id)
+              .then(async () => {
+                homeStatus = '已上传到云端'
+                homeError = ''
+                await refreshPacks()
+              })
+              .catch((err) => {
+                homeError = err instanceof Error ? err.message : '上传失败'
+                homeStatus = ''
+              })
+              .finally(() => {
+                cloudBusy = false
+                render()
+              })
+          },
+          { disabled: Boolean(pack.cloudSynced) || cloudBusy },
+        ),
       )
-      sync.type = 'button'
-      sync.disabled = Boolean(pack.cloudSynced) || cloudBusy
-      sync.addEventListener('click', (e) => {
-        e.stopPropagation()
-        cloudBusy = true
-        homeStatus = '正在上传…'
-        render()
-        void pushLocalPackToCloud(pack.id)
-          .then(async () => {
-            homeStatus = '已上传到云端'
-            homeError = ''
+    }
+    items.push(
+      menuAction(
+        '删除',
+        () => {
+          if (!confirm(`删除这节课「${pack.titleZh}」？`)) return
+          void deleteCustomPack(pack.id).then(async () => {
             await refreshPacks()
-          })
-          .catch((err) => {
-            homeError = err instanceof Error ? err.message : '上传失败'
-            homeStatus = ''
-          })
-          .finally(() => {
-            cloudBusy = false
             render()
           })
-      })
-      tools.append(sync)
-    }
-    const del = el('button', 'btn-tiny btn-tiny-danger', '删除')
-    del.type = 'button'
-    del.addEventListener('click', (e) => {
-      e.stopPropagation()
-      if (!confirm(`删除这节课「${pack.titleZh}」？`)) return
-      void deleteCustomPack(pack.id).then(async () => {
-        await refreshPacks()
-        render()
-      })
-    })
-    const note = el('button', 'btn-tiny', '上课记')
-    note.type = 'button'
-    note.addEventListener('click', (e) => {
-      e.stopPropagation()
-      openCapture(pack)
-    })
-    tools.append(note, edit, exp, del)
-    wrap.append(tools)
+        },
+        { danger: true },
+      ),
+    )
   } else {
-    const copy = el('button', 'btn-tiny', '复制并编辑')
-    copy.type = 'button'
-    copy.addEventListener('click', (e) => {
-      e.stopPropagation()
-      openCopy(pack)
-    })
-    tools.append(copy)
-    wrap.append(tools)
+    items.push(menuAction('复制并编辑', () => openCopy(pack)))
   }
+  wrap.append(
+    renderMoreMenu('⋯', items, {
+      ariaLabel: `「${pack.titleZh}」的更多操作`,
+      className: 'pack-more',
+    }),
+  )
   return wrap
+}
+
+function renderCalendar(custom: LessonPack[]): HTMLElement {
+  const cal = el('section', 'cal')
+  cal.setAttribute('aria-label', '上课日历')
+
+  const head = el('div', 'cal-head')
+  const prev = el('button', 'cal-nav', '上月')
+  prev.type = 'button'
+  prev.addEventListener('click', () => {
+    homeMonth = shiftYearMonth(homeMonth.year, homeMonth.month, -1)
+    render()
+  })
+  const next = el('button', 'cal-nav', '下月')
+  next.type = 'button'
+  next.addEventListener('click', () => {
+    homeMonth = shiftYearMonth(homeMonth.year, homeMonth.month, 1)
+    render()
+  })
+  head.append(
+    prev,
+    el('h2', 'cal-title', monthTitle(homeMonth.year, homeMonth.month)),
+    next,
+  )
+  cal.append(head)
+
+  const grid = el('div', 'cal-grid')
+  for (const day of WEEKDAY_ORDER) {
+    grid.append(el('div', 'cal-dow', WEEKDAY_SHORT_ZH[day] ?? ''))
+  }
+  for (const cell of monthCells(homeMonth.year, homeMonth.month)) {
+    const pack = packForYmd(custom, cell.ymd)
+    const filled = Boolean(pack && packHasContent(pack))
+    const booked = Boolean(pack)
+    const btn = el('button', 'cal-day')
+    btn.type = 'button'
+    btn.disabled = dayBusy
+    if (!cell.inMonth) btn.classList.add('is-outside')
+    if (isYmdToday(cell.ymd)) {
+      btn.classList.add('is-today')
+      btn.setAttribute('aria-current', 'date')
+    }
+    if (filled) btn.classList.add('is-filled')
+    else if (booked) btn.classList.add('is-booked')
+    const date = parseYmd(cell.ymd)
+    btn.append(el('span', 'cal-num', String(date.getDate())))
+    if (booked) btn.append(el('span', 'cal-dot'))
+    const mark = filled ? '已记' : booked ? '已排，点进去记' : '点进去记'
+    btn.setAttribute('aria-label', `${lessonTitleForYmd(cell.ymd)}，${mark}`)
+    btn.addEventListener('click', () => void openDay(cell.ymd))
+    grid.append(btn)
+  }
+  cal.append(grid)
+  cal.append(el('p', 'cal-hint', '点日期就记。实心是已记，空心是已排。'))
+  return cal
 }
 
 function renderHome(): void {
   clearApp()
   const shell = el('div', 'shell home-shell')
-  const masthead = el('div', 'home-masthead')
-  const panel = el('div', 'home-panel')
+  const bar = el('header', 'home-bar')
+  bar.append(el('p', 'hero-brand', '陪练本'))
 
-  const hero = el('section', 'hero')
-  hero.append(
-    el('p', 'hero-brand', '陪练本'),
-    el(
-      'h1',
-      'hero-title',
-      '按每周几排课',
-    ),
-    el(
-      'p',
-      'hero-lead',
-      '例如每周二、周四，先排出几周空课。上课点进去记词汇和问答。',
-    ),
-  )
-  masthead.append(hero)
-
-  const cloudBar = el('div', 'cloud-bar')
-  if (!isSupabaseConfigured()) {
-    cloudBar.append(
-      el(
-        'p',
-        'cloud-note',
-        '本机的课可用。配置 Supabase 后可跨设备同步（需 VITE_SUPABASE_URL / ANON_KEY）。',
-      ),
-    )
-  } else {
-    const label = el(
-      'p',
-      'cloud-note',
-      cloudUserId
-        ? `云端已连接 · ${cloudUserId.slice(0, 8)}…`
-        : '云端已配置，可匿名登录并同步这些课',
-    )
-    const syncBtn = el(
-      'button',
-      'btn-secondary',
-      cloudBusy ? '同步中…' : cloudUserId ? '重新同步' : '连接并同步云端',
-    )
-    syncBtn.type = 'button'
-    syncBtn.disabled = cloudBusy
-    syncBtn.addEventListener('click', () => void connectCloud())
-    cloudBar.append(label, syncBtn)
+  const tools = el('div', 'home-bar-tools')
+  const mixedPacks = packsForHomeMixed()
+  if (mixedPacks.length) {
+    const mixedBtn = el('button', 'btn-secondary', '巩固')
+    mixedBtn.type = 'button'
+    mixedBtn.addEventListener('click', () => openDrill())
+    tools.append(mixedBtn)
   }
-  panel.append(cloudBar)
 
-  const actions = el('div', 'home-actions')
-  const importBtn = el('button', 'btn-secondary', '导入备份')
-  importBtn.type = 'button'
   const fileInput = el('input', 'sr-only')
   fileInput.type = 'file'
   fileInput.accept = 'application/json,.json,.peilian.json'
@@ -886,48 +964,66 @@ function renderHome(): void {
     fileInput.value = ''
     if (file) void importPackFile(file)
   })
-  importBtn.addEventListener('click', () => fileInput.click())
 
-  const createCourseBtn = el('button', 'btn-primary', '排课')
-  createCourseBtn.type = 'button'
-  createCourseBtn.addEventListener('click', () => openSchedule())
-
-  const createBtn = el('button', 'btn-secondary', '记一节课')
-  createBtn.type = 'button'
-  createBtn.addEventListener('click', openCreate)
-
-  actions.append(createCourseBtn, importBtn, createBtn, fileInput)
-  panel.append(actions)
-
-  const secondary = el('div', 'home-secondary')
-  const mixedPacks = packsForHomeMixed()
-  if (mixedPacks.length) {
-    const mixedBtn = el('button', 'btn-ghost-block', '巩固')
-    mixedBtn.type = 'button'
-    mixedBtn.addEventListener('click', () => openDrill())
-    const mixedHint = el(
-      'p',
-      'home-note',
-      mixedPacks.some((p) => p.source === 'custom')
-        ? '用记下的课来巩固。可选一节课或已学全部，并设定这次练多少词汇、多少问答。'
-        : '先用示例课巩固。记下自己的课后，会改成练你的课。',
+  const moreItems: HTMLElement[] = [
+    menuAction(courseCache.length ? '再排一组课' : '排课', () => openSchedule()),
+    menuAction('导入备份', () => fileInput.click()),
+    menuAction('导入示例课', () => void importSamplePack()),
+  ]
+  for (const course of courseCache) {
+    const rule = weekdaysLabel(course.weekdays)
+    moreItems.push(
+      menuAction(`再排4周 · ${rule}`, () => void extendCourse(course, 4)),
+      menuAction(`改${rule}`, () => openSchedule(course)),
+      menuAction(
+        `删除${rule}`,
+        () => {
+          const n = packCache.filter((pack) => pack.courseId === course.id)
+            .length
+          if (
+            !confirm(
+              n ? `删除${rule}下面的 ${n} 节课？` : `删除${rule}的排课？`,
+            )
+          ) {
+            return
+          }
+          void deleteCourseAndLessons(course.id).then(async () => {
+            await refreshPacks()
+            render()
+          })
+        },
+        { danger: true },
+      ),
     )
-    secondary.append(mixedBtn, mixedHint)
   }
+  if (isSupabaseConfigured()) {
+    moreItems.push(
+      menuAction(
+        cloudBusy ? '同步中…' : cloudUserId ? '重新同步云端' : '同步云端',
+        () => void connectCloud(),
+        { disabled: cloudBusy },
+      ),
+    )
+  }
+  const formatLink = el('a', 'more-menu-item', '备份格式说明')
+  formatLink.href = `${import.meta.env.BASE_URL}content/README.md`
+  formatLink.target = '_blank'
+  formatLink.rel = 'noopener'
+  moreItems.push(formatLink)
 
-  const sampleBtn = el('button', 'btn-ghost-block', '一键导入示例课')
-  sampleBtn.type = 'button'
-  sampleBtn.addEventListener('click', () => void importSamplePack())
+  const more = renderMoreMenu('更多', moreItems, {
+    ariaLabel: '排课、导入、同步等更多操作',
+    className: 'home-more',
+  })
+  more.append(fileInput)
+  tools.append(more)
+  bar.append(tools)
+  shell.append(bar)
 
-  const sampleLink = el('a', 'sample-link', '查看备份格式说明')
-  sampleLink.href = `${import.meta.env.BASE_URL}content/README.md`
-  sampleLink.target = '_blank'
-  sampleLink.rel = 'noopener'
-
-  secondary.append(sampleBtn, sampleLink)
-  panel.append(secondary)
-  masthead.append(panel)
-  shell.append(masthead)
+  shell.append(
+    el('p', 'hero-lead', '点哪一天，就记哪一天。'),
+    renderCalendar(packCache),
+  )
 
   if (homeError) {
     shell.append(el('p', 'form-error', homeError))
@@ -939,71 +1035,25 @@ function renderHome(): void {
   const custom = packCache.filter((p) => p.source === 'custom')
   const builtin = packCache.filter((p) => p.source !== 'custom')
   const grouped = groupPacksByCourse(custom, courseCache)
+  const recorded = [
+    ...grouped.courses.flatMap(({ packs }) => packs),
+    ...grouped.oneOffs,
+  ].filter((pack) => packHasContent(pack) || !pack.scheduledOn)
 
-  if (grouped.courses.length || grouped.oneOffs.length) {
-    for (const { course, packs } of grouped.courses) {
-      const mine = el('section', 'pack-list course-block')
-      const head = el('div', 'course-head')
-      const titles = el('div', 'course-head-text')
-      titles.append(el('h2', 'section-label', weekdaysLabel(course.weekdays)))
-      const note = scheduleNote(course)
-      if (note) titles.append(el('p', 'course-rule', note))
-      const tools = el('div', 'course-tools')
-      const extend = el('button', 'btn-tiny', '再排4周')
-      extend.type = 'button'
-      extend.addEventListener('click', () => void extendCourse(course, 4))
-      const edit = el('button', 'btn-tiny', '改上课日')
-      edit.type = 'button'
-      edit.addEventListener('click', () => openSchedule(course))
-      const del = el('button', 'btn-tiny btn-tiny-danger', '删除这些课')
-      del.type = 'button'
-      del.addEventListener('click', () => {
-        const n = packs.length
-        const rule = weekdaysLabel(course.weekdays)
-        if (
-          !confirm(
-            n
-              ? `删除${rule}下面的 ${n} 节课？`
-              : `删除${rule}的排课？`,
-          )
-        ) {
-          return
-        }
-        void deleteCourseAndLessons(course.id).then(async () => {
-          await refreshPacks()
-          render()
-        })
-      })
-      tools.append(extend, edit, del)
-      head.append(titles, tools)
-      mine.append(head)
-      if (!packs.length) {
-        mine.append(el('p', 'draft-empty', '还没有排期。点「再排4周」生成空课。'))
-      }
-      for (const pack of packs) mine.append(renderPackCard(pack))
-      shell.append(mine)
-    }
-
-    if (grouped.oneOffs.length) {
-      const mine = el('section', 'pack-list')
-      mine.append(el('h2', 'section-label', '单独记的课'))
-      for (const pack of grouped.oneOffs) mine.append(renderPackCard(pack))
-      shell.append(mine)
-    }
+  if (recorded.length) {
+    const mine = el('section', 'pack-list')
+    mine.append(el('h2', 'section-label', '已记的课'))
+    for (const pack of recorded) mine.append(renderPackCard(pack))
+    shell.append(mine)
   }
 
-  const demos = el('section', 'pack-list')
-  demos.append(el('h2', 'section-label', '示例课'))
-  for (const pack of builtin) demos.append(renderPackCard(pack))
-  shell.append(demos)
+  if (!custom.length) {
+    const demos = el('section', 'pack-list')
+    demos.append(el('h2', 'section-label', '先看一节示例'))
+    for (const pack of builtin) demos.append(renderPackCard(pack))
+    shell.append(demos)
+  }
 
-  shell.append(
-    el(
-      'p',
-      'home-note',
-      '先按每周几排出空课，上课再点「上课记」。知识就记词汇和问答。',
-    ),
-  )
   app.append(shell)
 }
 
@@ -1430,6 +1480,12 @@ function renderStart(): void {
   back.type = 'button'
   back.addEventListener('click', goHome)
   top.append(back, el('div', 'brand-mark', '怎么练'))
+  if (pack.source === 'custom') {
+    const edit = el('button', 'btn-ghost', '编辑')
+    edit.type = 'button'
+    edit.addEventListener('click', () => openEdit(pack))
+    top.append(edit)
+  }
   shell.append(top)
 
   const main = el('main', 'main create-main')
